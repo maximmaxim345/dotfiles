@@ -1,0 +1,115 @@
+DotfilesApp {
+    layout: horizontal;
+}
+
+#categories {
+    layout: vertical;
+}
+
+.category {
+    height: auto;
+    border: round $accent;
+    background: $background;
+}
+
+.category-header {
+    content-align: center bottom;
+    border-bottom: round $accent;
+}
+
+ModuleItem {
+    layout: horizontal;
+    background: $primary-background;
+    margin-bottom: 1;
+}
+
+ModuleItem.module-changed {
+    border-left: thick $secondary;
+}
+
+#module-description {
+    height: auto;
+}
+
+#module-description > #name {
+    content-align: center top;
+    background: $primary-background-lighten-1;
+}
+
+#module-actions {
+    layout: horizontal;
+    width: auto;
+    dock: right;
+}
+
+#module-actions > Button {
+    display: none;
+    height: 100%;
+}
+
+.module-style-not-installed #install {
+    display: block;
+}
+
+.module-style-installed #remove {
+    display: block;
+}
+
+.queued-actions-header {
+    content-align: center bottom;
+    border-bottom: round $secondary;
+}
+
+#queued_actions {
+    border: round #181;
+    height: auto;
+    border: round $secondary;
+    max-height: 50%;
+}
+
+
+#actions {
+    layout: horizontal;
+    height: auto;
+}
+
+#actions > #apply {
+    dock: right;
+}
+
+#title{
+    content-align: center top;
+    border-bottom: round $accent;
+}
+
+InstallationScreen > #buttons {
+    layout: horizontal;
+    height: auto;
+    /* dock: bottom; */
+}
+
+#log {
+    border: round $accent;
+}
+
+#buttons > Button {
+    dock: right;
+}
+
+QueuedActionItem.queued {
+}
+
+QueuedActionItem.installing {
+    color: $warning;
+    /* border-left: solid $warning; */
+}
+
+QueuedActionItem.installed {
+    color: $success;
+    border-left: solid $success;
+}
+
+QueuedActionItem.failed {
+    color: $error;
+    border-left: thick $error;
+}

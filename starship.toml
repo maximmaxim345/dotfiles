@@ -1,0 +1,165 @@
+"$schema" = "https://starship.rs/config-schema.json"
+
+format = """
+$character\
+$cmd_duration\
+[](#FCA17D)\
+$git_branch\
+$git_status\
+[](fg:#FCA17D bg:#06969A)\
+$c\
+$cmake\
+$python\
+$elixir\
+$elm\
+$golang\
+$haskell\
+$java\
+$julia\
+$nodejs\
+$nim\
+$rust\
+$scala\
+$env_var\
+[](fg:#06969A bg:#06969A)\
+$docker_context\
+[](fg:#06969A bg:#33658A)\
+$time\
+[](fg:#33658A)
+[](#52783c)\
+$directory\
+[ ](fg:#52783c)\
+"""
+
+add_newline = false
+
+# palette = "p"
+# [palettes.p]
+# white = "#FFFFFF"
+
+[cmd_duration]
+min_time = 5_000
+format = "[[$duration](bg:#1E919D fg:#FFFFFF)](#1E919D) "
+
+[env_var.IDF_PATH]
+style = "bg:#06969A fg:#FFFFFF"
+format = "[  esp-idf ]($style)"
+
+
+[character]
+format = "$symbol"
+success_symbol = ""
+error_symbol = "[[](bg:#FE612D fg:#FFFFFF)](#FE612D) "
+
+[username]
+show_always = true
+style_user = "bg:#9A348E fg:#FFFFFF"
+style_root = "bg:#9A348E fg:#ff7575"
+format = '[$user ]($style)'
+
+[directory]
+style = "bg:#52783c fg:#FFFFFF"
+format = "[ $path ]($style)"
+truncation_length = 3
+truncation_symbol = "…/"
+repo_root_style = "bg:#6da44d fg:#FFFFFF"
+repo_root_format = """
+[ $before_root_path]($style)\
+[](bg:#52783c fg:#6da44d)\
+[$repo_root]($repo_root_style)\
+[](bg:#52783c fg:#6da44d)\
+[$path ]($style)\
+"""
+
+# Here is how you can shorten some long paths by text replacement
+# similar to mapped_locations in Oh My Posh:
+# [directory.substitutions]
+# "Documents" = ""
+# "Downloads" = "  "
+# "Music" = "  "
+# "Pictures" = " "
+
+[c]
+symbol = " "
+style = "bg:#06969A fg:#FFFFFF"
+format = '[ $symbol ($version) ]($style)'
+
+[cmake]
+symbol = "喝"
+style = "bg:#06969A fg:#FFFFFF"
+format = '[ $symbol ($version) ]($style)'
+
+[docker_context]
+symbol = " "
+style = "bg:#06969A fg:#FFFFFF"
+format = '[ $symbol $context ]($style) $path'
+
+[elixir]
+symbol = " "
+style = "bg:#06969A fg:#FFFFFF"
+format = '[ $symbol ($version) ]($style)'
+
+[elm]
+symbol = " "
+style = "bg:#06969A fg:#FFFFFF"
+format = '[ $symbol ($version) ]($style)'
+
+[git_branch]
+symbol = ""
+style = "bg:#FCA17D fg:#FFFFFF"
+format = '[ $symbol $branch ]($style)'
+
+[git_status]
+style = "bg:#FCA17D fg:#FFFFFF"
+format = '[$all_status$ahead_behind ]($style)'
+
+[golang]
+symbol = " "
+style = "bg:#06969A fg:#FFFFFF"
+format = '[ $symbol ($version) ]($style)'
+
+[haskell]
+symbol = " "
+style = "bg:#06969A fg:#FFFFFF"
+format = '[ $symbol ($version) ]($style)'
+
+[java]
+symbol = " "
+style = "bg:#06969A fg:#FFFFFF"
+format = '[ $symbol ($version) ]($style)'
+
+[python]
+symbol = "🐍 "
+style = "bg:#06969A fg:#FFFFFF"
+format = '[ $symbol$virtualenv ($version) ]($style)'
+
+[julia]
+symbol = " "
+style = "bg:#06969A fg:#FFFFFF"
+format = '[ $symbol ($version) ]($style)'
+
+[nodejs]
+symbol = ""
+style = "bg:#06969A fg:#FFFFFF"
+format = '[ $symbol ($version) ]($style)'
+
+[nim]
+symbol = " "
+style = "bg:#06969A fg:#FFFFFF"
+format = '[ $symbol ($version) ]($style)'
+
+[rust]
+symbol = ""
+style = "bg:#06969A fg:#FFFFFF"
+format = '[ $symbol ($version) ]($style)'
+
+[scala]
+symbol = " "
+style = "bg:#06969A fg:#FFFFFF"
+format = '[ $symbol ($version) ]($style)'
+
+[time]
+disabled = false
+time_format = "%R" # Hour:Minute Format
+style = "bg:#33658A fg:#FFFFFF"
+format = '[ $time ]($style)'

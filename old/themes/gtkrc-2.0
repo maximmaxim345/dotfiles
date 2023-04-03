@@ -1,0 +1,9 @@
+include "/usr/share/themes/Materia-light/gtk-2.0/gtkrc"
+
+style "user-font" {
+	font_name = "Inter 10"
+}
+
+widget_class "*" style "user-font"
+
+gtk-font-name="Inter 10"

@@ -1,0 +1,11 @@
+[core]
+	editor = vim
+[user]
+	email = EMAIL
+	name = NAME
+	signinkey = KEY
+[credential]
+	helper = GIT_CREDENTIAL_HELPER
+## true on windows, input on unix
+#[core]
+#	autocrlf = input

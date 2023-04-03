@@ -1,0 +1,11 @@
+[color]
+	diff = auto
+	status = auto
+	branch = auto
+	ui = true
+[mergetool]
+	keepBackup = false
+[init]
+	defaultBranch = main
+[include]
+	path = ~/.gitconfig.local

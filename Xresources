@@ -1,0 +1,33 @@
+xterm*faceName: FiraCode Nerd Font
+XTerm*faceSize: 10
+xterm*renderFont: true
+xterm*utf8: 1
+xterm*locale: true
+xterm*termName: xterm-256color
+XTerm*selectToClipboard: true
+
+XTerm.vt100.metaSendsEscape: true
+XTerm.vt100.backarrowKey: false
+XTerm.ttyModes: erase ^?
+
+! Dracula Xresources palette
+*.foreground: #D6D6D1
+*.background: #282A36
+*.color0:     #000000
+*.color8:     #4D4D4D
+*.color1:     #FF5555
+*.color9:     #FF6E67
+*.color2:     #50FA7B
+*.color10:    #5AF78E
+*.color3:     #DEDC47
+*.color11:    #EFFF68
+*.color4:     #BD93F9
+*.color12:    #CAA9FA
+*.color5:     #FF79C6
+*.color13:    #FF92D0
+*.color6:     #8BE9FD
+*.color14:    #9AEDFE
+*.color7:     #BFBFBF
+*.color15:    #E6E6E6
+
+Xft.dpi: 96

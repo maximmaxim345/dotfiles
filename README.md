@@ -55,6 +55,7 @@ Software I use regularly. The software on this list is available on linux, but s
 
 ### CLI
 
+- topgrade: upgrade all software
 - bat: cat clone with syntax highlighting
 - ripgrep: grep clone with better visuals and usability
 - htop: interactive process viewer
@@ -104,6 +105,7 @@ Software I use regularly. The software on this list is available on linux, but s
 ## VSCode Plugins
 
 - C/C++: C/C++ language support from Microsoft
+- PlatformIO IDE: IDE for embedded development
 - Material Theme: Material Theme for VSCode
 - Copilot: AI code completion
 - Matieral Icon Theme: Material Design Icons for Visual Studio Code

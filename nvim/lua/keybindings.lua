@@ -28,8 +28,6 @@ wk.register({
     ['<c-q>'] = { ':BufferClose<CR>', 'Close the current buffer' },
     -- LSP
     K = { ':Lspsaga hover_doc<CR>', 'Show documentation (LSP)' },
-    ['<C-f>'] = { ':lua require("lspsaga.action").smart_scroll_with_saga(1)<CR>', 'Scroll down lsp preview (LSP)' },
-    ['<C-b>'] = { ':lua require("lspsaga.action").smart_scroll_with_saga(-1)<CR>', 'Scroll up (LSP)' },
 
     ['<M-t>'] = 'Toggle terminal (can be prefixed with terminal number)', -- set in toggleterm-cfg
     -- Navigation
@@ -46,14 +44,20 @@ wk.register({
     ['<leader>'] = {
         name = 'More commands',
         -- More buffer management
-        ['<c-q>'] = { ':BufferClose!<CR>', 'Close buffer forcefully (BarBar)' },
-        ['<Left>'] = { ':BufferMovePrevious<CR>', 'Move buffer to left (BarBar)' },
-        ['<Right>'] = { ':BufferMoveNext<CR>', 'Move buffer to right (BarBar)' },
-        ['<Up>'] = { ':BufferPick<CR>', 'Pick a buffer (BarBar)' },
-        ['<Down>'] = { ':BufferOrderByDirectory<CR>', 'Sort buffers by directory (BarBar)' },
+        ['<c-q>'] = { ':BufferClose!<CR>', 'Close buffer forcefully' },
+        ['<S-TAB>'] = { ':BufferMovePrevious<CR>', 'Move buffer to left' },
+        ['<TAB>'] = { ':BufferMoveNext<CR>', 'Move buffer to right' },
 
         t = { ':NvimTreeToggle<CR>', 'Toggle file explorer (nvim-tree)' },
         T = { ':NvimTreeFindFile<CR>', 'Select the current file in file explorer (nvim-tree)' },
+        b = {
+            name = 'BarBar',
+            ['<Up>'] = { ':BufferPick<CR>', 'Pick a buffer (BarBar)' },
+            ['d'] = { ':BufferOrderByDirectory<CR>', 'Sort buffers by directory' },
+            ['l'] = { ':BufferOrderByLanguage<CR>', 'Sort buffers by language' },
+            ['p'] = { ':BufferPin<CR>', 'Pin/Unpin a buffer' },
+            ['r'] = { ':BufferRestore<CR>', 'Restore the last closed buffer' },
+        },
         c = {
             name = 'Copilot',
             e = { ':Copilot enable<CR>', 'Enable copilot' },
@@ -149,13 +153,14 @@ wk.register({
             name = 'Sessions',
             c = { ':SClose<CR>', 'Close current session' },
             l = { ':Telescope possession list<CR>', 'Load a session' },
-            q = { ':qa<CR>', 'Quit' },
+            q = { ':SQuit<CR>', 'Quit' },
         },
         g = {
             name = 'Git',
             g = { ':Neogit<CR>', 'Open Neogit' },
         },
         ['<leader>'] = { ':lua require"mini.map".toggle()<CR>', 'Toggle map' },
+        q = { ':SQuit<CR>', 'Quit' },
     },
     -- hide neoscroll keybindings
     ['<C-y>'] = 'which_key_ignore',

@@ -19,7 +19,9 @@ require('material').setup({
 })
 
 function theme.set_theme(theme_name)
-    -- test if beginns with material
+    -- first load the default theme, to avoid weird colors from previous theme
+    vim.cmd('colorscheme default')
+    -- test if begins with "material"
     if string.match(theme_name, "material ") then
         vim.g.material_style = string.sub(theme_name, 10)
         vim.cmd('colorscheme material')

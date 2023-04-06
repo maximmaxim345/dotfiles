@@ -1,14 +1,71 @@
-vim.api.nvim_create_user_command('SClose',
-    function()
-        local session = require('possession.session')
+local function close_session()
+    local session = require('possession.session')
+    if session.session_name then
         session.autosave()
         session.close()
+    else
+        -- close all buffers
+        vim.api.nvim_command('bufdo bd!')
+    end
+end
+
+local function has_unsaved_changes()
+    -- test all buffers for unsaved changes
+    local unsaved = false
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_get_option(buf, 'modified') then
+            unsaved = true
+            break
+        end
+    end
+    return unsaved
+end
+
+-- return true if changes were saved or discarded
+local function ask_unsaved_changes()
+    if has_unsaved_changes() then
+        -- Ask a dialog to discard changes
+        local choice = vim.fn.input({
+            prompt = 'You have unsaved changes. Save them, discard or cancel? (s/d/c): ',
+            cancelreturn = 'c',
+        })
+        if choice == 's' then
+            -- save all buffers
+            vim.api.nvim_command('wa')
+        elseif choice == 'd' then
+            -- discard all changes
+            vim.api.nvim_command('bufdo e!')
+        else
+            -- cancel, do nothing
+            return false
+        end
+    end
+    return true
+end
+
+vim.api.nvim_create_user_command('SClose',
+    function()
+        if not ask_unsaved_changes() then
+            return
+        end
+        close_session()
         vim.api.nvim_command('nohlsearch')
         vim.opt.spell = false
         vim.opt.wrap = false
         vim.g.neovide_fullscreen = false
         theme.set_default()
-        require('alpha').start(false)
+        require('alpha').start(true)
+    end,
+    {}
+)
+
+vim.api.nvim_create_user_command('SQuit',
+    function()
+        if not ask_unsaved_changes() then
+            return
+        end
+        close_session()
+        vim.api.nvim_command('qa')
     end,
     {}
 )
@@ -40,9 +97,17 @@ require('possession').setup {
             user_data.neovide = {
                 fullscreen = vim.g.neovide_fullscreen
             }
+            -- Barbar dumps its data only after SessionSavePre is fired.
+            vim.cmd("doautocmd User SessionSavePre")
+            user_data.barbar_session_restore = vim.g.Bufferline__session_restore
             return user_data
         end,
-        after_save = function(name, user_data, aborted) end,
+        after_save = function(name, user_data, aborted)
+            -- This is a workaround for a bug, where barbar doesn't update the buffer list when a buffer is deleted.
+            -- Otherwise, it tries to lookup a invalid buffer id.
+            local state = require("barbar.state")
+            state.buffers = {}
+        end,
         before_load = function(name, user_data)
             -- close all buffers
             vim.api.nvim_command('bufdo bd!')
@@ -55,11 +120,16 @@ require('possession').setup {
             if user_data.neovide then
                 vim.g.neovide_fullscreen = user_data.neovide.fullscreen
             end
+            if user_data.barbar_session_restore then
+                vim.g.Bufferline__session_restore = user_data.barbar_session_restore
+            end
             return user_data
         end,
         after_load = function(name, user_data)
             -- reload nvim_tree cwd
             require('nvim-tree.api').tree.change_root(vim.loop.cwd())
+            -- restore barbar session
+            vim.cmd("doautocmd SessionLoadPost")
         end,
     },
     plugins = {

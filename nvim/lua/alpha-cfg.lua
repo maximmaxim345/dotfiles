@@ -9,14 +9,25 @@ dashboard.section.header.val = {
     [[/_/ /_/\___/\____/|___/_/_/ /_/ /_/ ]],
     [[                                    ]]
 }
+
+local last_session_button = {}
+local session = require("possession")
+local last_session = session.last()
+if last_session~= nil then
+    -- we have a last session, just use the filename without the extension
+    last_session =  string.match(last_session, "([^/\\]+)%.json$")
+    local button = dashboard.button( "<leader><leader>", "Open " .. last_session, ":SLoad<CR>")
+    table.insert(last_session_button, button)
+end
 dashboard.section.buttons.val = {
     dashboard.button( "s", "Search a session" , ":Telescope possession list<CR>"),
+    table.unpack(last_session_button),
     dashboard.button( "o", "New file" , ":ene<CR>"),
     dashboard.button( "f", "Find file" , ":Telescope find_files<CR>"),
     dashboard.button( "g", "Find word" , ":Telescope live_grep<CR>"),
     dashboard.button( "t", "Change theme" , ":lua theme.open_theme_list()<CR>"),
-    dashboard.button( "l", "Open Lazy", ":Lazy<CR>"),
-    dashboard.button( "m", "Open Mason", ":Mason<CR>"),
+    dashboard.button( "l", "Open Lazy (package manager)", ":Lazy<CR>"),
+    dashboard.button( "m", "Open Mason (LSP/DAP/Linters)", ":Mason<CR>"),
     dashboard.button( "q", "Quit NVIM" , ":qa<CR>"),
 }
 alpha.setup(dashboard.config)

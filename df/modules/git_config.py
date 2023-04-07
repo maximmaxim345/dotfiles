@@ -6,17 +6,18 @@ import subprocess
 import io
 from pathlib import Path
 import df
+from typing import Union, List
 
 ID: str = "git_config"
 NAME: str = "Git Config"
 DESCRIPTION: str = "Basic git configuration, edit ~/.gitconfig to change name/email"
-DEPENDENCIES: list[str] = []
-CONFLICTING: list[str] = []
+DEPENDENCIES: List[str] = []
+CONFLICTING: List[str] = []
 
 target_path = Path.home() / ".gitconfig"
 target_local_path = Path.home() / ".gitconfig.local"
 
-def is_compatible() -> bool | str:
+def is_compatible() -> Union[bool, str]:
     return True
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -39,7 +40,7 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 # Optional functions for modules that can be updated
 
-def has_update(config: ModuleConfig) -> bool | str:
+def has_update(config: ModuleConfig) -> Union[bool, str]:
     return False
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

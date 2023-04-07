@@ -12,6 +12,7 @@ import os
 import re
 import traceback
 from df.modules import MODULES
+from typing import Union, List
 
 class ModuleItem(Static):
     """A Widget representing a module that can be installed/removed/updated."""
@@ -85,7 +86,7 @@ class ModuleItem(Static):
             # compose will use the new value
             pass
 
-    def watch_queued_action(self, old_action: str | None, new_action: str | None) -> None:
+    def watch_queued_action(self, old_action: Union[str, None], new_action: Union[str, None]) -> None:
         if old_action == new_action:
             return
         if new_action is None:

@@ -5,16 +5,17 @@ import subprocess
 import io
 from pathlib import Path
 import df
+from typing import Union, List
 
 ID: str = "starship_config"
 NAME: str = "Starship Config"
 DESCRIPTION: str = "A roundedd prompt for starship"
-DEPENDENCIES: list[str] = ["starship"]
-CONFLICTING: list[str] = []
+DEPENDENCIES: List[str] = ["starship"]
+CONFLICTING: List[str] = []
 
 config_path = Path.home() / ".config" / "starship.toml"
 
-def is_compatible() -> bool | str:
+def is_compatible() -> Union[bool, str]:
     return platform.system() in ["Linux", "Darwin"]
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -26,7 +27,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     df.restore_backup(config_path, config, "old_path")
 
-def has_update(config: ModuleConfig) -> bool | str:
+def has_update(config: ModuleConfig) -> Union[bool, str]:
     return False
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

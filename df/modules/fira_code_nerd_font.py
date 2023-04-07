@@ -6,18 +6,19 @@ import shutil
 import subprocess
 import io
 from pathlib import Path
+from typing import Union, List
 
 ID: str = "fira_code_nerd_font"
 NAME: str = "Fira Code Nerd Font"
 DESCRIPTION: str = "Fira Code: free monospaced font with programming ligatures"
-DEPENDENCIES: list[str] = []
-CONFLICTING: list[str] = []
+DEPENDENCIES: List[str] = []
+CONFLICTING: List[str] = []
 
 dl_link = "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/FiraCode/Medium/complete/Fira%20Code%20Medium%20Nerd%20Font%20Complete.ttf"
 font_name = "Fira Code Medium Nerd Font Complete.ttf"
 fonts_folder = Path.home() / ".local/share/fonts/"
 
-def is_compatible() -> bool | str:
+def is_compatible() -> Union[bool, str]:
     return platform.system() == "Linux"
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -43,7 +44,7 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     font_path = fonts_folder / font_name
     font_path.unlink(missing_ok=True)
 
-def has_update(config: ModuleConfig) -> bool | str:
+def has_update(config: ModuleConfig) -> Union[bool, str]:
     # We don't have a version number, so we can't check for updates
     return False
 

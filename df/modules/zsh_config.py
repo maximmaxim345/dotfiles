@@ -6,17 +6,18 @@ import shutil
 import io
 from pathlib import Path
 import df
+from typing import Union, List
 
 ID: str = "zsh_config"
 NAME: str = "Zsh Config"
 DESCRIPTION: str = "A simple zsh config using oh-my-zsh and starship"
-DEPENDENCIES: list[str] = ["oh_my_zsh", "starship_config"]
-CONFLICTING: list[str] = []
+DEPENDENCIES: List[str] = ["oh_my_zsh", "starship_config"]
+CONFLICTING: List[str] = []
 
 target_path = Path.home() / ".zshrc"
 target_local_path = Path.home() / ".zshrc.local"
 
-def is_compatible() -> bool | str:
+def is_compatible() -> Union[bool, str]:
     return True
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -39,7 +40,7 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 # Optional functions for modules that can be updated
 
-def has_update(config: ModuleConfig) -> bool | str:
+def has_update(config: ModuleConfig) -> Union[bool, str]:
     return False
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

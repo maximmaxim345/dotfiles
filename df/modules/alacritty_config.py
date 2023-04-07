@@ -3,14 +3,15 @@ from df.config import ModuleConfig
 import platform
 from pathlib import Path
 import io
+from typing import Union, List
 
 ID: str = "alacritty_config"
 NAME: str = "Alacritty Config"
 DESCRIPTION: str = "A config for the alacritty terminal emulator"
-DEPENDENCIES: list[str] = ["fira_code_nerd_font"]
-CONFLICTING: list[str] = []
+DEPENDENCIES: List[str] = ["fira_code_nerd_font"]
+CONFLICTING: List[str] = []
 
-def is_compatible() -> bool | str:
+def is_compatible() -> Union[bool, str]:
     return platform.system() in ["Linux", "Darwin"]
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -24,7 +25,7 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     target_path = Path.home() / ".config" / "alacritty"
     df.restore_backup(target_path, config, "old_path")
 
-def has_update(config: ModuleConfig) -> bool | str:
+def has_update(config: ModuleConfig) -> Union[bool, str]:
     return False
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

@@ -5,14 +5,15 @@ import subprocess
 from pathlib import Path
 import df
 import io
+from typing import Union, List
 
 ID: str = "nvim_config"
 NAME: str = "Neovim config"
 DESCRIPTION: str = "A config for neovim"
-DEPENDENCIES: list[str] = []
-CONFLICTING: list[str] = []
+DEPENDENCIES: List[str] = []
+CONFLICTING: List[str] = []
 
-def is_compatible() -> bool | str:
+def is_compatible() -> Union[bool, str]:
     return True
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -28,7 +29,7 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 # Optional functions for modules that can be updated
 
-def has_update(config: ModuleConfig) -> bool | str:
+def has_update(config: ModuleConfig) -> Union[bool, str]:
     return False
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

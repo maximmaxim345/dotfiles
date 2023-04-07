@@ -5,16 +5,17 @@ import subprocess
 from pathlib import Path
 import df
 import io
+from typing import Union, List
 
 ID: str = "picom_legacy_config"
 NAME: str = "Picom Config for Legacy Systems"
 DESCRIPTION: str = "Configures picom (jonaburg's fork) with animations and without modern features"
-DEPENDENCIES: list[str] = []
-CONFLICTING: list[str] = ["picom_config"]
+DEPENDENCIES: List[str] = []
+CONFLICTING: List[str] = ["picom_config"]
 
 config_path = Path.home() / ".config" / "picom.conf"
 
-def is_compatible() -> bool | str:
+def is_compatible() -> Union[bool, str]:
     return platform.system() == "Linux"
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -28,7 +29,7 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 # Optional functions for modules that can be updated
 
-def has_update(config: ModuleConfig) -> bool | str:
+def has_update(config: ModuleConfig) -> Union[bool, str]:
     return False
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

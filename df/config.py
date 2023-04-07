@@ -1,6 +1,7 @@
 import json
 from os import path
 import df
+from typing import Union, List
 
 class ModuleConfig:
     """
@@ -34,7 +35,7 @@ class ModuleConfig:
         self.config.config["modules"][self.id]["installed"] = installed
         self.config.modified = True
 
-    def get_installed_version(self) -> str | None:
+    def get_installed_version(self) -> Union[str, None]:
         """
         Returns the installed version of the module
         """
@@ -108,7 +109,7 @@ class Config:
             json.dump(self.config, f, indent=4)
         self.modified = False
 
-    def get_module_ids(self) -> list[str]:
+    def get_module_ids(self) -> List[str]:
         """
         Returns the list of all module ids, that have a config entry
         """

@@ -5,17 +5,18 @@ import subprocess
 import io
 from pathlib import Path
 import df
+from typing import Union, List
 
 ID: str = "starship"
 NAME: str = "Starship"
 DESCRIPTION: str = "The minimal, blazing-fast, and infinitely customizable prompt for any shell!"
-DEPENDENCIES: list[str] = []
-CONFLICTING: list[str] = []
+DEPENDENCIES: List[str] = []
+CONFLICTING: List[str] = []
 
 script_link = "https://starship.rs/install.sh"
 bin_dir = Path.home() / ".local" / "bin"
 
-def is_compatible() -> bool | str:
+def is_compatible() -> Union[bool, str]:
     return platform.system() in ["Linux", "Darwin"]
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -36,7 +37,7 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     starship_path = bin_dir / "starship"
     starship_path.unlink(missing_ok=True)
 
-def has_update(config: ModuleConfig) -> bool | str:
+def has_update(config: ModuleConfig) -> Union[bool, str]:
     return False
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

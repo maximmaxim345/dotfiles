@@ -5,17 +5,18 @@ import subprocess
 import io
 from pathlib import Path
 import df
+from typing import Union, List
 
 ID: str = "oh_my_zsh"
 NAME: str = "Oh My Zsh"
 DESCRIPTION: str = "Oh My Zsh is an open source, community-driven framework for managing your Zsh configuration."
-DEPENDENCIES: list[str] = []
-CONFLICTING: list[str] = []
+DEPENDENCIES: List[str] = []
+CONFLICTING: List[str] = []
 
 dl_url = "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
 oh_my_zsh_path = Path.home() / ".oh-my-zsh"
 
-def is_compatible() -> bool | str:
+def is_compatible() -> Union[bool, str]:
     return platform.system() in ("Linux", "Darwin")
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -48,7 +49,7 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 # Optional functions for modules that can be updated
 
-def has_update(config: ModuleConfig) -> bool | str:
+def has_update(config: ModuleConfig) -> Union[bool, str]:
     return False
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

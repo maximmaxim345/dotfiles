@@ -14,16 +14,16 @@ MODULES = {}
 #                    lowercase letters, numbers and underscores
 # - NAME: str        a human readable name for the module
 # - DESCRIPTION: str a short description of the module
-# - DEPENDENCIES: list[str]
+# - DEPENDENCIES: List[str]
 #                    A list of module names that must be installed
 #                    before this module can be installed
 #                    (e.g. ["git", "zsh"] or [])
-# - CONFLICTING: list[str]
+# - CONFLICTING: List[str]
 #                    A list of module ids that must not be
 #                    installed when this module is installed
 #                    (e.g. ["zsh", "bash"] or [])
 # and following functions:
-# - is_compatible() -> bool | str:
+# - is_compatible() -> Union[bool, str]:
 #                    Check if the module is compatible with the system
 #                    Must return either True if the module is compatible
 #                    or a string with the reason why it is not compatible
@@ -38,7 +38,7 @@ MODULES = {}
 # - uninstall(config: df.config.ModuleConfig, stdout: io.TextIOWrapper) -> None:
 #                    On an error, this function must raise an exception.
 # optional functions for modules that can be updated:
-# - has_update(config: df.config.ModuleConfig) -> bool | str:
+# - has_update(config: df.config.ModuleConfig) -> Union[bool, str]:
 #                    Check if the module can be updated
 #                    If it can be updated, this function must return True or
 #                    a string with the version after the update

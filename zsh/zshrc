@@ -56,12 +56,12 @@ DISABLE_MAGIC_FUNCTIONS="true"
 # Add wisely, as too many plugins slow down shell startup.
 plugins=()
 
+path+=("/usr/local/bin")
+path+=("$HOME/.local/bin")
+path+=("$HOME/.cargo/bin")
+
 source $ZSH/oh-my-zsh.sh
 eval "$(starship init zsh)"
-
-path+=("$HOME/.local/bin")
-path+=("/usr/local/bin")
-path+=("$HOME/.cargo/bin")
 
 export PATH
 export npm_config_prefix="$HOME/.local"

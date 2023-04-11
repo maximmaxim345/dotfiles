@@ -30,6 +30,16 @@ function theme.set_theme(theme_name)
         require('noirbuddy').setup {
             preset = preset,
         }
+    elseif string.match(theme_name, "bluloco ") then
+        local style = string.sub(theme_name, 9)
+        require('bluloco').setup {
+            style = style,
+            transparent = false,
+            italics = false,
+            terminal = vim.fn.has("gui_running") == 1, -- bluoco colors are enabled in gui terminals per default.
+            guicursor   = true,
+        }
+        vim.cmd('colorscheme bluloco')
     else
         vim.cmd('colorscheme ' .. theme_name)
     end
@@ -50,6 +60,8 @@ function theme.open_theme_list()
         "noirbuddy slate",
         "noirbuddy crt-green",
         "noirbuddy crt-amber",
+        "bluloco dark",
+        "bluloco light",
         "moonfly",
         "github_light",
         "github_dark",

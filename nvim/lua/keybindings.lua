@@ -73,6 +73,7 @@ wk.register({
         n = { ':Lspsaga diagnostic_jump_next<CR>', 'Go to next diagnostic (LSP)' },
         l = {
             name = 'LSP',
+            l = { ':Navbuddy<CR>', 'Open Navbuddy (LSP)' },
             a = { ':lua vim.lsp.buf.code_action()<CR>', 'Code action' },
             d = { ':Telescope lsp_definitions<CR>', 'Go to definition' },
             D = { ':Lspsaga peek_definition<CR>', 'Peek definition' },
@@ -81,9 +82,8 @@ wk.register({
             r = { ':Lspsaga rename<CR>', 'Rename symbol' },
             h = { ':ClangdSwitchSourceHeader<CR>', 'Switch between header and source file (Clangd)' },
             f = { ':lua vim.lsp.buf.format({async=true})<CR>', 'Format file' },
-            l = { ':Telescope flutter commands<CR>', 'Open flutter commands' },
-            o = { ':Lspsaga outline<CR>', 'Toggle outline' },
-            O = { ':TroubleToggle workspace_diagnostics<CR>', 'Toggle workspace diagnostics list' },
+            F = { ':Telescope flutter commands<CR>', 'Open flutter commands' },
+            L = { ':TroubleToggle workspace_diagnostics<CR>', 'Toggle workspace diagnostics list' },
             I = { ':LspInfo<CR>', 'Show LSP info' },
             t = { ':TroubleToggle todo<CR>', 'Toggle todo list' },
             T = {
@@ -112,39 +112,15 @@ wk.register({
         },
         ['.'] = { ":lua theme.open_theme_list()<CR>", 'Change theme' },
         f = {
-            name = 'Find',
+            name = 'Find/Spectre',
             f = { ':Telescope find_files<CR>', 'Find files' },
             g = { ':Telescope live_grep<CR>', 'Find word' },
             b = { ':Telescope buffers<CR>', 'Find buffers' },
             h = { ':Telescope help_tags<CR>', 'Find help (neovim)' },
             m = { ':Telescope man_pages<CR>', 'Find help (man pages)' },
             u = { ':Telescope undo<CR>', 'Find undo history' },
-        },
-        r = {
-            name = 'Replace',
-
-            s = { ":SearchReplaceSingleBufferSelections<CR>", "SearchReplaceSingleBuffer [s]elction list" },
-            o = { ":SearchReplaceSingleBufferOpen<CR>", "[o]pen" },
-            w = { ":SearchReplaceSingleBufferCWord<CR>", "[w]ord" },
-            W = { ":SearchReplaceSingleBufferCWORD<CR>", "[W]ORD" },
-            e = { ":SearchReplaceSingleBufferCExpr<CR>", "[e]xpr" },
-            f = { ":SearchReplaceSingleBufferCFile<CR>", "[f]ile" },
-            t = { ':lua require("mini.trailspace").trim()<CR>', 'Trim trailing whitespace' },
-            T = { ':lua require("mini.trailspace").trim_last_lines()<CR>', 'Trim trailing last lines' },
-
-            b = {
-                name = "MultiBuffer Replace",
-                s = { ":SearchReplaceMultiBufferSelections<CR>","SearchReplaceMultiBuffer [s]elction list" },
-                o = { ":SearchReplaceMultiBufferOpen<CR>", "[o]pen" },
-                w = { ":SearchReplaceMultiBufferCWord<CR>", "[w]ord" },
-                W = { ":SearchReplaceMultiBufferCWORD<CR>", "[W]ORD" },
-                e = { ":SearchReplaceMultiBufferCExpr<CR>", "[e]xpr" },
-                f = { ":SearchReplaceMultiBufferCFile<CR>", "[f]ile" }
-            },
-
--- -- show the effects of a search / replace in a live preview window
--- vim.o.inccommand = "split"
-
+            s = { ':lua require"spectre".open()<CR>', 'Open Spectre' },
+            w = { ':lua require"spectre".open_visual({select_word=true})<CR>', 'Search for current word' },
         },
         I = { ':GuessIndent', 'Guess the indentation of the current file' },
         z = { ':Twilight<CR>', 'Toggle Twilight' },
@@ -201,6 +177,10 @@ wk.register({
             f = { ':lua vim.lsp.buf.range_formatting()<CR>', 'Format range' },
         },
         s = { ':lua require("spectre").open()<CR>', 'Open search and replace' },
+        f = {
+            name = 'Find/Spectre',
+            w = { '<esc><cmd>lua require("spectre").open_visual()<CR>', 'Search for current word' },
+        },
     }
 }, {
     mode = 'v',

@@ -78,7 +78,8 @@ cmp.setup({
             -- so that you can provide more controls on popup customization. (See [#30](https://github.com/onsails/lspkind-nvim/pull/30))
             before = function (entry, vim_item)
                 return vim_item
-            end
+            end,
+            symbol_map = { Codeium = "", }
         })
     },
     snippet = {
@@ -127,12 +128,17 @@ cmp.setup({
                     })
                 end
             else
-                cmp.complete()
+                cmp.complete({
+                    config = {
+                        preselect = cmp.PreselectMode.Item,
+                    }
+                })
             end
         end, { 'i', 'c' }),
     },
     sources = cmp.config.sources(
         {
+            -- { name = 'codeium', priority = 4 },
             { name = 'calc', priority = 2 },
             { name = 'luasnip', priority = 1},
             { name = 'nvim_lsp', priority = 2},

@@ -54,6 +54,7 @@ vim.api.nvim_create_user_command('SClose',
         vim.opt.wrap = false
         vim.g.neovide_fullscreen = false
         theme.set_default()
+        require('alpha-cfg').alpha_load_buttons()
         require('alpha').start(true)
     end,
     {}

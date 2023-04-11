@@ -59,6 +59,18 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+-- required for flatten.nvim
+-- If opening from inside neovim terminal then do not load all the other plugins
+if os.getenv("NVIM") ~= nil then
+    require('lazy').setup {
+        {
+            'willothy/flatten.nvim',
+            opts = {},
+        },
+    }
+    return
+end
+
 require("lazy").setup({
     {
         'kyazdani42/nvim-web-devicons',
@@ -106,6 +118,14 @@ require("lazy").setup({
         end,
         dependencies = {
             {
+                "SmiteshP/nvim-navbuddy",
+                dependencies = {
+                    "SmiteshP/nvim-navic",
+                    "MunifTanjim/nui.nvim"
+                },
+                opts = { lsp = { auto_attach = true } }
+            },
+            {
                 'hrsh7th/nvim-cmp',
             },
             {
@@ -138,7 +158,7 @@ require("lazy").setup({
                 'L3MON4D3/LuaSnip',
             },
             {
-                'glepnir/lspsaga.nvim',
+                'nvimdev/lspsaga.nvim',
                 dependencies = 'kyazdani42/nvim-web-devicons'
             },
             {
@@ -344,7 +364,10 @@ require("lazy").setup({
         end
     },
     {
-        'mrjones2014/nvim-ts-rainbow',
+        'https://gitlab.com/HiPhish/nvim-ts-rainbow2',
+        dependencies = {
+            'nvim-treesitter/nvim-treesitter',
+        },
         config = function() require"tsrainbow-cfg" end,
     },
     -- {
@@ -358,6 +381,7 @@ require("lazy").setup({
         config = function()
             require('mini.indentscope').setup()
             require('mini.trailspace').setup()
+            require('mini.bracketed').setup()
 
             local map = require('mini.map')
             map.setup({
@@ -416,37 +440,6 @@ require("lazy").setup({
         end,
     },
     {
-        "roobert/search-replace.nvim",
-        lazy = true,
-        cmd = {
-            'SearchReplaceSingleBufferOpen',
-            'SearchReplaceMultiBufferOpen',
-            'SearchReplaceSingleBufferCWord',
-            'SearchReplaceSingleBufferCWORD',
-            'SearchReplaceSingleBufferCExpr',
-            'SearchReplaceSingleBufferCFile',
-            'SearchReplaceMultiBufferCWord',
-            'SearchReplaceMultiBufferCWORD',
-            'SearchReplaceMultiBufferCExpr',
-            'SearchReplaceMultiBufferCFile',
-            'SearchReplaceSingleBufferSelections',
-            'SearchReplaceMultiBufferSelections',
-            'SearchReplaceSingleBufferWithinBlock',
-            'SearchReplaceVisualSelection',
-            'SearchReplaceVisualSelectionCWord',
-            'SearchReplaceVisualSelectionCWORD',
-            'SearchReplaceVisualSelectionCExpr',
-            'SearchReplaceVisualSelectionCFile',
-        },
-        config = function()
-            require("search-replace").setup({
-                -- optionally override defaults
-                default_replace_single_buffer_options = "gcI",
-                default_replace_multi_buffer_options = "egcI",
-            })
-        end,
-    },
-    {
         "danymat/neogen",
         dependencies = "nvim-treesitter/nvim-treesitter",
         lazy = true,
@@ -461,6 +454,13 @@ require("lazy").setup({
             require('auto-hlsearch').setup()
         end
     },
+    {
+        'willothy/flatten.nvim',
+        -- or pass configuration with
+        opts = {  },
+        -- Ensure that it runs first to minimize delay when opening file from terminal
+        lazy = false, priority = 1001,
+    },
     -- {
     --     'm-demare/hlargs.nvim',
     --     dependencies = {
@@ -474,11 +474,29 @@ require("lazy").setup({
     -- },
     -- {
     --     'folke/noice.nvim',
-    --     config = function() require"noice-cfg" end,
+    --     config = function()require"noice-cfg" end,
+    --     cond = not vim.g.neovide, -- neovide doesn't support noice
     --     dependencies = {
     --         'MunifTanjim/nui.nvim',
     --         'rcarriga/nvim-notify'
     --     }
+    -- },
+    {
+        'nvim-pack/nvim-spectre',
+        config = function()
+            require('spectre').setup()
+        end,
+    },
+    -- {
+    --     "jcdickinson/codeium.nvim",
+    --     dependencies = {
+    --         "nvim-lua/plenary.nvim",
+    --         "hrsh7th/nvim-cmp",
+    --     },
+    --     config = function()
+    --         require("codeium").setup({
+    --         })
+    --     end
     -- },
     ------------------------------------
     ---            Themes            ---
@@ -511,7 +529,11 @@ require("lazy").setup({
     },
     {
         'folke/lsp-colors.nvim',
-    }
+    },
+    {
+        'uloco/bluloco.nvim',
+        dependencies = { 'rktjmp/lush.nvim' },
+    },
 })
 
 -- load theme and set keybindings after plugins are loaded

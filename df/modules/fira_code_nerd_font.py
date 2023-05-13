@@ -14,7 +14,7 @@ DESCRIPTION: str = "Fira Code: free monospaced font with programming ligatures"
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 
-dl_link = "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/FiraCode/Medium/complete/Fira%20Code%20Medium%20Nerd%20Font%20Complete.ttf"
+dl_link = "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/FiraCode/Medium/FiraCodeNerdFont-Medium.ttf"
 font_name = "Fira Code Medium Nerd Font Complete.ttf"
 fonts_folder = Path.home() / ".local/share/fonts/"
 

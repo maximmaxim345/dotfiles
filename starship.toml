@@ -25,7 +25,9 @@ $env_var\
 $docker_context\
 [](fg:#06969A bg:#33658A)\
 $time\
-[](fg:#33658A)
+[](fg:#33658A)\
+$hostname\
+$shell
 [](#52783c)\
 $directory\
 [ ](fg:#52783c)\
@@ -163,3 +165,24 @@ disabled = false
 time_format = "%R" # Hour:Minute Format
 style = "bg:#33658A fg:#FFFFFF"
 format = '[ $time ]($style)'
+
+[hostname]
+ssh_only = false
+style = "bg:#33658A fg:#FFFFFF"
+format = " [[$ssh_symbol$hostname](bg:#1E919D fg:#FFFFFF)](#1E919D)"
+
+[shell]
+disabled = false
+style = "bg:#33658A fg:#FFFFFF"
+bash_indicator = " [[bash](bg:#1f9d48 fg:#FFFFFF)](#1f9d48)"
+fish_indicator = " [[fish](bg:#1f9d48 fg:#FFFFFF)](#1f9d48)"
+# zsh_indicator = " [[zsh](bg:#1f9d48 fg:#FFFFFF)](#1f9d48)"
+zsh_indicator = ""
+powershell_indicator = " [[powershell](bg:#1f9d48 fg:#FFFFFF)](#1f9d48)"
+ion_indicator = " [[ion](bg:#1f9d48 fg:#FFFFFF)](#1f9d48)"
+elvish_indicator = " [[elvish](bg:#1f9d48 fg:#FFFFFF)](#1f9d48)"
+tcsh_indicator = " [[tcsh](bg:#1f9d48 fg:#FFFFFF)](#1f9d48)"
+xonsh_indicator = " [[xonsh](bg:#1f9d48 fg:#FFFFFF)](#1f9d48)"
+nu_indicator = " [[nu](bg:#1f9d48 fg:#FFFFFF)](#1f9d48)"
+unknown_indicator = ""
+format = "$indicator"

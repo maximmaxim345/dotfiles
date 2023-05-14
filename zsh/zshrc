@@ -67,3 +67,8 @@ export PATH
 export npm_config_prefix="$HOME/.local"
 
 [[ ! -f ~/.zshrc.local ]] || source ~/.zshrc.local
+
+# Aliases
+
+# distrobox
+alias de="distrobox-enter"

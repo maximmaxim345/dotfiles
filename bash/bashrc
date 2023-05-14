@@ -1,0 +1,12 @@
+
+path+=("/usr/local/bin")
+path+=("$HOME/.local/bin")
+path+=("$HOME/.cargo/bin")
+
+eval "$(starship init bash)"
+bind 'TAB:menu-complete'
+
+# Aliases
+
+# distrobox
+alias de="distrobox-enter"

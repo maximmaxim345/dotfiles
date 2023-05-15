@@ -74,6 +74,17 @@ if __name__ == '__main__':
         restart_with_venv()
         exit()  # This line is never reached
 
+# Test if the venv is working
+try:
+    import textual
+except ImportError:
+    print("The venv is not working, trying to delete it, please run the script again")
+    venv_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),".venv")
+    print("Deleting {}".format(venv_path))
+    import shutil
+    shutil.rmtree(venv_path, ignore_errors=True)
+    print("If the problem persists, please report")
+    exit(1)
 
 if os.environ.get("TEXTUAL"):
     # The app is launched with textual devtools

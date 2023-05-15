@@ -168,8 +168,9 @@ format = '[ $time ]($style)'
 
 [hostname]
 ssh_only = false
+ssh_symbol = "[[ssh](bg:#a05a25 fg:#FFFFFF)](#a05a25) "
 style = "bg:#33658A fg:#FFFFFF"
-format = " [[$ssh_symbol$hostname](bg:#1E919D fg:#FFFFFF)](#1E919D)"
+format = " $ssh_symbol[[$hostname](bg:#1E919D fg:#FFFFFF)](#1E919D)"
 
 [shell]
 disabled = false

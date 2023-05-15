@@ -13,18 +13,17 @@ dashboard.section.header.val = {
 }
 
 function M.alpha_load_buttons()
-    local last_session_button = {}
+    local last_session_button = nil
     local session = require("possession")
     local last_session = session.last()
     if last_session~= nil then
         -- we have a last session, just use the filename without the extension
         last_session =  string.match(last_session, "([^/\\]+)%.json$")
         local button = dashboard.button( "<leader><leader>", "Open " .. last_session, ":SLoad<CR>")
-        table.insert(last_session_button, button)
+        last_session_button = button
     end
     dashboard.section.buttons.val = {
         dashboard.button( "s", "Search a session" , ":Telescope possession list<CR>"),
-        table.unpack(last_session_button),
         dashboard.button( "o", "New file" , ":ene<CR>"),
         dashboard.button( "f", "Find file" , ":Telescope find_files<CR>"),
         dashboard.button( "g", "Find word" , ":Telescope live_grep<CR>"),
@@ -33,6 +32,9 @@ function M.alpha_load_buttons()
         dashboard.button( "m", "Open Mason (LSP/DAP/Linters)", ":Mason<CR>"),
         dashboard.button( "q", "Quit NVIM" , ":qa<CR>"),
     }
+    if last_session_button ~= nil then
+        table.insert(dashboard.section.buttons.val, 2, last_session_button)
+    end
 end
 
 M.alpha_load_buttons()

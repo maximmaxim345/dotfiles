@@ -56,9 +56,19 @@ DISABLE_MAGIC_FUNCTIONS="true"
 # Add wisely, as too many plugins slow down shell startup.
 plugins=()
 
-path+=("/usr/local/bin")
-path+=("$HOME/.local/bin")
-path+=("$HOME/.cargo/bin")
+if [[ -d "/usr/local/bin" ]]; then
+    path+=("/usr/local/bin")
+fi
+if [[ -d "$HOME/.local/bin" ]]; then
+    path+=("$HOME/.local/bin")
+fi
+if [[ -d "$HOME/.cargo/bin" ]]; then
+    path+=("$HOME/.cargo/bin")
+fi
+# Add nvim to path (with highest priority)
+if [[ -d "$HOME/.local/share/bob/nvim-bin" ]]; then
+    path=("$HOME/.local/share/bob/nvim-bin" $path)
+fi
 
 source $ZSH/oh-my-zsh.sh
 eval "$(starship init zsh)"

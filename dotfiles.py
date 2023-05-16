@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Dotfiles installer/updater/manager
 # Run this script with --help to see the available options
 

@@ -46,6 +46,10 @@ vim.g.neovide_cursor_vfx_mode = 'pixiedust'
 vim.g.neovide_cursor_vfx_particle_density = 10.0
 vim.g.neovide_fullscreen = false
 
+-- Copilot requires this to be set before loading
+vim.g.copilot_no_tab_map = true
+vim.g.copilot_assume_mapped = true
+
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
     vim.fn.system({
@@ -181,9 +185,7 @@ require("lazy").setup({
         'github/copilot.vim',
         lazy = true,
         event = 'BufEnter',
-        config = function()
-            require"copilot-cfg"
-        end
+        -- Config is at the top of this file
     },
     {
         'mfussenegger/nvim-dap',

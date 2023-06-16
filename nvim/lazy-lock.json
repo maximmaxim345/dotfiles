@@ -23,6 +23,7 @@
   "copilot.vim": { "branch": "release", "commit": "1358e8e45ecedc53daf971924a0541ddf6224faf" },
   "diffview.nvim": { "branch": "main", "commit": "b3a763f8c7810b352226c95faa7d3ac9fb93b8d9" },
   "flatten.nvim": { "branch": "main", "commit": "d92c93959e9ac52a00002d6fd64c2d2ca5dd7192" },
+  "fluoromachine.nvim": { "branch": "main", "commit": "f083b6d05a59cdb79885ed6e188c1fbff57958f7" },
   "flutter-tools.nvim": { "branch": "main", "commit": "2b72017f369c5d80bb56bcf4379b3eccd69e2371" },
   "friendly-snippets": { "branch": "main", "commit": "9ec817dedd4474f16fc170910da9a2f5a8b262b6" },
   "github-nvim-theme": { "branch": "main", "commit": "ab90dd7bd835cb90572e2d8337ff50452cdec58c" },

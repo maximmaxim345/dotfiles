@@ -40,6 +40,16 @@ function theme.set_theme(theme_name)
             guicursor   = true,
         }
         vim.cmd('colorscheme bluloco')
+    elseif string.match(theme_name, "fluoromachine") then
+        local preset = string.sub(theme_name, 15)
+        if preset == '' then
+            preset = 'fluoromachine'
+        end
+        require'fluoromachine'.setup {
+            glow = true,
+            theme = preset,
+        }
+        vim.cmd('colorscheme fluoromachine')
     else
         vim.cmd('colorscheme ' .. theme_name)
     end
@@ -67,7 +77,11 @@ function theme.open_theme_list()
         "github_dark",
         "github_dimmed",
         "tokyonight",
-        "nord"}
+        "nord",
+        "fluoromachine",
+        -- "fluoromachine retrowave",
+        -- "fluoromachine delta",
+    }
     local opts = {
         scroll_strategy = "cycle",
         layout_strategy = "center",

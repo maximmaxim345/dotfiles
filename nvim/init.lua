@@ -601,6 +601,10 @@ require("lazy").setup({
         'uloco/bluloco.nvim',
         dependencies = { 'rktjmp/lush.nvim' },
     },
+    {
+        'maxmx03/fluoromachine.nvim',
+        lazy = true,
+    }
 })
 
 -- load theme and set keybindings after plugins are loaded

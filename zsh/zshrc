@@ -75,10 +75,33 @@ eval "$(starship init zsh)"
 
 export PATH
 export npm_config_prefix="$HOME/.local"
+export NEOVIDE_MULTIGRID=1
 
 [[ ! -f ~/.zshrc.local ]] || source ~/.zshrc.local
 
 # Aliases
 
-# distrobox
 alias de="distrobox-enter"
+alias d="distrobox"
+alias n="nvim"
+alias nv="neovide"
+
+# Functions
+
+# # Open neovide inside a distrobox (load zshrc and start neovide)
+# function dnv() {
+#     if [[ $# -eq 0 ]]; then
+#         # no arguments
+#         distrobox enter -- neovide --multigrid
+#         return
+#     elif [[ $# -eq 1 ]]; then
+#         # open neovide in distrobox with name $1
+#         distrobox enter "$1" -- neovide --multigrid
+#         return
+#     else
+#         # first argument is the distrobox name
+#         # the rest are arguments to neovide
+#         distrobox enter "$1" -- neovide --multigrid "${@:2}"
+#         return
+#     fi
+# }

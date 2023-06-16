@@ -384,41 +384,20 @@ require("lazy").setup({
             require('mini.indentscope').setup()
             require('mini.trailspace').setup()
             require('mini.bracketed').setup()
-
-            local map = require('mini.map')
-            map.setup({
-                integrations = {
-                    map.gen_integration.diagnostic({
-                        error = 'DiagnosticFloatingError',
-                        warn  = 'DiagnosticFloatingWarn',
-                        info  = 'DiagnosticFloatingInfo',
-                        hint  = 'DiagnosticFloatingHint',
-                    }),
-                    map.gen_integration.builtin_search({}),
-                    map.gen_integration.gitsigns({}),
-                }
-            })
         end,
         dependencies = {
             'lewis6991/gitsigns.nvim',
         }
     },
     {
-        'folke/twilight.nvim',
-        lazy = true,
-        cmd = {'Twilight'},
-        config = function() require"twilight-cfg" end,
-    },
-    {
-        'folke/zen-mode.nvim',
-        lazy = true,
-        cmd = {'ZenMode'},
-        dependencies = {
-            'folke/twilight.nvim',
-        },
+        'Pocco81/true-zen.nvim',
         config = function()
-            require('zen-mode').setup({})
-        end
+            require("true-zen").setup {
+                integrations = {
+                    lualine = true,
+                }
+            }
+        end,
     },
     -- {
     --     'j-hui/fidget.nvim',
@@ -500,6 +479,92 @@ require("lazy").setup({
     --         })
     --     end
     -- },
+    {
+        "anuvyklack/windows.nvim",
+        dependencies = {
+            "anuvyklack/middleclass",
+            {
+                "anuvyklack/animation.nvim",
+                enabled = not vim.g.neovide,
+            }
+        },
+        config = function()
+            vim.o.winwidth = 10
+            vim.o.winminwidth = 10
+            vim.o.equalalways = false
+            require('windows').setup()
+        end
+    },
+    {
+        'sindrets/winshift.nvim',
+        config = function()
+            -- Lua
+            require("winshift").setup({
+                highlight_moving_win = true,  -- Highlight the window being moved
+                focused_hl_group = "Visual",  -- The highlight group used for the moving window
+                moving_win_options = {
+                    -- These are local options applied to the moving window while it's
+                    -- being moved. They are unset when you leave Win-Move mode.
+                    wrap = false,
+                    cursorline = false,
+                    cursorcolumn = false,
+                    colorcolumn = "",
+                },
+                keymaps = {
+                    disable_defaults = false, -- Disable the default keymaps
+                    win_move_mode = {
+                        ["h"] = "left",
+                        ["j"] = "down",
+                        ["k"] = "up",
+                        ["l"] = "right",
+                        ["H"] = "far_left",
+                        ["J"] = "far_down",
+                        ["K"] = "far_up",
+                        ["L"] = "far_right",
+                        ["<left>"] = "left",
+                        ["<down>"] = "down",
+                        ["<up>"] = "up",
+                        ["<right>"] = "right",
+                        ["<S-left>"] = "far_left",
+                        ["<S-down>"] = "far_down",
+                        ["<S-up>"] = "far_up",
+                        ["<S-right>"] = "far_right",
+                    },
+                },
+                ---A function that should prompt the user to select a window.
+                ---
+                ---The window picker is used to select a window while swapping windows with
+                ---`:WinShift swap`.
+                ---@return integer? winid # Either the selected window ID, or `nil` to
+                ---   indicate that the user cancelled / gave an invalid selection.
+                window_picker = function()
+                    return require("winshift.lib").pick_window({
+                        -- A string of chars used as identifiers by the window picker.
+                        picker_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890",
+                        filter_rules = {
+                            -- This table allows you to indicate to the window picker that a window
+                            -- should be ignored if its buffer matches any of the following criteria.
+                            cur_win = true, -- Filter out the current window
+                            floats = true,  -- Filter out floating windows
+                            filetype = {},  -- List of ignored file types
+                            buftype = {},   -- List of ignored buftypes
+                            bufname = {},   -- List of vim regex patterns matching ignored buffer names
+                        },
+                        ---A function used to filter the list of selectable windows.
+                        ---@param winids integer[] # The list of selectable window IDs.
+                        ---@return integer[] filtered # The filtered list of window IDs.
+                        filter_func = nil,
+                    })
+                end,
+            })
+        end,
+    },
+    {
+        'lewis6991/satellite.nvim',
+        config = function()
+            require('satellite').setup()
+        end,
+    },
     ------------------------------------
     ---            Themes            ---
     ------------------------------------

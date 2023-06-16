@@ -41,6 +41,15 @@ wk.register({
     ['<C-l>'] = { '<C-w>l', 'Go to the right window' },
     s = 'search below cursor (lightspeed)', -- set by lightspeed
     S = 'search above cursor (lightspeed)', -- set by lightspeed
+    ['<C-w>'] = {
+        ['<c-m>'] = { ':WindowsMaximize<CR>', 'Maximize window' },
+        ['<c-v>'] = { ':WindowsMaximizeVertically<CR>', 'Maximize window vertically' },
+        ['<c-h>'] = { ':WindowsMaximizeHorizontally<CR>', 'Maximize window horizontally' },
+        ['<c-e>'] = { ':WindowsEqualize<CR>', 'Equalize windows' },
+        ['<c-w>'] = { ':WinShift<CR>', 'Move Window' },
+        ['<c-s>'] = { ':WinShift swap<CR>', 'Swap Window' },
+        ['<c-t>'] = { ':WindowsToggleAutowidth<CR>', 'Toggle autowidth' },
+    },
     ['<leader>'] = {
         name = 'More commands',
         -- More buffer management
@@ -123,8 +132,13 @@ wk.register({
             w = { ':lua require"spectre".open_visual({select_word=true})<CR>', 'Search for current word' },
         },
         I = { ':GuessIndent', 'Guess the indentation of the current file' },
-        z = { ':Twilight<CR>', 'Toggle Twilight' },
-        Z = { ':ZenMode<CR>', 'Toggle Zen mode' },
+        z = {
+            name = 'Zen',
+            n = { ':TZNarrow<CR>', 'Narrow' },
+            f = { ':TZFocus<CR>', 'Focus' },
+            m = { ':TZMinimalist<CR>', 'Minimalist' },
+            z = { ':TZAtaraxis<CR>', 'Ataraxis (Zen)' },
+        },
         s = {
             name = 'Sessions',
             c = { ':SClose<CR>', 'Close current session' },
@@ -135,7 +149,6 @@ wk.register({
             name = 'Git',
             g = { ':Neogit<CR>', 'Open Neogit' },
         },
-        ['<leader>'] = { ':lua require"mini.map".toggle()<CR>', 'Toggle map' },
         q = { ':SQuit<CR>', 'Quit' },
     },
     -- hide neoscroll keybindings
@@ -175,6 +188,10 @@ wk.register({
             name = 'LSP',
             a = { ':lua vim.lsp.buf.range_code_action()<CR>', 'Code action' },
             f = { ':lua vim.lsp.buf.range_formatting()<CR>', 'Format range' },
+        },
+        z = {
+            name = 'Zen',
+            n = { ":'<,'>TZNarrow<CR>", 'Narrow' },
         },
         s = { ':lua require("spectre").open()<CR>', 'Open search and replace' },
         f = {

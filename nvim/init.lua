@@ -492,7 +492,11 @@ require("lazy").setup({
             vim.o.winwidth = 10
             vim.o.winminwidth = 10
             vim.o.equalalways = false
-            require('windows').setup()
+            require('windows').setup{
+                ignore = {
+                    filetype = { "NvimTree", "neo-tree", "undotree", "gundo", "no-neck-pain" }
+                }
+            }
         end
     },
     {
@@ -561,9 +565,21 @@ require("lazy").setup({
     },
     {
         'lewis6991/satellite.nvim',
+        commit = 'de3b6e70d033a0ddc2d2040fd9e0af76ad16c63e', -- For nvim 0.9
         config = function()
             require('satellite').setup()
         end,
+    },
+    {
+        'shortcuts/no-neck-pain.nvim',
+        config = function()
+            require('no-neck-pain').setup({
+                width = 200,
+            })
+        end,
+    },
+    {
+        'mbbill/undotree',
     },
     ------------------------------------
     ---            Themes            ---

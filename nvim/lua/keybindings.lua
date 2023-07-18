@@ -133,11 +133,12 @@ wk.register({
         },
         I = { ':GuessIndent', 'Guess the indentation of the current file' },
         z = {
-            name = 'Zen',
+            name = 'Zen/NoNeckPain',
             n = { ':TZNarrow<CR>', 'Narrow' },
             f = { ':TZFocus<CR>', 'Focus' },
             m = { ':TZMinimalist<CR>', 'Minimalist' },
-            z = { ':TZAtaraxis<CR>', 'Ataraxis (Zen)' },
+            a = { ':TZAtaraxis<CR>', 'Ataraxis (Zen)' },
+            z = { ':NoNeckPain<CR>', 'NoNeckPain' },
         },
         s = {
             name = 'Sessions',
@@ -150,6 +151,7 @@ wk.register({
             g = { ':Neogit<CR>', 'Open Neogit' },
         },
         q = { ':SQuit<CR>', 'Quit' },
+        u = { ':UndotreeToggle<CR>', 'Toggle undo tree' },
     },
     -- hide neoscroll keybindings
     ['<C-y>'] = 'which_key_ignore',

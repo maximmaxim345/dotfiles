@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# Custom runner for neovide, which supports restarting in a distrobox
+
+has_nofork=false
+for arg in "$@"; do
+    if [[ $arg == "--nofork" ]]; then
+        has_nofork=true
+    fi
+done
+
+if [[ $has_nofork == false ]]; then
+    # Restart this script in the background
+    nohup $0 ${@:1} --nofork > /dev/null 2> /dev/null < /dev/null &
+    disown
+    exit 0
+fi
+
+# this part is responsible for launching the neovide executable and restarting in a
+# (different) distrobox if requested
+
+neovide_executable=$HOME/.local/lib/neovide/AppRun
+# this file is used to communicate with the neovide/neovim instance
+# we assume, that at most only one instance of neovide is started in a second
+restart_request=$HOME/.local/lib/neovide/restart-request-$(date +%s)
+
+# read the restart request file
+# returns the target distrobox name or empty string if no request
+function readRestartRequest() {
+    if [[ -f $restart_request ]]; then
+        cat $restart_request
+    else
+        echo ""
+    fi
+}
+
+# Launch neovide inside a distrobox, blocking until it exits
+# First argument is the distrobox name or HOST if we are launching from the host
+function launchNeovide() {
+    launchCommand=$neovide_executable
+    if [[ $1 != "HOST" ]]; then
+        launchCommand="distrobox enter $1 -- $launchCommand"
+    fi
+    if [[ $has_nofork == false ]]; then
+        launchCommand="$launchCommand --nofork"
+    fi
+    # this is a hack to make sure that the neovide executable is in path, TODO: fix this
+    export PATH=$PATH:$HOME/.local/bin:$HOME/.local/share/bob/nvim-bin
+    export NEOVIDE_RESTART_REQUEST_FILE=$restart_request
+    $launchCommand ${@:2} --neovim-bin $(which nvim)
+}
+
+# If true, we are running inside a distrobox
+function isInsideContainer() {
+    # from distrobox-host-exec
+    [[ -f /run/.containerenv || -f /.dockerenv ]]
+}
+
+# If true, we have distrobox installed
+function hasDistrobox() {
+    # the executable distrobox is in path if we have distrobox installed (and are not inside one)
+    [[ -n $(which distrobox) ]]
+}
+
+# If we don't have distrobox or are already inside one, launch neovide directly
+if ! hasDistrobox || isInsideContainer; then
+    launchNeovide HOST $@
+    exit 0
+fi
+
+# Attach a function to the exit signal, to clean up the restart request file
+function cleanup() {
+    rm -f $restart_request
+}
+trap cleanup EXIT
+
+# First launch neovide from the host
+echo "HOST" > $restart_request
+last_restart_request=""
+
+while true; do
+    # If the restart request file has changed, we need to restart neovide
+    if [[ $(readRestartRequest) != $last_restart_request ]]; then
+        last_restart_request=$(readRestartRequest)
+        if [[ -z $last_restart_request ]]; then
+            # If the restart request file is empty, we need to exit
+            exit 0
+        else
+            # Otherwise, we need to launch neovide in the distrobox
+            launchNeovide $last_restart_request $@
+            # if we crashed, just cleanup and exit
+            return_code=$?
+            if [[ $return_code != 0 ]]; then
+                exit $return_code
+            fi
+        fi
+    else
+        exit 0
+    fi
+done

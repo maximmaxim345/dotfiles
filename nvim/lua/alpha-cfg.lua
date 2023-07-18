@@ -35,6 +35,16 @@ function M.alpha_load_buttons()
     if last_session_button ~= nil then
         table.insert(dashboard.section.buttons.val, 2, last_session_button)
     end
+    -- distrobox integration
+    local restart_request = os.getenv("NEOVIDE_RESTART_REQUEST_FILE")
+    if restart_request ~= nil then
+        -- read the file
+        local file = io.open(restart_request, "r")
+        local current = file:read("*all")
+
+        local button = dashboard.button( "d", "Open Distrobox selector", ":lua require('distrobox').launch_selector()<CR>")
+        table.insert(dashboard.section.buttons.val, 2, button)
+    end
 end
 
 M.alpha_load_buttons()

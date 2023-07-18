@@ -10,15 +10,9 @@ from typing import Union, List
 
 ID: str = "neovide"
 NAME: str = "Neovide"
-DESCRIPTION: str = "No Nonsense Neovim Client in Rust"
+DESCRIPTION: str = "No Nonsense Neovim Client in Rust, with additional distrobox integration"
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
-
-def dl_link(platform: str, arch: str) -> str:
-    """
-    Returns the download link for the latest version of bob for the given platform and architecture.
-    """
-    return f"https://github.com/MordechaiHadad/bob/releases/latest/download/bob-{platform}-{arch}.zip"
 
 def is_compatible() -> Union[bool, str]:
     return platform.system() == "Linux" and platform.machine() in ["x86_64"]
@@ -34,17 +28,21 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         print("Unzipping Neovide...")
         shutil.unpack_archive(download_path, temp_dir)
 
-        print("Installing Neovide...")
+        print("Installing Neovide with distrobox wrapper...")
+
+        (Path.home() / ".local" / "bin").mkdir(parents=True, exist_ok=True)
         # For maximum compatibility, we need to run the appimage with the --appimage-extract flag
+        # This is especially useful for running inside distrobox containers
         neovide_path = temp_dir / "neovide.AppImage"
         neovide_path.chmod(0o755)
         subprocess.run([neovide_path, "--appimage-extract"], cwd=temp_dir, stdout=stdout, stderr=stdout, check=True)
         # Copy the folder to the local lib folder
         (Path.home() / ".local" / "lib").mkdir(parents=True, exist_ok=True)
-        shutil.copytree(temp_dir / "squashfs-root", Path.home() / ".local" / "lib" / "neovide")
-        # Create a symlink to the executable
-        (Path.home() / ".local" / "bin").mkdir(parents=True, exist_ok=True)
-        (Path.home() / ".local" / "bin" / "neovide").symlink_to(Path.home() / ".local" / "lib" / "neovide" / "AppRun")
+        shutil.copytree(temp_dir / "squashfs-root", Path.home() / ".local" / "lib" / "neovide", dirs_exist_ok=True)
+        # Copy the launcher script (wrapper around neovide
+        shutil.copyfile(df.DOTFILES_PATH / "neovide" / "neovide", Path.home() / ".local" / "bin" / "neovide")
+        (Path.home() / ".local" / "bin" / "neovide").chmod(0o755)
+
 
         # Copy the desktop file (with changed path, and multigrid flag)
         desktop_file = f"""

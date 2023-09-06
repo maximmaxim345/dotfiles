@@ -21,6 +21,14 @@ local function has_unsaved_changes()
     return unsaved
 end
 
+local function kill_all_terminals()
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_get_option(buf, 'buftype') == 'terminal' then
+            vim.api.nvim_buf_delete(buf, {force = true})
+        end
+    end
+end
+
 -- return true if changes were saved or discarded
 local function ask_unsaved_changes()
     if has_unsaved_changes() then
@@ -48,6 +56,7 @@ vim.api.nvim_create_user_command('SClose',
         if not ask_unsaved_changes() then
             return
         end
+        kill_all_terminals()
         close_session()
         vim.api.nvim_command('nohlsearch')
         vim.opt.spell = false
@@ -65,6 +74,7 @@ vim.api.nvim_create_user_command('SQuit',
         if not ask_unsaved_changes() then
             return
         end
+        kill_all_terminals()
         close_session()
         vim.api.nvim_command('qa')
     end,

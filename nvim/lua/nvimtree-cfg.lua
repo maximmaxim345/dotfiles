@@ -1,5 +1,4 @@
 -- vim.g.nvim_tree_ignore = {".git", "node_modules", ".cache"}
-local tree_cb = require'nvim-tree.config'.nvim_tree_callback
 require'nvim-tree'.setup {
     auto_reload_on_write = false,
     disable_netrw = true,

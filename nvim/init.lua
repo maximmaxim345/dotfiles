@@ -20,6 +20,31 @@ vim.opt.writebackup = false
 vim.opt.updatetime = 100
 vim.opt.timeoutlen = 500
 vim.opt.sessionoptions = 'blank,buffers,curdir,help,tabpages,terminal'
+vim.opt.mouse = 'a'
+
+if vim.g.vscode then
+    -- Very Basic VSCode support
+    -- Since some of plugins don't work in vscode, I will not
+    -- even bother to load them
+    -- Also since the majority of keybindings are not applicable
+    -- in vscode, I will recreate them here
+    -- Add following to keybindings.json
+    --[[
+    {
+        "command": "vscode-neovim.compositeEscape1",
+        "key": "j",
+        "when": "neovim.mode == insert && editorTextFocus",
+        "args": "j"
+    },
+    {
+        "command": "vscode-neovim.compositeEscape2",
+        "key": "k",
+        "when": "neovim.mode == insert && editorTextFocus",
+        "args": "k"
+    }
+    ]]
+    return
+end
 
 -- fix formatoptions
 local formatOptions = vim.api.nvim_create_augroup('Format-Options', { clear = true })
@@ -49,6 +74,8 @@ vim.g.neovide_fullscreen = false
 -- Copilot requires this to be set before loading
 vim.g.copilot_no_tab_map = true
 vim.g.copilot_assume_mapped = true
+
+vim.filetype.add({extension = {wgsl = 'wgsl'}})
 
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
@@ -230,6 +257,20 @@ require("lazy").setup({
         dependencies = {
             'nvim-lua/plenary.nvim',
         }
+    },
+    {
+        'simrat39/rust-tools.nvim',
+        config = function()
+            local rt = require("rust-tools")
+            rt.setup({
+              server = {
+                on_attach = function(_, bufnr)
+                  -- Hover actions
+                  vim.keymap.set("n", "<C-space>", rt.hover_actions.hover_actions, { buffer = bufnr })
+                end,
+              },
+            })
+        end,
     },
     {
         'lewis6991/gitsigns.nvim',
@@ -626,3 +667,55 @@ require("lazy").setup({
 -- load theme and set keybindings after plugins are loaded
 require('theme')
 require('keybindings')
+
+-- Create Popup menu
+vim.cmd [[
+aunmenu PopUp
+vnoremenu PopUp.Cut                         "+x
+vnoremenu PopUp.Copy                        "+y
+anoremenu PopUp.Paste                       "+gP
+vnoremenu PopUp.Paste                       "+P
+vnoremenu PopUp.Delete                      "_x
+nnoremenu PopUp.Select\ All                 ggVG
+vnoremenu PopUp.Select\ All                 gg0oG$
+inoremenu PopUp.Select\ All                 <C-Home><C-O>VG
+
+anoremenu PopUp.-1-                         <Nop>
+
+" Lsp Options
+nnoremenu PopUp.Code\ Action                <Cmd>lua vim.lsp.buf.code_action()<CR>
+nnoremenu PopUp.Go\ To\ Definition          <Cmd>Telescope lsp_definitions<CR>
+nnoremenu PopUp.Peek\ Definition            <Cmd>Lspsaga peek_definition<CR>
+nnoremenu PopUp.Open\ Documentation         <Cmd>Lspsaga hover_doc<CR>
+nnoremenu PopUp.Open\ Definitions           <Cmd>Lspsaga finder<CR>
+nnoremenu PopUp.Rename\ Symbol              <Cmd>Lspsaga rename<CR>
+nnoremenu PopUp.Format\ File                <Cmd>lua vim.lsp.buf.format({async=true})<CR>
+nnoremenu PopUp.Toggle\ Workspace\ Diagnostics  <Cmd>TroubleToggle workspace_diagnostics<CR>
+nnoremenu PopUp.Diagnostic\ Next            <Cmd>lua vim.lsp.diagnostic.goto_next()<CR>
+
+vnoremenu PopUp.Format\ Range               <Cmd>lua vim.lsp.buf.range_formatting()<CR>
+
+inoremenu PopUp.Code\ Action                <Esc><Cmd>lua vim.lsp.buf.code_action()<CR>
+inoremenu PopUp.Go\ To\ Definition          <Esc><Cmd>Telescope lsp_definitions<CR>
+inoremenu PopUp.Peek\ Definition            <Esc><Cmd>Lspsaga peek_definition<CR>
+inoremenu PopUp.Open\ Documentation         <Esc><Cmd>Lspsaga hover_doc<CR>
+inoremenu PopUp.Open\ Definitions           <Esc><Cmd>Lspsaga finder<CR>
+inoremenu PopUp.Rename\ Symbol              <Esc><Cmd>Lspsaga rename<CR>
+inoremenu PopUp.Format\ File                <Esc><Cmd>lua vim.lsp.buf.format({async=true})<CR>
+inoremenu PopUp.Toggle\ Workspace\ Diagnostics  <Esc><Cmd>TroubleToggle workspace_diagnostics<CR>
+inoremenu PopUp.Diagnostic\ Next            <Esc><Cmd>lua vim.lsp.diagnostic.goto_next()<CR>
+
+anoremenu PopUp.-2-                         <Nop>
+
+" Buffer Opetions
+nnoremenu PopUp.Close\ Buffer               <C-w>c<CR>
+nnoremenu PopUp.Split\ Buffer               <C-w>s<CR>
+nnoremenu PopUp.Vsplit\ Buffer              <C-w>v<CR>
+vnoremenu PopUp.Close\ Buffer               <C-w>c<CR>
+vnoremenu PopUp.Split\ Buffer               <C-w>s<CR>
+vnoremenu PopUp.Vsplit\ Buffer              <C-w>v<CR>
+inoremenu PopUp.Close\ Buffer               <Esc><C-w>c<CR>
+inoremenu PopUp.Split\ Buffer               <Esc><C-w>s<CR>
+inoremenu PopUp.Vsplit\ Buffer              <Esc><C-w>v<CR>
+
+]]

@@ -112,9 +112,7 @@ cmp.setup({
             end
         end, { "i", "s" }),
         ['<C-Space>'] = cmp.mapping(function(fallback)
-            if luasnip.expand_or_jumpable() then
-                luasnip.expand_or_jump()
-            elseif cmp.visible() then
+            if cmp.visible() then
                 local entry = cmp.get_active_entry()
                 if entry and entry.source == 'luasnip' then
                     print('luasnip')
@@ -127,6 +125,8 @@ cmp.setup({
                         select = true,
                     })
                 end
+            elseif luasnip.expand_or_jumpable() then
+                luasnip.expand_or_jump()
             else
                 cmp.complete({
                     config = {
@@ -201,7 +201,7 @@ end
 null_ls.setup({
     sources = {
         null_ls.builtins.diagnostics.todo_comments,
-        null_ls.builtins.diagnostics.trail_space,
+        -- null_ls.builtins.diagnostics.trail_space,
         null_ls.builtins.hover.dictionary,
         -- add_if_installed('eslint_d', null_ls.builtins.code_actions.eslint_d),
         add_if_installed('eslint_d', null_ls.builtins.diagnostics.eslint_d),

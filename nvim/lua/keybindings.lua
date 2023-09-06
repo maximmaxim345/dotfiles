@@ -18,6 +18,8 @@ else
 end
 
 vim.api.nvim_set_keymap("i", "jk", "<Esc>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("i", "<C-BS>", "<C-W>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("i", "<S-Tab>", "<C-d>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap("t", "jk", "<C-\\><C-n>", { noremap = true, silent = true })
 
 wk.register({
@@ -87,7 +89,7 @@ wk.register({
             d = { ':Telescope lsp_definitions<CR>', 'Go to definition' },
             D = { ':Lspsaga peek_definition<CR>', 'Peek definition' },
             K = { ':Lspsaga hover_doc<CR>', 'Open documentation' },
-            k = { ':Lspsaga lsp_finder<CR>', 'Open definitions/implementations/references' },
+            k = { ':Lspsaga finder<CR>', 'Open definitions/implementations/references' },
             r = { ':Lspsaga rename<CR>', 'Rename symbol' },
             h = { ':ClangdSwitchSourceHeader<CR>', 'Switch between header and source file (Clangd)' },
             f = { ':lua vim.lsp.buf.format({async=true})<CR>', 'Format file' },

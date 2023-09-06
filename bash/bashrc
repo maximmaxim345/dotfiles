@@ -8,6 +8,9 @@ fi
 if [[ -d "$HOME/.cargo/bin" ]]; then
     path+=("$HOME/.cargo/bin")
 fi
+if [[ -f "$HOME/.cargo/env" ]]; then
+    . "$HOME/.cargo/env"
+fi
 # Add nvim to path (with highest priority)
 if [[ -d "$HOME/.local/share/bob/nvim-bin" ]]; then
     path=("$HOME/.local/share/bob/nvim-bin" $path)

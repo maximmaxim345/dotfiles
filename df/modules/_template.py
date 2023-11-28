@@ -13,6 +13,9 @@ DESCRIPTION: str = ""
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 
+# Optional attributes
+VERSION: str = ""
+
 def is_compatible() -> Union[bool, str]:
     return True
 

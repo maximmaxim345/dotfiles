@@ -370,9 +370,12 @@ class DotfilesApp(App):
                     # Add to Updatable
                     widget = self.add_module_to_category(module_id, "updatable")
                     widget.style = "updatable"
-                    info_text = f"Version {module.VERSION} available"
-                    if self.modules_installed_version[module_id] != None:
-                        info_text += f", currently installed {self.modules_installed_version[module_id]}"
+                    if hasattr(module, "VERSION") and module.VERSION is not None:
+                        info_text = f"Version {module.VERSION} available"
+                        if self.modules_installed_version[module_id] is not None:
+                            info_text += f", currently installed {self.modules_installed_version[module_id]}"
+                    else:
+                        info_text = "Update available"
                     widget.info = info_text
                     continue
                 else:

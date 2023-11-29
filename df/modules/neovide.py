@@ -22,18 +22,19 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         print("Downloading Neovide...")
         temp_dir = Path(temp_dir)
-        download_path = temp_dir / "neovide.zip"
-        link = "https://github.com/neovide/neovide/releases/latest/download/neovide.AppImage.zip"
+        download_path = temp_dir / "neovide.AppImage"
+        link = "https://github.com/neovide/neovide/releases/latest/download/neovide.AppImage"
         df.download_file(link, download_path)
-        print("Unzipping Neovide...")
-        shutil.unpack_archive(download_path, temp_dir)
+        # print("Unzipping Neovide...")
+        # shutil.unpack_archive(download_path, temp_dir)
 
         print("Installing Neovide with distrobox wrapper...")
 
         (Path.home() / ".local" / "bin").mkdir(parents=True, exist_ok=True)
+        (Path.home() / ".local" / "share" / "applications").mkdir(parents=True, exist_ok=True)
         # For maximum compatibility, we need to run the appimage with the --appimage-extract flag
         # This is especially useful for running inside distrobox containers
-        neovide_path = temp_dir / "neovide.AppImage"
+        neovide_path = download_path
         neovide_path.chmod(0o755)
         subprocess.run([neovide_path, "--appimage-extract"], cwd=temp_dir, stdout=stdout, stderr=stdout, check=True)
         # Copy the folder to the local lib folder

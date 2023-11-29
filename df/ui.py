@@ -486,14 +486,14 @@ class DotfilesApp(App):
             else:
                 widget.queued_action = None
 
-        # # Hide empty categories
-        # for category in self.CATEGORIES:
-        #     container = self.query_one(f"#{category}")
-        #     if len(container.children) == 1:
-        #         # Only the header is present
-        #         container.styles.display = "none"
-        #     else:
-        #         container.styles.display = "block"
+        # Hide empty categories
+        for category in self.CATEGORIES:
+            container = self.query_one(f"#{category}")
+            if len(container.children) == 1:
+                # Only the header is present
+                container.styles.display = "none"
+            else:
+                container.styles.display = "block"
 
         # Update the list of queued actions
         queued_actions_widget = self.query_one("#queued_actions")

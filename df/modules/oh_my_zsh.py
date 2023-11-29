@@ -45,7 +45,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     # just remove the directory
     print("Removing Oh My Zsh...")
-    df.delete_or_unlink(oh_my_zsh_path)
+    df.delete_or_unlink(oh_my_zsh_path, delete_recursively=True)
 
 # Optional functions for modules that can be updated
 

@@ -175,6 +175,7 @@ class InstallationScreen(Screen):
         self.textlog = TextLog(id="log")
         yield Container(self.textlog, id="log-container")
         yield Container(
+            Button("Retry", id="retry", variant="warning", disabled=True),
             Button("Quit", id="quit", variant="error", disabled=True),
             id="buttons",
         )
@@ -189,10 +190,14 @@ class InstallationScreen(Screen):
         asyncio.create_task(self.pipe_log())
         asyncio.create_task(self.run_installation())
 
-    async def run_installation(self) -> None:
+    async def run_installation(self, resume_at=None) -> None:
         self.add_queued_actions(self.queued_actions)
         success = True
         for i, (action, module_id) in enumerate(self.queued_actions):
+            if resume_at is not None and i < resume_at:
+                # Skip this action
+                self.queued_action_items[i].add_class("installed")
+                continue
             module = MODULES[module_id]
             # Mark the module as being installed
             self.queued_action_items[i].remove_class("queued")
@@ -223,6 +228,7 @@ class InstallationScreen(Screen):
                 # Print the traceback
                 self.print_log(traceback.format_exc())
                 success = False
+                self.failed_at = i
                 break
             finally:
                 # Restore print
@@ -244,9 +250,15 @@ class InstallationScreen(Screen):
             self.print_log("Failed applying changes!")
             self.query("#title").first(Static).update("Failed to apply changes!")
             self.query("#quit").first(Button).disabled = False
+            self.query("#retry").first(Button).disabled = False
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "quit":
             self.app.exit()
+        elif event.button.id == "retry":
+            self.query("#title").first(Static).update("Applying changes...")
+            self.query("#quit").first(Button).disabled = True
+            self.query("#retry").first(Button).disabled = True
+            asyncio.create_task(self.run_installation(resume_at=self.failed_at))
 
 class DotfilesApp(App):
     """A Terminal UI for managing dotfiles."""

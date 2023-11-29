@@ -108,7 +108,7 @@ InstallationScreen > #buttons {
     border: round $accent;
 }
 
-#buttons > Button {
+#buttons > #quit {
     dock: right;
 }
 
@@ -128,4 +128,18 @@ QueuedActionItem.installed {
 QueuedActionItem.failed {
     color: $error;
     border-left: thick $error;
+}
+
+ErrorQueueingScreen > #buttons {
+    layout: horizontal;
+    height: auto;
+    /* dock: bottom; */
+}
+
+#buttons > #back {
+    dock: right;
+}
+
+#conflicts-log {
+    border: round $accent;
 }

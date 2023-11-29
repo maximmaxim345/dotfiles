@@ -260,6 +260,38 @@ class InstallationScreen(Screen):
             self.query("#retry").first(Button).disabled = True
             asyncio.create_task(self.run_installation(resume_at=self.failed_at))
 
+
+class ErrorQueueingScreen(Screen):
+    """Screen for showing incompatible modules."""
+
+    CSS_PATH = "ui.css"
+
+    def __init__(self, impossibleActionError, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.error = impossibleActionError
+
+    def compose(self) -> ComposeResult:
+        yield Static(f"Error while {self.error.action} {MODULES[self.error.module_id].NAME}", id="title")
+        self.textlog = TextLog(id="log")
+        for conflict in self.error.conflicts:
+            if conflict.reason == "incompatible":
+                self.textlog.write(f"{MODULES[conflict.module_id].NAME} is incompatible with this system.", shrink=False, scroll_end=True)
+            elif conflict.reason == "conflicting":
+                conflicting_as_text = ", ".join([MODULES[id].NAME for id in conflict.conflicts_with])
+                if len(conflict.conflicts_with) == 1:
+                    self.textlog.write(f"{MODULES[conflict.module_id].NAME} conflicts with the installed module \"{conflicting_as_text}\".", shrink=False, scroll_end=True)
+                else:
+                    self.textlog.write(f"{MODULES[conflict.module_id].NAME} conflicts the following installed modules: {conflicting_as_text}.", shrink=False, scroll_end=True)
+        yield Container(self.textlog, id="conflicts-log")
+        yield Container(
+            Button("Back", id="back", variant="primary", disabled=False),
+            id="buttons",
+        )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "back":
+            self.app.pop_screen()
+
 class DotfilesApp(App):
     """A Terminal UI for managing dotfiles."""
 
@@ -433,7 +465,10 @@ class DotfilesApp(App):
                     conflicting_as_text = ", ".join([MODULES[id].NAME for id in conflicting])
                     reason = f"Conflicts with {conflicting_as_text}"
             else:
-                reason = compatible
+                if compatible == False:
+                    reason = "Not compatible with this system"
+                else:
+                    reason = compatible
             # Add to Incompatible
             widget = self.add_module_to_category(module_id, "incompatible")
             widget.style = "incompatible"
@@ -478,9 +513,58 @@ class DotfilesApp(App):
             reset_button.disabled = False
             apply_button.disabled = False
 
-    def queue_action(self, module_id: str, action: str) -> None:
-        """Queue an action to be applied to the module.
+    class ImpossibleActionError(Exception):
+        """Raised when a action is impossible."""
+
+        class Conflict:
+            action: str
+            module_id: str
+            reason: str # "incompatible" or "conflicting"
+            conflicts_with: List[str] # If reason is "conflicting", this are the conflicting modules
+
+            def __init__(self, action: str, module_id: str, reason: str, conflicts_with: List[str] = []) -> None:
+                super().__init__()
+                self.action = action
+                self.module_id = module_id
+                self.reason = reason
+                self.conflicts_with = conflicts_with
+
+        action: str
+        module_id: str
+
         """
+        List of subsiquent actions that would have been queued, but
+        would have resulted in a invalid state.
+        """
+        conflicts: List[Conflict]
+
+        def __init__(self, action: str, module_id: str, conflicts: List[Conflict]) -> None:
+            super().__init__()
+            self.action = action
+            self.module_id = module_id
+            self.conflicts = conflicts
+
+    def queue_action(self, module_id: str, action: str, state=None) -> None:
+        """Try to Queue the action.
+        This function is fail-safe, it will not queue an action that results
+        in a invalid state. We only allow getting into an invalid state if
+        we only uninstall modules. (If the user wants to resolve the conflict)
+        Throws ImpossibleActionError if the action is cannot be applied.
+        """
+        class State:
+            def __init__(self):
+                self.modules_installed = {}
+                self.queued_actions = []
+                self.modules_has_update = {}
+                self.conflicts = []
+        if state is None:
+            topmost = True
+            state = State()
+            state.modules_installed = self.modules_installed.copy()
+            state.queued_actions = self.queued_actions.copy()
+            state.modules_has_update = self.modules_has_update.copy()
+        else:
+            topmost = False
         # The order of actions is important, since we only show possible
         # actions, we can assume that the action is valid at this point
         if action == "install" or action == "install-no-deps":
@@ -488,58 +572,96 @@ class DotfilesApp(App):
             if action == "install":
                 for dependency_id in MODULES[module_id].DEPENDENCIES:
                     if state.modules_has_update[dependency_id]:
-                        self.queue_action(dependency_id, "update")
+                        self.queue_action(dependency_id, "update", state=state)
                     else:
-                        self.queue_action(dependency_id, "install")
+                        self.queue_action(dependency_id, "install", state=state)
             # Queue the module itself
-            if not self.modules_installed[module_id]:
-                self.modules_installed[module_id] = True
+            if not state.modules_installed[module_id]:
+                if not self.modules_is_compatible[module_id]:
+                    state.conflicts.append(self.ImpossibleActionError.Conflict(action, module_id, "incompatible"))
+
+                state.modules_installed[module_id] = True
                 # Remove previous actions for this module
                 shouldAppend = True
-                for (a, id) in self.queued_actions:
+                for (a, id) in state.queued_actions:
                     if id != module_id:
                         continue
                     if a == "remove":
                         # It was allready installed
                         shouldAppend = False
                     break
-                self.queued_actions = [a for a in self.queued_actions if a[1] != module_id]
+                state.queued_actions = [a for a in state.queued_actions if a[1] != module_id]
                 if shouldAppend:
-                    self.queued_actions.append((action, module_id))
+                    state.queued_actions.append((action, module_id))
         elif action == "update" or action == "update-no-deps":
             # Recursively queue all dependencies for installation/update
             if action == "update":
                 for dependency_id in MODULES[module_id].DEPENDENCIES:
-                    if self.modules_has_update[dependency_id]:
-                        self.queue_action(dependency_id, "update")
+                    if state.modules_has_update[dependency_id]:
+                        self.queue_action(dependency_id, "update", state=state)
                     else:
-                        self.queue_action(dependency_id, "install")
+                        self.queue_action(dependency_id, "install", state=state)
             # Queue the module itself
-            if self.modules_has_update[module_id]:
-                self.modules_has_update[module_id] = False # Mark as up to date
+            if state.modules_has_update[module_id]:
+                state.modules_has_update[module_id] = False # Mark as up to date
                 # Remove previous actions for this module
-                self.queued_actions = [a for a in self.queued_actions if a[1] != module_id]
-                self.queued_actions.append((action, module_id))
+                state.queued_actions = [a for a in state.queued_actions if a[1] != module_id]
+                state.queued_actions.append((action, module_id))
         elif action == "remove":
             # Queue the module itself
-            if self.modules_installed[module_id]:
-                self.modules_installed[module_id] = False
+            if state.modules_installed[module_id]:
+                state.modules_installed[module_id] = False
                 # Remove previous actions for this module
                 shouldAppend = True
-                for (a, id) in self.queued_actions:
+                for (a, id) in state.queued_actions:
                     if id != module_id:
                         continue
                     if a == "install" or a == "install-no-deps":
                         # It is not installed, we dont need to remove it
                         shouldAppend = False
                     break
-                self.queued_actions = [a for a in self.queued_actions if a[1] != module_id]
+                state.queued_actions = [a for a in state.queued_actions if a[1] != module_id]
                 if shouldAppend:
-                    self.queued_actions.append((action, module_id))
+                    state.queued_actions.append((action, module_id))
             # Recursively queue modules that depend on this module for removal
             for module in MODULES.values():
                 if module_id in module.DEPENDENCIES:
-                    self.queue_action(module.ID, "remove")
+                    self.queue_action(module.ID, "remove", state=state)
+
+        # Check if all actions we do are uninstall actions
+        all_uninstall = True
+        for (a, id) in state.queued_actions:
+            if a != "remove":
+                all_uninstall = False
+                break
+        # Check if we have incompatible modules
+        for module_id, module in MODULES.items():
+            if not state.modules_installed[module_id]:
+                continue
+            if not self.modules_is_compatible[module_id]:
+                # A module is incompatible, we cannot apply the action
+                # But we make an exception if we only uninstall things
+                if not all_uninstall:
+                    state.conflicts.append(self.ImpossibleActionError.Conflict(action, module_id, "incompatible"))
+            for incompatible_id in module.CONFLICTING:
+                # Same here, just also save the conflicting module
+                if state.modules_installed[incompatible_id] and not all_uninstall:
+                    # If we allready have this conflict, just add the conflicting module to the list
+                    added = False
+                    for conflict in state.conflicts:
+                        if conflict.module_id == module_id and conflict.reason == "conflicting":
+                            conflict.conflicts_with.append(incompatible_id)
+                            added = True
+                            break
+                    if not added:
+                        state.conflicts.append(self.ImpossibleActionError.Conflict(action, module_id, "conflicting", [incompatible_id]))
+        # Throw an error if we have conflicts
+        if len(state.conflicts) > 0:
+            raise self.ImpossibleActionError(action, module_id, state.conflicts)
+        # We have queued the action without errors, update the state
+        self.modules_installed = state.modules_installed
+        self.queued_actions = state.queued_actions
+        self.modules_has_update = state.modules_has_update
 
     def on_module_item_action_pressed(self, message: ModuleItem.ActionPressed) -> None:
         # A action on a module was pressed
@@ -547,7 +669,12 @@ class DotfilesApp(App):
         action = message.action
         id = message.module_id
         if action in ["install", "update", "remove", "install-no-deps", "update-no-deps"]:
-            self.queue_action(id, action)
+            try:
+                self.queue_action(id, action)
+            except self.ImpossibleActionError as e:
+                # The action is impossible, show a message
+                self.push_screen(ErrorQueueingScreen(e))
+                return
 
         # Update the UI to reflect the new config
         self.update_ui()

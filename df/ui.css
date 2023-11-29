@@ -55,6 +55,22 @@ ModuleItem.module-changed {
     display: block;
 }
 
+.module-style-updatable #update {
+    display: block;
+}
+
+.advanced > .module-style-updatable #update-no-deps {
+    display: block;
+}
+
+.module-style-updatable #remove {
+    display: block;
+}
+
+.advanced > .module-style-not-installed #install-no-deps {
+    display: block;
+}
+
 .queued-actions-header {
     content-align: center bottom;
     border-bottom: round $secondary;

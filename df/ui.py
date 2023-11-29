@@ -28,7 +28,7 @@ class ModuleItem(Static):
     info = reactive("", layout=True)
     """Queued action for this module.
     This changes the appearance of the module item. It can be one of:
-    "install", "update", "remove", or None.
+    "install", "update", "remove", "install-no-deps", "update-no-deps" or None.
     """
     queued_action = reactive(None, layout=True)
 
@@ -65,6 +65,8 @@ class ModuleItem(Static):
             id="module-description",
         )
         yield Container(
+            Button("Install without dependencies", id="install-no-deps", variant="warning"),
+            Button("Update without dependencies", id="update-no-deps", variant="warning"),
             Button("Install", id="install", variant="success"),
             Button("Update", id="update", variant="warning"),
             Button("Remove", id="remove", variant="error"),
@@ -95,7 +97,7 @@ class ModuleItem(Static):
             self.add_class("module-changed")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id in ["install", "update", "remove"]:
+        if event.button.id in ["install", "update", "remove", "install-no-deps", "update-no-deps"]:
             action = event.button.id
             self.post_message(self.ActionPressed(self.module, action))
 
@@ -201,11 +203,11 @@ class InstallationScreen(Screen):
                 module.print = self.print_log
                 # Run the action inside the module
                 config = self.Config.get_module(module_id)
-                if action == "install":
+                if action == "install" or action == "install-no-deps":
                     await asyncio.to_thread(module.install, config, self.stdout)
                     # Mark the module as installed
                     config.set_installed(True)
-                elif action == "update":
+                elif action == "update" or action == "update-no-deps":
                     await asyncio.to_thread(module.update, config, self.stdout)
                 elif action == "remove":
                     await asyncio.to_thread(module.uninstall, config, self.stdout)
@@ -260,6 +262,10 @@ class DotfilesApp(App):
     ]
 
     CATEGORIES = ["updatable", "installed", "not_installed", "incompatible"]
+
+    """Advanced mode.
+    If enabled, we can bypass module compatibility checks."""
+    advanced = reactive(False, layout=True)
 
     def __init__(self, Config: df.config.Config):
         self.Config = Config
@@ -324,9 +330,20 @@ class DotfilesApp(App):
         yield Container(
             Button("Quit", id="quit", variant="error"),
             Button("Reset", id="reset", variant="error"),
+            Button("Enable Advanced Mode", id="advanced-mode", variant="warning"),
             Button("Apply Changes", id="apply", variant="success"),
             id="actions",
         )
+    
+    def watch_advanced(self, old_advanced: bool, new_advanced: bool) -> None:
+        if old_advanced == new_advanced:
+            return
+        for category in self.CATEGORIES:
+            container = self.query_one(f"#{category}")
+            if new_advanced:
+                container.add_class("advanced")
+            else:
+                container.remove_class("advanced")
 
     def add_module_to_category(self, module_id, category: str) -> ModuleItem:
         """Idempotently add a module to a category.
@@ -454,13 +471,14 @@ class DotfilesApp(App):
         """
         # The order of actions is important, since we only show possible
         # actions, we can assume that the action is valid at this point
-        if action == "install":
+        if action == "install" or action == "install-no-deps":
             # Recursively queue all dependencies for installation/update
-            for dependency_id in MODULES[module_id].DEPENDENCIES:
-                if self.modules_has_update[dependency_id]:
-                    self.queue_action(dependency_id, "update")
-                else:
-                    self.queue_action(dependency_id, "install")
+            if action == "install":
+                for dependency_id in MODULES[module_id].DEPENDENCIES:
+                    if state.modules_has_update[dependency_id]:
+                        self.queue_action(dependency_id, "update")
+                    else:
+                        self.queue_action(dependency_id, "install")
             # Queue the module itself
             if not self.modules_installed[module_id]:
                 self.modules_installed[module_id] = True
@@ -476,13 +494,14 @@ class DotfilesApp(App):
                 self.queued_actions = [a for a in self.queued_actions if a[1] != module_id]
                 if shouldAppend:
                     self.queued_actions.append((action, module_id))
-        elif action == "update":
+        elif action == "update" or action == "update-no-deps":
             # Recursively queue all dependencies for installation/update
-            for dependency_id in MODULES[module_id].DEPENDENCIES:
-                if self.modules_has_update[dependency_id]:
-                    self.queue_action(dependency_id, "update")
-                else:
-                    self.queue_action(dependency_id, "install")
+            if action == "update":
+                for dependency_id in MODULES[module_id].DEPENDENCIES:
+                    if self.modules_has_update[dependency_id]:
+                        self.queue_action(dependency_id, "update")
+                    else:
+                        self.queue_action(dependency_id, "install")
             # Queue the module itself
             if self.modules_has_update[module_id]:
                 self.modules_has_update[module_id] = False # Mark as up to date
@@ -498,7 +517,7 @@ class DotfilesApp(App):
                 for (a, id) in self.queued_actions:
                     if id != module_id:
                         continue
-                    if a == "install":
+                    if a == "install" or a == "install-no-deps":
                         # It is not installed, we dont need to remove it
                         shouldAppend = False
                     break
@@ -515,7 +534,7 @@ class DotfilesApp(App):
         # Update the config, as if the action was applied
         action = message.action
         id = message.module_id
-        if action in ["install", "update", "remove"]:
+        if action in ["install", "update", "remove", "install-no-deps", "update-no-deps"]:
             self.queue_action(id, action)
 
         # Update the UI to reflect the new config
@@ -535,3 +554,12 @@ class DotfilesApp(App):
         elif id == "quit":
             # Quit the application
             self.app.exit()
+        elif id == "advanced-mode":
+            # Toggle advanced mode
+            self.advanced = not self.advanced
+            # Update text of the button
+            button = self.get_widget_by_id("advanced-mode", expect_type=Button)
+            if self.advanced:
+                button.label = "Disable Advanced Mode"
+            else:
+                button.label = "Enable Advanced Mode"

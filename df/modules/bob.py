@@ -20,6 +20,12 @@ def dl_link(platform: str, arch: str) -> str:
     """
     return f"https://github.com/MordechaiHadad/bob/releases/latest/download/bob-{platform}-{arch}.zip"
 
+def subfolder_name(platform: str, arch: str) -> str:
+    """
+    Returns the name of the subfolder in the bob zip file for the given platform and architecture.
+    """
+    return f"bob-{platform}-{arch}"
+
 def is_compatible() -> Union[bool, str]:
     # We only support Linux with x86_64 and aarch64
     return platform.system() == "Linux" and platform.machine() in ["x86_64", "aarch64"]
@@ -30,13 +36,15 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         print("Downloading bob...")
         temp_dir = Path(temp_dir)
         download_path = temp_dir / "bob.zip"
-        link = dl_link(platform.system().lower(), platform.machine().lower())
+        pf = platform.system().lower()
+        arch = platform.machine().lower()
+        link = dl_link(pf, arch)
         df.download_file(link, download_path)
         print("Unzipping bob...")
         shutil.unpack_archive(download_path, temp_dir)
 
         print("Installing bob...")
-        bob_path = temp_dir / "bob"
+        bob_path = temp_dir / subfolder_name(pf, arch) / "bob"
         bob_path.chmod(0o755)
         # Copy bob to the bin folder (create folder if it doesn't exist)
         (Path.home() / ".local" / "bin").mkdir(parents=True, exist_ok=True)

@@ -36,8 +36,11 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         shutil.copy(download_path, font_path)
 
         print("Updating font cache...")
-        # Update the font cache
-        subprocess.run(["fc-cache", "-f"], stdout=stdout, stderr=stdout, stdin=subprocess.DEVNULL)
+        # Update the font cache if fc-cache is installed
+        try:
+            subprocess.run(["fc-cache", "-f"], stdout=stdout, stderr=stdout, stdin=subprocess.DEVNULL)
+        except FileNotFoundError:
+            print("fc-cache is not installed. Font cache was not updated.")
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     # Delete the font file

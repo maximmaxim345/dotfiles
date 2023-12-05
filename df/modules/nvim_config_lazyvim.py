@@ -7,11 +7,11 @@ import df
 import io
 from typing import Union, List
 
-ID: str = "nvim_config"
-NAME: str = "Neovim config"
-DESCRIPTION: str = "A config for neovim"
+ID: str = "nvim_config_lazyvim"
+NAME: str = "Neovim config based on lazyvim"
+DESCRIPTION: str = "A config for neovim based on lazyvim"
 DEPENDENCIES: List[str] = []
-CONFLICTING: List[str] = ["nvim_config_lazyvim"]
+CONFLICTING: List[str] = ["nvim_config"]
 
 
 def is_compatible() -> Union[bool, str]:
@@ -19,7 +19,7 @@ def is_compatible() -> Union[bool, str]:
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
-    source_path = df.DOTFILES_PATH / "nvim"
+    source_path = df.DOTFILES_PATH / "lazyvim"
     target_path = Path.home() / ".config" / "nvim"
 
     df.create_backup(target_path, config, "old_path")

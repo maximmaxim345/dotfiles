@@ -4,6 +4,7 @@ import platform
 import tempfile
 import shutil
 import subprocess
+import requests
 import io
 from pathlib import Path
 from typing import Union, List
@@ -14,11 +15,13 @@ DESCRIPTION: str = "Version Manager for NeoVim"
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 
+release_url = "https://github.com/MordechaiHadad/bob/releases/latest"
+
 def dl_link(platform: str, arch: str) -> str:
     """
     Returns the download link for the latest version of bob for the given platform and architecture.
     """
-    return f"https://github.com/MordechaiHadad/bob/releases/latest/download/bob-{platform}-{arch}.zip"
+    return f"{release_url}/download/bob-{platform}-{arch}.zip"
 
 def subfolder_name(platform: str, arch: str) -> str:
     """
@@ -54,6 +57,10 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         # Run bob install
         subprocess.run(["bob", "install", "stable"], stdout=stdout, stderr=stdout)
         subprocess.run(["bob", "use", "stable"], stdout=stdout, stderr=stdout)
+        # Save the installed version
+        latest_version = requests.get(release_url).url.split("/")[-1]
+        config.set("version", latest_version)
+
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     # Run bob erase
@@ -62,7 +69,8 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     (Path.home() / ".local" / "bin" / "bob").unlink(missing_ok=True)
 
 def has_update(config: ModuleConfig) -> Union[bool, str]:
-    return False
+    latest_version = requests.get(release_url).url.split("/")[-1]
+    return config.get("version") != latest_version
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
-    pass
+    install(config, stdout) # this will overwrite the old version

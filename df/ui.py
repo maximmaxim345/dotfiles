@@ -329,6 +329,7 @@ class DotfilesApp(App):
         self.modules_is_compatible = {}
 
         ids_with_config = self.Config.get_module_ids()
+        updates_to_check = []
         for module_id, module in MODULES.items():
             if module_id in ids_with_config:
                 module_config = self.Config.get_module(module_id)
@@ -336,7 +337,7 @@ class DotfilesApp(App):
                 self.modules_installed[module_id] = is_installed
                 self.modules_installed_version[module_id] = module_config.get_installed_version()
                 if is_installed and hasattr(module, "has_update"):
-                    self.modules_has_update[module_id] = module.has_update(module_config)
+                    updates_to_check.append(module_id)
                 else:
                     self.modules_has_update[module_id] = False
             else:
@@ -344,6 +345,23 @@ class DotfilesApp(App):
                 self.modules_installed_version[module_id] = None
                 self.modules_has_update[module_id] = False
             self.modules_is_compatible[module_id] = module.is_compatible()
+
+        # Check for updates
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = []
+            for module_id in updates_to_check:
+                module_config = self.Config.get_module(module_id)
+                module = MODULES[module_id]
+                future = executor.submit(module.has_update, module_config)
+                futures.append(future)
+
+            for future, module_id in zip(futures, updates_to_check):
+                try:
+                    self.modules_has_update[module_id] = future.result()
+                except Exception as e:
+                    self.modules_has_update[module_id] = False
+                    print(f"Error while checking for updates for {MODULES[module_id].NAME}: {e}")
 
     def compose(self) -> ComposeResult:
         yield Static("Dotfiles Manager", id="title")

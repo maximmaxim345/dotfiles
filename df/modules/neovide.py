@@ -4,6 +4,7 @@ import platform
 import tempfile
 import shutil
 import subprocess
+import requests
 import io
 from pathlib import Path
 from typing import Union, List
@@ -14,6 +15,8 @@ DESCRIPTION: str = "No Nonsense Neovim Client in Rust, with additional distrobox
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 
+release_url = "https://github.com/neovide/neovide/releases/latest"
+
 def is_compatible() -> Union[bool, str]:
     return platform.system() == "Linux" and platform.machine() in ["x86_64"]
 
@@ -23,7 +26,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         print("Downloading Neovide...")
         temp_dir = Path(temp_dir)
         download_path = temp_dir / "neovide.AppImage"
-        link = "https://github.com/neovide/neovide/releases/latest/download/neovide.AppImage"
+        link = f"{release_url}/download/neovide.AppImage"
         df.download_file(link, download_path)
         # print("Unzipping Neovide...")
         # shutil.unpack_archive(download_path, temp_dir)
@@ -59,9 +62,16 @@ MimeType=text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;tex
         with open(Path.home() / ".local" / "share" / "applications" / "neovide.desktop", "w") as f:
             f.write(desktop_file)
 
-        # Simlink the icon
-        (Path.home() / ".local" / "share" / "icons" / "hicolor" / "scalable" / "apps").mkdir(parents=True, exist_ok=True)
-        (Path.home() / ".local" / "share" / "icons" / "hicolor" / "scalable" / "apps" / "neovide.svg").symlink_to(Path.home() / ".local" / "lib" / "neovide" / "neovide.svg")
+        # Simlink the icon (delete first if it exists)
+        icon_path = Path.home() / ".local" / "share" / "icons" / "hicolor" / "scalable" / "apps"
+        icon_path.mkdir(parents=True, exist_ok=True)
+        icon_path = icon_path / "neovide.svg"
+        icon_src_path = Path.home() / ".local" / "lib" / "neovide" / "neovide.svg"
+        icon_path.unlink(missing_ok=True)
+        shutil.copyfile(icon_src_path, icon_path)
+        # Save the installed version
+        latest_version = requests.get(release_url).url.split("/")[-1]
+        config.set("version", latest_version)
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -74,7 +84,8 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     shutil.rmtree(Path.home() / ".local" / "lib" / "neovide", ignore_errors=True)
 
 def has_update(config: ModuleConfig) -> Union[bool, str]:
-    return False
+    latest_version = requests.get(release_url).url.split("/")[-1]
+    return config.get("version") != latest_version
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
-    pass
+    install(config, stdout) # this will overwrite the old version

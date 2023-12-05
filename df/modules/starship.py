@@ -2,6 +2,7 @@ from df.config import ModuleConfig
 import platform
 import tempfile
 import subprocess
+import requests
 import io
 from pathlib import Path
 import df
@@ -13,6 +14,7 @@ DESCRIPTION: str = "The minimal, blazing-fast, and infinitely customizable promp
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 
+release_url = "https://github.com/starship/starship/releases/latest"
 script_link = "https://starship.rs/install.sh"
 bin_dir = Path.home() / ".local" / "bin"
 
@@ -30,6 +32,9 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
         print("Installing Starship...")
         subprocess.run(["sh", script_path, "-b", bin_dir, "-y"], check=True, stdout=stdout, stderr=stdout, stdin=subprocess.DEVNULL)
+        # Save the (probably) installed version
+        latest_version = requests.get(release_url).url.split("/")[-1]
+        config.set("version", latest_version)
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -38,7 +43,8 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     starship_path.unlink(missing_ok=True)
 
 def has_update(config: ModuleConfig) -> Union[bool, str]:
-    return False
+    latest_version = requests.get(release_url).url.split("/")[-1]
+    return config.get("version") != latest_version
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
-    pass
+    install(config, stdout)

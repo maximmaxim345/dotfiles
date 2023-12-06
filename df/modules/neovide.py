@@ -15,6 +15,8 @@ DESCRIPTION: str = "No Nonsense Neovim Client in Rust, with additional distrobox
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 
+VERSION: str = "1.0.1"
+
 release_url = "https://github.com/neovide/neovide/releases/latest"
 
 def is_compatible() -> Union[bool, str]:

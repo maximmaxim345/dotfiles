@@ -212,8 +212,14 @@ class InstallationScreen(Screen):
                     await asyncio.to_thread(module.install, config, self.stdout)
                     # Mark the module as installed
                     config.set_installed(True)
+                    # save the installed version
+                    if hasattr(module, "VERSION"):
+                        config.set_installed_version(module.VERSION)
                 elif action == "update" or action == "update-no-deps":
                     await asyncio.to_thread(module.update, config, self.stdout)
+                    # save the installed version
+                    if hasattr(module, "VERSION"):
+                        config.set_installed_version(module.VERSION)
                 elif action == "remove":
                     await asyncio.to_thread(module.uninstall, config, self.stdout)
                     # Mark the module as not installed
@@ -362,6 +368,13 @@ class DotfilesApp(App):
                 except Exception as e:
                     self.modules_has_update[module_id] = False
                     print(f"Error while checking for updates for {MODULES[module_id].NAME}: {e}")
+
+        # Now add modules, which have a different (module) version than the installed version
+        for module_id, module in MODULES.items():
+            if self.modules_installed[module_id] and hasattr(module, "VERSION") and module.VERSION is not None:
+                if self.modules_installed_version[module_id] != module.VERSION:
+                    self.modules_has_update[module_id] = True
+
 
     def compose(self) -> ComposeResult:
         yield Static("Dotfiles Manager", id="title")

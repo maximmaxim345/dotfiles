@@ -33,6 +33,18 @@ function readRestartRequest() {
     fi
 }
 
+# If true, we are running inside a distrobox
+function isInsideContainer() {
+    # from distrobox-host-exec
+    [[ -f /run/.containerenv || -f /.dockerenv ]]
+}
+
+# If true, we have distrobox installed
+function hasDistrobox() {
+    # the executable distrobox is in path if we have distrobox installed (and are not inside one)
+    [[ -n $(which distrobox 2> /dev/null) ]]
+}
+
 # Launch neovide inside a distrobox, blocking until it exits
 # First argument is the distrobox name or HOST if we are launching from the host
 function launchNeovide() {
@@ -45,21 +57,13 @@ function launchNeovide() {
     fi
     # this is a hack to make sure that the neovide executable is in path, TODO: fix this
     export PATH=$PATH:$HOME/.local/bin:$HOME/.local/share/bob/nvim-bin
-    export NEOVIDE_RESTART_REQUEST_FILE=$restart_request
+    # only set if we are inside a distrobox
+    if hasDistrobox && ! isInsideContainer; then
+        export NEOVIDE_RESTART_REQUEST_FILE=$restart_request
+    fi
     $launchCommand ${@:2} --neovim-bin $(which nvim)
 }
 
-# If true, we are running inside a distrobox
-function isInsideContainer() {
-    # from distrobox-host-exec
-    [[ -f /run/.containerenv || -f /.dockerenv ]]
-}
-
-# If true, we have distrobox installed
-function hasDistrobox() {
-    # the executable distrobox is in path if we have distrobox installed (and are not inside one)
-    [[ -n $(which distrobox) ]]
-}
 
 # If we don't have distrobox or are already inside one, launch neovide directly
 if ! hasDistrobox || isInsideContainer; then
@@ -97,3 +101,4 @@ while true; do
         exit 0
     fi
 done
+

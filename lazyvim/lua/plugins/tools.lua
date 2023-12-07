@@ -18,7 +18,13 @@ return {
     cmd = { "Neogit" },
     dependencies = {
       "nvim-lua/plenary.nvim",
-      "sindrets/diffview.nvim",
+      {
+        "sindrets/diffview.nvim",
+        cmd = { "DiffviewOpen" },
+        keys = {
+          { "<leader>gd", "<cmd>DiffviewOpen<CR>", desc = "Open diffview" },
+        },
+      },
     },
     opts = {
       integrations = {

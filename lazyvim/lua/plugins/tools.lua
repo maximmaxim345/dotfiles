@@ -60,7 +60,7 @@ return {
         auto_enable = true,
       },
     },
-    lazy = false,
+    event = "VeryLazy",
     keys = {
       { "<leader>cC", "<cmd>CccPick<CR>", desc = "Open colorpicker (ccc)" },
     },

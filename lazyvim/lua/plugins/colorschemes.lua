@@ -1,4 +1,5 @@
 local p = {
+  { "ellisonleao/gruvbox.nvim" },
   {
     "marko-cerovac/material.nvim",
   },
@@ -28,9 +29,10 @@ local p = {
   { "catppuccin/nvim", name = "catppuccin" },
 }
 
--- disable lazy in all colorscheme plugins
+-- load all colorschemes
 for _, plugin in ipairs(p) do
-  plugin.lazy = false
+  -- plugin.lazy = false
+  plugin.event = "VeryLazy"
 end
 
 return p

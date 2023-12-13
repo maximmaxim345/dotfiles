@@ -1,5 +1,9 @@
 return {
   {
+    "folke/persistence.nvim",
+    disable = true,
+  },
+  {
     "jedrzejboczar/possession.nvim",
     dependencies = {
       "nvim-lua/plenary.nvim",
@@ -212,6 +216,14 @@ return {
         button.opts.hl = "AlphaButtons"
         button.opts.hl_shortcut = "AlphaShortcut"
         table.insert(dashboard.section.buttons.val, 2, button)
+      end
+
+      -- delete the "Restore Sessions Button"
+      for i, btn in ipairs(dashboard.section.buttons.val) do
+        if btn.val:match("Restore Session") then
+          -- remove it from the array
+          table.remove(dashboard.section.buttons.val, i)
+        end
       end
     end,
   },

@@ -1,19 +1,18 @@
-
 if [[ -d "/usr/local/bin" ]]; then
-    path+=("/usr/local/bin")
+    PATH="$PATH:/usr/local/bin"
 fi
 if [[ -d "$HOME/.local/bin" ]]; then
-    path+=("$HOME/.local/bin")
+    PATH="$HOME/.local/bin:$PATH"
 fi
 if [[ -d "$HOME/.cargo/bin" ]]; then
-    path+=("$HOME/.cargo/bin")
+    PATH="$HOME/.cargo/bin:$PATH"
 fi
 if [[ -f "$HOME/.cargo/env" ]]; then
     . "$HOME/.cargo/env"
 fi
 # Add nvim to path (with highest priority)
 if [[ -d "$HOME/.local/share/bob/nvim-bin" ]]; then
-    path=("$HOME/.local/share/bob/nvim-bin" $path)
+    PATH="$HOME/.local/share/bob/nvim-bin:$PATH"
 fi
 
 eval "$(starship init bash)"

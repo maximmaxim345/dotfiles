@@ -10,12 +10,13 @@ from pathlib import Path
 from typing import Union, List
 
 ID: str = "zellij"
-NAME: str = "Zelli"
+NAME: str = "Zellij"
 DESCRIPTION: str = "A terminal workspace with batteries included"
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 
 release_url = "https://github.com/zellij-org/zellij/releases/latest"
+
 
 def dl_link(platform: str, arch: str) -> str:
     """
@@ -37,7 +38,10 @@ def dl_link(platform: str, arch: str) -> str:
 
 def is_compatible() -> Union[bool, str]:
     # We only support Linux/Mac with x86_64 and aarch64
-    return platform.system() in ["Linux", "Darwin"] and platform.machine() in ["x86_64", "aarch64"]
+    return platform.system() in ["Linux", "Darwin"] and platform.machine() in [
+        "x86_64",
+        "aarch64",
+    ]
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

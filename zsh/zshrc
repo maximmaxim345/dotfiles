@@ -53,4 +53,13 @@ zinit light agkozak/zsh-z
 
 export ZSHZ_NO_RESOLVE_SYMLINKS=1
 export ZSHZ_CASE=smart
+zstyle ':autocomplete:*' delay 0.5
+setopt autocd
 
+HISTFILE=~/.zsh_history
+HISTSIZE=10000
+SAVEHIST=10000
+setopt appendhistory
+
+bindkey '\t' menu-select "$terminfo[kcbt]" menu-select
+bindkey -M menuselect '\t' menu-complete "$terminfo[kcbt]" reverse-menu-complete

@@ -1,89 +1,56 @@
-export ZSH="$HOME/.oh-my-zsh"
 
-# Uncomment the following line to use case-sensitive completion.
-# CASE_SENSITIVE="true"
+# Define directories to add to PATH
+directories=(
+    "/usr/local/bin"
+    "$HOME/.local/bin"
+    "$HOME/.cargo/bin"
+    "$HOME/.local/share/bob/nvim-bin" # Add nvim to path (with highest priority)
+)
 
-# Uncomment the following line to use hyphen-insensitive completion.
-# Case-sensitive completion must be off. _ and - will be interchangeable.
-HYPHEN_INSENSITIVE="true"
+# Add directories to PATH if they exist
+for dir in "${directories[@]}"; do
+    [[ -d "$dir" ]] && path=("$dir" $path)
+done
 
-# Uncomment the following line to disable bi-weekly auto-update checks.
-DISABLE_AUTO_UPDATE="true"
-
-# Uncomment the following line to automatically update without prompting.
-# DISABLE_UPDATE_PROMPT="true"
-
-# Uncomment the following line to change how often to auto-update (in days).
-# export UPDATE_ZSH_DAYS=13
-
-# Uncomment the following line if pasting URLs and other text is messed up.
-DISABLE_MAGIC_FUNCTIONS="true"
-
-# Uncomment the following line to disable colors in ls.
-# DISABLE_LS_COLORS="true"
-
-# Uncomment the following line to disable auto-setting terminal title.
-# DISABLE_AUTO_TITLE="true"
-
-# Uncomment the following line to enable command auto-correction.
-# ENABLE_CORRECTION="true"
-
-# Uncomment the following line to display red dots whilst waiting for completion.
-# Caution: this setting can cause issues with multiline prompts (zsh 5.7.1 and newer seem to work)
-# See https://github.com/ohmyzsh/ohmyzsh/issues/5765
-# COMPLETION_WAITING_DOTS="true"
-
-# Uncomment the following line if you want to disable marking untracked files
-# under VCS as dirty. This makes repository status check for large repositories
-# much, much faster.
-# DISABLE_UNTRACKED_FILES_DIRTY="true"
-
-# Uncomment the following line if you want to change the command execution time
-# stamp shown in the history command output.
-# You can set one of the optional three formats:
-# "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
-# or set a custom format using the strftime function format specifications,
-# see 'man strftime' for details.
-# HIST_STAMPS="mm/dd/yyyy"
-
-# Would you like to use another custom folder than $ZSH/custom?
-# ZSH_CUSTOM=/path/to/new-custom-folder
-
-# Which plugins would you like to load?
-# Standard plugins can be found in $ZSH/plugins/
-# Custom plugins may be added to $ZSH_CUSTOM/plugins/
-# Example format: plugins=(rails git textmate ruby lighthouse)
-# Add wisely, as too many plugins slow down shell startup.
-plugins=()
-
-if [[ -d "/usr/local/bin" ]]; then
-    path+=("/usr/local/bin")
-fi
-if [[ -d "$HOME/.local/bin" ]]; then
-    path+=("$HOME/.local/bin")
-fi
-if [[ -d "$HOME/.cargo/bin" ]]; then
-    path+=("$HOME/.cargo/bin")
-fi
-# Add nvim to path (with highest priority)
-if [[ -d "$HOME/.local/share/bob/nvim-bin" ]]; then
-    path=("$HOME/.local/share/bob/nvim-bin" $path)
-fi
-
-source $ZSH/oh-my-zsh.sh
 eval "$(starship init zsh)"
 
 export PATH
 export npm_config_prefix="$HOME/.local"
 export NEOVIDE_MULTIGRID=1
 
-[[ ! -f ~/.zshrc.local ]] || source ~/.zshrc.local
+# Source local zshrc if it exists
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 
 # Aliases
-
 alias de="distrobox-enter"
 alias d="distrobox"
 alias n="nvim"
 alias nv="neovide"
 
-# Functions
+# Zinit installation and setup
+if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
+    print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
+    command mkdir -p "$HOME/.local/share/zinit" && command chmod g-rwX "$HOME/.local/share/zinit"
+    command git clone https://github.com/zdharma-continuum/zinit "$HOME/.local/share/zinit/zinit.git" && \
+        print -P "%F{33} %F{34}Installation successful.%f%b" || \
+        print -P "%F{160} The clone has failed.%f%b"
+fi
+
+source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
+autoload -Uz _zinit
+(( ${+_comps} )) && _comps[zinit]=_zinit
+
+# Load plugins with zinit
+zinit light zsh-users/zsh-autosuggestions
+zinit light marlonrichert/zsh-autocomplete
+
+zinit ice wait lucid
+zinit light zsh-users/zsh-syntax-highlighting
+zinit ice wait lucid
+zinit light zsh-users/zsh-completions
+zinit ice wait lucid
+zinit light agkozak/zsh-z
+
+export ZSHZ_NO_RESOLVE_SYMLINKS=1
+export ZSHZ_CASE=smart
+

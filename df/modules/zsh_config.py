@@ -10,15 +10,17 @@ from typing import Union, List
 
 ID: str = "zsh_config"
 NAME: str = "Zsh Config"
-DESCRIPTION: str = "A simple zsh config using oh-my-zsh and starship"
-DEPENDENCIES: List[str] = ["oh_my_zsh", "starship_config"]
+DESCRIPTION: str = "A simple zsh config using zinit and starship"
+DEPENDENCIES: List[str] = ["starship_config"]
 CONFLICTING: List[str] = []
 
 target_path = Path.home() / ".zshrc"
 target_local_path = Path.home() / ".zshrc.local"
 
+
 def is_compatible() -> Union[bool, str]:
     return True
+
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     source_path = df.DOTFILES_PATH / "zsh/zshrc"
@@ -34,14 +36,19 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         print("Local zshrc config already exists, not overwriting")
         print(f"Look at {source_local_path} for an example")
 
+
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     df.restore_backup(target_path, config, "old_path")
     print("Keeping local zshrc config (~/.zshrc.local), you can delete it manually")
+    # We will leave the zinit directory for now
+
 
 # Optional functions for modules that can be updated
 
+
 def has_update(config: ModuleConfig) -> Union[bool, str]:
     return False
+
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     pass

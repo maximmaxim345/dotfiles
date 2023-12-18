@@ -1,3 +1,4 @@
+# ZSH Configuration
 
 # Define directories to add to PATH
 directories=(
@@ -12,8 +13,10 @@ for dir in "${directories[@]}"; do
     [[ -d "$dir" ]] && path=("$dir" $path)
 done
 
+# Initialize Starship, a cross-shell prompt
 eval "$(starship init zsh)"
 
+# Export environment variables
 export PATH
 export npm_config_prefix="$HOME/.local"
 export NEOVIDE_MULTIGRID=1
@@ -21,13 +24,13 @@ export NEOVIDE_MULTIGRID=1
 # Source local zshrc if it exists
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 
-# Aliases
+# Define aliases for common commands
 alias de="distrobox-enter"
 alias d="distrobox"
 alias n="nvim"
 alias nv="neovide"
 
-# Zinit installation and setup
+# Install and setup Zinit, a flexible ZSH plugin manager
 if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
     print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
     command mkdir -p "$HOME/.local/share/zinit" && command chmod g-rwX "$HOME/.local/share/zinit"
@@ -36,6 +39,7 @@ if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
         print -P "%F{160} The clone has failed.%f%b"
 fi
 
+# Source Zinit and load plugins
 source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
 autoload -Uz _zinit
 (( ${+_comps} )) && _comps[zinit]=_zinit
@@ -43,23 +47,33 @@ autoload -Uz _zinit
 # Load plugins with zinit
 zinit light zsh-users/zsh-autosuggestions
 zinit light marlonrichert/zsh-autocomplete
-
 zinit ice wait lucid
 zinit light zsh-users/zsh-syntax-highlighting
 zinit ice wait lucid
 zinit light zsh-users/zsh-completions
 zinit ice wait lucid
 zinit light agkozak/zsh-z
+zinit light zsh-users/zsh-history-substring-search
 
+# Configure autocomplete and syntax highlighting
+WORDCHARS='*?_-.[]~=&;!#$%^(){}<>' 
 export ZSHZ_NO_RESOLVE_SYMLINKS=1
 export ZSHZ_CASE=smart
 zstyle ':autocomplete:*' delay 0.5
 setopt autocd
 
+# Configure history
 HISTFILE=~/.zsh_history
 HISTSIZE=10000
 SAVEHIST=10000
 setopt appendhistory
 
+# Configure key bindings
 bindkey '\t' menu-select "$terminfo[kcbt]" menu-select
 bindkey -M menuselect '\t' menu-complete "$terminfo[kcbt]" reverse-menu-complete
+bindkey '^[[A' history-substring-search-up # or '\eOA'
+bindkey '^[[B' history-substring-search-down # or '\eOB'
+HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE=1
+bindkey '^H' backward-kill-word
+bindkey '^[[1;5C' forward-word
+bindkey '^[[1;5D' backward-word

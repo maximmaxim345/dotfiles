@@ -15,7 +15,7 @@ DESCRIPTION: str = "No Nonsense Neovim Client in Rust, with additional distrobox
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 
-VERSION: str = "1.0.1"
+VERSION: str = "1.0.2"
 
 release_url = "https://github.com/neovide/neovide/releases/latest"
 
@@ -50,11 +50,11 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         (Path.home() / ".local" / "bin" / "neovide").chmod(0o755)
 
 
-        # Copy the desktop file (with changed path, and multigrid flag)
+        # Copy the desktop file (with changed path flag)
         desktop_file = f"""
 [Desktop Entry]
 Type=Application
-Exec={Path.home() / ".local" / "bin" / "neovide"} --multigrid %F
+Exec={Path.home() / ".local" / "bin" / "neovide"} %F
 Icon=neovide
 Name=Neovide (nvim)
 Keywords=Text;Editor;

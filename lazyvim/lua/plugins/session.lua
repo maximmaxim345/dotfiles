@@ -1,3 +1,23 @@
+-- Note the current colorscheme when it changes.
+-- This will also keep the colorscheme varianet like material-deep-ocean instead of material.
+COLORSCHEME = {
+  current = nil,
+}
+
+function COLORSCHEME.autocommand()
+  COLORSCHEME.current = vim.fn.expand("<amatch>")
+end
+
+function COLORSCHEME.get_current()
+  if COLORSCHEME.current == nil then
+    return vim.g.colors_name
+  else
+    return COLORSCHEME.current
+  end
+end
+
+vim.cmd("autocmd ColorScheme * lua COLORSCHEME.autocommand()")
+
 return {
   {
     "folke/persistence.nvim",
@@ -110,7 +130,7 @@ return {
           before_save = function(name)
             local user_data = {}
             user_data.font_size = GUIFONT.font_size
-            user_data.theme = vim.g.colors_name
+            user_data.theme = COLORSCHEME.get_current()
             user_data.neovide = {
               fullscreen = vim.g.neovide_fullscreen,
             }

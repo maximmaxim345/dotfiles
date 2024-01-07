@@ -3,14 +3,14 @@
 
 has_nofork=false
 for arg in "$@"; do
-    if [[ $arg == "--nofork" ]]; then
+    if [[ $arg == "--no-fork" ]]; then
         has_nofork=true
     fi
 done
 
 if [[ $has_nofork == false ]]; then
     # Restart this script in the background
-    nohup $0 ${@:1} --nofork > /dev/null 2> /dev/null < /dev/null &
+    nohup $0 ${@:1} --no-fork > /dev/null 2> /dev/null < /dev/null &
     disown
     exit 0
 fi
@@ -52,8 +52,8 @@ function launchNeovide() {
     if [[ $1 != "HOST" ]]; then
         launchCommand="distrobox enter $1 -- $launchCommand"
     fi
-    if [[ $has_nofork == false ]]; then
-        launchCommand="$launchCommand --nofork"
+    if [[ $has_no_fork == false ]]; then
+        launchCommand="$launchCommand --no-fork"
     fi
     # this is a hack to make sure that the neovide executable is in path, TODO: fix this
     export PATH=$PATH:$HOME/.local/bin:$HOME/.local/share/bob/nvim-bin

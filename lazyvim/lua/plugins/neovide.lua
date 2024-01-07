@@ -5,14 +5,14 @@ end
 
 vim.api.nvim_set_keymap(
   "n",
-  "<Leader>u+",
-  ":lua require('theme').set_font_size(1)<CR>",
+  "<C-+>",
+  ":lua GUIFONT.set_font_size(1)<CR>",
   { noremap = true, silent = true, desc = "Increase Font size" }
 )
 vim.api.nvim_set_keymap(
   "n",
-  "<Leader>u-",
-  ":lua require('theme').set_font_size(-1)<CR>",
+  "<C-->",
+  ":lua GUIFONT.set_font_size(-1)<CR>",
   { noremap = true, silent = true, desc = "Decrease Font size" }
 )
 vim.api.nvim_set_keymap(

@@ -6,6 +6,10 @@ if restart_request ~= nil then
   -- read the file
   local file = io.open(restart_request, "r")
   DISTROBOX.current = file:read("*all")
+  -- trim
+  DISTROBOX.current = string.gsub(DISTROBOX.current, "^%s*(.-)%s*$", "%1")
+else
+  DISTROBOX.current = "HOST"
 end
 
 function DISTROBOX.launch_selector()
@@ -38,6 +42,15 @@ function DISTROBOX.launch_selector()
   picker:find()
 end
 
+function DISTROBOX.is_in_distrobox()
+  -- we will check this using the mechansim from distrobox-host-exec
+  -- [[ -f /run/.containerenv || -f /.dockerenv ]]
+  local containerenv_exists = vim.fn.filereadable("/run/.containerenv") ~= 0
+  local dockerenv_exists = vim.fn.filereadable("/.dockerenv") ~= 0
+
+  return containerenv_exists or dockerenv_exists
+end
+
 function DISTROBOX.get_launch_targets()
   -- distrobox-list --no-color gives this output:
   -- ID           | NAME                 | STATUS                         | IMAGE
@@ -47,6 +60,10 @@ function DISTROBOX.get_launch_targets()
   -- we only need the NAME column
   local targets = {}
   local cmd = "distrobox-list --no-color"
+  -- Run through the host if we are in a container
+  if DISTROBOX.is_in_distrobox() then
+    cmd = "distrobox-host-exec -- " .. cmd
+  end
   local handle = io.popen(cmd)
   local result = handle:read("*a")
   handle:close()
@@ -62,10 +79,12 @@ function DISTROBOX.get_launch_targets()
     ::continue::
   end
   -- add HOST (the host machine)
-  table.insert(targets, "HOST")
+  if DISTROBOX.is_in_distrobox() then
+    table.insert(targets, "HOST")
+  end
   -- remove the current one
-  for i, v in ipairs(targets) do
-    if v == DISTROBOX.current then
+  for i = #targets, 1, -1 do
+    if targets[i] == DISTROBOX.current then
       table.remove(targets, i)
       break
     end
@@ -97,10 +116,21 @@ return {
         local file = io.open(restart_request, "r")
         local current = file:read("*all")
 
-        local button = dashboard.button("d", "Open Distrobox selector", ":lua DISTROBOX.launch_selector()<CR>")
+        local text = "  Select Distrobox"
+        if DISTROBOX.current ~= nil then
+          text = text .. " (on " .. DISTROBOX.current .. ")"
+        end
+
+        local button = dashboard.button("d", text, ":lua DISTROBOX.launch_selector()<CR>")
         button.opts.hl = "AlphaButtons"
         button.opts.hl_shortcut = "AlphaShortcut"
-        table.insert(dashboard.section.buttons.val, 2, button)
+        local location = 0
+        -- Show as first item if we are not in a container
+        if DISTROBOX.is_in_distrobox() then
+          location = 1
+        end
+
+        table.insert(dashboard.section.buttons.val, location, button)
       end
     end,
   },

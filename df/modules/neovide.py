@@ -15,7 +15,7 @@ DESCRIPTION: str = "No Nonsense Neovim Client in Rust, with additional distrobox
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 
-VERSION: str = "1.0.2"
+VERSION: str = "1.0.3"
 
 release_url = "https://github.com/neovide/neovide/releases/latest"
 

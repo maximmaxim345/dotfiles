@@ -7,7 +7,7 @@ function GUIFONT.set_font_size(size, absolute)
   if absolute then
     GUIFONT.font_size = size
   else
-    GUIFONT.font_size = M.font_size + size
+    GUIFONT.font_size = GUIFONT.font_size + size
   end
   -- minimum font size
   if GUIFONT.font_size <= 3 then

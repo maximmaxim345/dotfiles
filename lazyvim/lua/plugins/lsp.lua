@@ -23,7 +23,7 @@ return {
       local types = require("cmp.types")
 
       -- Lower priority of snippets
-      local snippet_sorter = function(entry1, entry2)
+      local itemkind_sorter = function(entry1, entry2)
         local kind1 = entry1:get_kind()
         kind1 = kind1 == types.lsp.CompletionItemKind.Text and 100 or kind1
         local kind2 = entry2:get_kind()
@@ -35,14 +35,18 @@ return {
           if kind2 == types.lsp.CompletionItemKind.Snippet then
             return true
           end
-          local diff = kind1 - kind2
-          if diff < 0 then
-            return true
-          elseif diff > 0 then
-            return false
-          end
+          return kind1 > kind2
         end
       end
+      opts.sorting.comparators = {
+        cmp.config.compare.offset,
+        cmp.config.compare.exact,
+        cmp.config.compare.score,
+        itemkind_sorter,
+        cmp.config.compare.sort_text,
+        cmp.config.compare.length,
+        cmp.config.compare.order,
+      }
 
       opts.preselect = cmp.PreselectMode.None
       opts.completion.completeopt = "noselect"

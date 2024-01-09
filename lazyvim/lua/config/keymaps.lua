@@ -4,6 +4,7 @@
 
 vim.keymap.set("i", "jk", "<Esc>")
 vim.keymap.set("i", "<C-BS>", "<C-W>")
+vim.keymap.set("i", "<C-H>", "<C-W>")
 vim.keymap.set("i", "<S-Tab>", "<C-d>")
 
 local wk = require("which-key")

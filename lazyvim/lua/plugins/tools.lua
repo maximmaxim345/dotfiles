@@ -71,4 +71,9 @@ return {
       { "<leader>cC", "<cmd>CccPick<CR>", desc = "Open colorpicker (ccc)" },
     },
   },
+  {
+    "tpope/vim-fugitive",
+    lazy = true,
+    cmd = { "G", "Git", "Gdiffsplit", "Gwrite", "Gread", "Ggrep", "GMove", "GDelete", "GBrowse" },
+  },
 }

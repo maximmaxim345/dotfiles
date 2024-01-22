@@ -27,6 +27,13 @@ local p = {
     "maxmx03/fluoromachine.nvim",
   },
   { "catppuccin/nvim", name = "catppuccin" },
+  { "Abstract-IDE/Abstract-cs" },
+  { "rafamadriz/neon" },
+  { "kyazdani42/blue-moon" },
+  { "Tsuzat/NeoSolarized.nvim" },
+  { "EdenEast/nightfox.nvim" },
+  { "Mofiqul/adwaita.nvim" },
+  { "xero/miasma.nvim" },
 }
 
 -- load all colorschemes

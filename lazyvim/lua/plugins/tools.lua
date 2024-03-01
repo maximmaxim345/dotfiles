@@ -76,4 +76,14 @@ return {
     lazy = true,
     cmd = { "G", "Git", "Gdiffsplit", "Gwrite", "Gread", "Ggrep", "GMove", "GDelete", "GBrowse" },
   },
+  {
+    "LunarVim/bigfile.nvim",
+    opts = {},
+  },
+  {
+    "zeioth/garbage-day.nvim",
+    dependencies = "neovim/nvim-lspconfig",
+    event = "VeryLazy",
+    opts = {},
+  },
 }

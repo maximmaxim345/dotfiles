@@ -1,3 +1,15 @@
+local Util = require("lazyvim.util")
+local function overrideKeys(keys, override)
+  for i, key in ipairs(keys) do
+    for _, over in ipairs(override) do
+      if key[1] == over[1] then
+        keys[i] = over
+        break
+      end
+    end
+  end
+end
+
 return {
   {
     "s1n7ax/nvim-window-picker",
@@ -22,7 +34,6 @@ return {
     "nvim-neo-tree/neo-tree.nvim",
     optional = true,
     keys = function(_, keys)
-      local Util = require("lazyvim.util")
       local override = {
         {
           "<leader>fE",
@@ -41,14 +52,7 @@ return {
         { "<leader>e", "<leader>fe", desc = "Explorer NeoTree (root dir)", remap = true },
         { "<leader>E", "<leader>fE", desc = "Explorer NeoTree (cwd)", remap = true },
       }
-      for i, key in ipairs(keys) do
-        for _, over in ipairs(override) do
-          if key[1] == over[1] then
-            keys[i] = over
-            break
-          end
-        end
-      end
+      overrideKeys(keys, override)
     end,
     opts = function(_, opts)
       opts.window.mappings["-"] = "split_with_window_picker"
@@ -67,6 +71,18 @@ return {
           end,
         },
       })
+    end,
+  },
+  {
+    -- Should probably be moved from neo-tree.lua in future (mabybe with part of neo-tree inside keys.lua or so)
+    "nvim-telescope/telescope.nvim",
+    keys = function(_, keys)
+      local override = {
+        { "<leader><space>", Util.telescope("files"), desc = "Find Files (cwd)" },
+        { "<leader>fF", Util.telescope("files"), desc = "Find Files (cwd)" },
+        { "<leader>ff", Util.telescope("files", { cwd = false }), desc = "Find Files (root dir)" },
+      }
+      overrideKeys(keys, override)
     end,
   },
 }

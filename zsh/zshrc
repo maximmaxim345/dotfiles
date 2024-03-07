@@ -29,6 +29,7 @@ alias de="distrobox-enter"
 alias d="distrobox"
 alias n="nvim"
 alias nv="neovide"
+alias lg="lazygit"
 
 # Install and setup Zinit, a flexible ZSH plugin manager
 if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
@@ -59,7 +60,7 @@ zinit light zsh-users/zsh-history-substring-search
 WORDCHARS='*?_-.[]~=&;!#$%^(){}<>' 
 export ZSHZ_NO_RESOLVE_SYMLINKS=1
 export ZSHZ_CASE=smart
-zstyle ':autocomplete:*' delay 0.5
+zstyle ':autocomplete:*' delay 0
 setopt autocd
 
 # Configure history

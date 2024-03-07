@@ -82,8 +82,33 @@ return {
   },
   {
     "zeioth/garbage-day.nvim",
+    enabled = false,
     dependencies = "neovim/nvim-lspconfig",
     event = "VeryLazy",
     opts = {},
+  },
+  {
+    "huggingface/llm.nvim",
+    enabled = false,
+    opts = {
+      tokens_to_clear = { "<|endoftext|>" },
+      debounce_ms = 1000,
+      fim = {
+        enabled = true,
+        prefix = "<fim_prefix>",
+        middle = "<fim_middle>",
+        suffix = "<fim_suffix>",
+      },
+      backend = "ollama",
+      url = "http://localhost:11434/api/generate",
+      model = "starcoder2:3b",
+      context_window = 4000, -- 8192,
+      tokenizer = {
+        repository = "bigcode/starcoder",
+      },
+      enable_suggestions_on_startup = false,
+      accept_keymap = "<M-i>",
+      dismiss_keymap = "<M-o>",
+    },
   },
 }

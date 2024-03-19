@@ -46,15 +46,13 @@ autoload -Uz _zinit
 (( ${+_comps} )) && _comps[zinit]=_zinit
 
 # Load plugins with zinit
-zinit light zsh-users/zsh-autosuggestions
-zinit light marlonrichert/zsh-autocomplete
-zinit ice wait lucid
-zinit light zsh-users/zsh-syntax-highlighting
-zinit ice wait lucid
-zinit light zsh-users/zsh-completions
-zinit ice wait lucid
-zinit light agkozak/zsh-z
-zinit light zsh-users/zsh-history-substring-search
+zinit light-mode for \
+    zsh-users/zsh-autosuggestions \
+    marlonrichert/zsh-autocomplete \
+    zsh-users/zsh-syntax-highlighting \
+    zsh-users/zsh-completions \
+    agkozak/zsh-z \
+    zsh-users/zsh-history-substring-search
 
 # Configure autocomplete and syntax highlighting
 WORDCHARS='*?_-.[]~=&;!#$%^(){}<>' 
@@ -69,12 +67,20 @@ HISTSIZE=10000
 SAVEHIST=10000
 setopt appendhistory
 
+# Prefer case sensitive completion
+bindkey '\t' menu-select
+bindkey -M menuselect '^[[Z' reverse-menu-complete
+zstyle ':completion:*' accept-exact '*(N)'
+zstyle ':completion:*' matcher-list '' 'm:{a-zA-Z}={A-Za-z}'
+zstyle ':completion:*' case-sensitive true
+
+# Hide duplicates in history
+HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE=1
+setopt HIST_IGNORE_ALL_DUPS
+
 # Configure key bindings
-bindkey '\t' menu-select "$terminfo[kcbt]" menu-select
-bindkey -M menuselect '\t' menu-complete "$terminfo[kcbt]" reverse-menu-complete
 bindkey '^[[A' history-substring-search-up # or '\eOA'
 bindkey '^[[B' history-substring-search-down # or '\eOB'
-HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE=1
 bindkey '^H' backward-kill-word
 bindkey '^[[1;5C' forward-word
 bindkey '^[[1;5D' backward-word

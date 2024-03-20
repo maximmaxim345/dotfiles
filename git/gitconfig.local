@@ -3,9 +3,14 @@
 [user]
 	email = EMAIL
 	name = NAME
-	signinkey = KEY
+	signingkey = /home/.../.ssh/id_ed25519.pub
+[gpg]
+	format = ssh
 [credential]
 	helper = GIT_CREDENTIAL_HELPER
 ## true on windows, input on unix
 #[core]
 #	autocrlf = input
+# Use the following section to include a .gitconfig file in a specific directory
+#[includeIf "gitdir:~/..."]
+# path = ~/.../.gitconfig

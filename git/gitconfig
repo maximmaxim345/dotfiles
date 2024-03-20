@@ -9,3 +9,11 @@
 	defaultBranch = main
 [include]
 	path = ~/.gitconfig.local
+[rerere]
+	enabled = true
+[core]
+	untrackedCache = true
+[branch]
+	sort = -committerdate
+[commit]
+	gpgsign = true

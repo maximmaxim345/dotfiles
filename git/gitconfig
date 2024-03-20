@@ -15,5 +15,5 @@
 	untrackedCache = true
 [branch]
 	sort = -committerdate
-[commit]
-	gpgsign = true
+; [commit]
+; 	gpgsign = true

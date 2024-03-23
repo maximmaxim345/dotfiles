@@ -11,8 +11,8 @@ local wk = require("which-key")
 
 wk.register({
   -- Buffer management
-  ["<tab>"] = { "<cmd>BufferLineCycleNext<cr>", "Next buffer" },
-  ["<s-tab>"] = { "<cmd>BufferLineCyclePrev<cr>", "Previous buffer" },
+  -- ["<tab>"] = { "<cmd>BufferLineCycleNext<cr>", "Next buffer" },
+  -- ["<s-tab>"] = { "<cmd>BufferLineCyclePrev<cr>", "Previous buffer" },
   ["<c-q>"] = { "<leader>bd", "Close buffer", noremap = false },
   ["<leader>"] = {
     cc = {
@@ -36,6 +36,8 @@ wk.register({
 }, {
   mode = "n",
 })
+
+vim.api.nvim_set_keymap("x", "<leader>p", '"_dP', { noremap = true, silent = true })
 
 -- wk.register({
 --   -- Copilot

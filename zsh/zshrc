@@ -79,6 +79,17 @@ HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE=1
 setopt HIST_IGNORE_ALL_DUPS
 
 # Configure key bindings
+() {
+   local -a prefix=( '\e'{\[,O} )
+   local -a up=( ${^prefix}A ) down=( ${^prefix}B )
+   local key=
+   for key in $up[@]; do
+      bindkey "$key" up-line-or-history
+   done
+   for key in $down[@]; do
+      bindkey "$key" down-line-or-history
+   done
+}
 bindkey '^[[A' history-substring-search-up # or '\eOA'
 bindkey '^[[B' history-substring-search-down # or '\eOB'
 bindkey '^H' backward-kill-word

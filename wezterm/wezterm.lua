@@ -1,5 +1,6 @@
 -- Pull in the wezterm API
 local wezterm = require("wezterm")
+local act = wezterm.action
 
 -- This table will hold the configuration.
 local config = {}
@@ -68,7 +69,7 @@ else
 end
 
 config.use_dead_keys = false
-config.use_fancy_tab_bar = true
+config.use_fancy_tab_bar = false
 
 local function scheme_for_appearance(appearance)
 	if appearance:find("Dark") then

@@ -7,5 +7,5 @@ layout {
       plugin location="zellij:status-bar"
     }
   }
-  pane borderless=true
+  pane borderless=false
 }

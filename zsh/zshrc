@@ -14,7 +14,14 @@ for dir in "${directories[@]}"; do
 done
 
 # Initialize Starship, a cross-shell prompt
-eval "$(starship init zsh)"
+if command -v starship &> /dev/null; then
+    eval "$(starship init zsh)"
+fi
+
+# Add brew to path
+if [[ -x "/home/linuxbrew/.linuxbrew/bin/brew" ]]; then
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+fi
 
 # Export environment variables
 export PATH

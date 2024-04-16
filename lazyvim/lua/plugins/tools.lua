@@ -111,4 +111,26 @@ return {
       dismiss_keymap = "<M-o>",
     },
   },
+  {
+    "folke/flash.nvim",
+    keys = {
+      {
+        "/",
+        mode = { "n", "x", "v" },
+        function()
+          require("flash").jump()
+        end,
+        desc = "Flash Jump",
+      },
+      {
+        "?",
+        mode = { "n", "x", "v" },
+        function()
+          require("flash").toggle(false)
+          vim.api.nvim_feedkeys("?", "n", true)
+        end,
+        desc = "Normal backward search",
+      },
+    },
+  },
 }

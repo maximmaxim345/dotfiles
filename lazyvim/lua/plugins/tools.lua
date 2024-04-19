@@ -118,7 +118,8 @@ return {
         "/",
         mode = { "n", "x", "v" },
         function()
-          require("flash").jump()
+          require("flash").toggle(true)
+          vim.api.nvim_feedkeys("/", "n", true)
         end,
         desc = "Flash Jump",
       },

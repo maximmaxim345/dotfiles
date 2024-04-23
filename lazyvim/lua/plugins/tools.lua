@@ -94,19 +94,19 @@ return {
         "/",
         mode = { "n", "x", "v" },
         function()
-          require("flash").toggle(true)
+          require("flash").toggle(false)
           vim.api.nvim_feedkeys("/", "n", true)
         end,
-        desc = "Flash Jump",
+        desc = "Search",
       },
       {
         "?",
         mode = { "n", "x", "v" },
         function()
-          require("flash").toggle(false)
+          require("flash").toggle(true)
           vim.api.nvim_feedkeys("?", "n", true)
         end,
-        desc = "Normal backward search",
+        desc = "Backward search (flash)",
       },
     },
   },

@@ -59,18 +59,18 @@ return {
       { "<leader>cD", "<cmd>Neogen<CR>", desc = "Generate documentation" },
     },
   },
-  {
-    "uga-rosa/ccc.nvim",
-    opts = {
-      highlighter = {
-        auto_enable = true,
-      },
-    },
-    event = "VeryLazy",
-    keys = {
-      { "<leader>cC", "<cmd>CccPick<CR>", desc = "Open colorpicker (ccc)" },
-    },
-  },
+  -- {
+  --   "uga-rosa/ccc.nvim",
+  --   opts = {
+  --     highlighter = {
+  --       auto_enable = true,
+  --     },
+  --   },
+  --   event = "VeryLazy",
+  --   keys = {
+  --     { "<leader>cC", "<cmd>CccPick<CR>", desc = "Open colorpicker (ccc)" },
+  --   },
+  -- },
   {
     "tpope/vim-fugitive",
     lazy = true,
@@ -86,30 +86,6 @@ return {
     dependencies = "neovim/nvim-lspconfig",
     event = "VeryLazy",
     opts = {},
-  },
-  {
-    "huggingface/llm.nvim",
-    enabled = false,
-    opts = {
-      tokens_to_clear = { "<|endoftext|>" },
-      debounce_ms = 1000,
-      fim = {
-        enabled = true,
-        prefix = "<fim_prefix>",
-        middle = "<fim_middle>",
-        suffix = "<fim_suffix>",
-      },
-      backend = "ollama",
-      url = "http://localhost:11434/api/generate",
-      model = "starcoder2:3b",
-      context_window = 4000, -- 8192,
-      tokenizer = {
-        repository = "bigcode/starcoder",
-      },
-      enable_suggestions_on_startup = false,
-      accept_keymap = "<M-i>",
-      dismiss_keymap = "<M-o>",
-    },
   },
   {
     "folke/flash.nvim",
@@ -133,5 +109,11 @@ return {
         desc = "Normal backward search",
       },
     },
+  },
+  {
+    "zbirenbaum/copilot.lua",
+    init = function()
+      vim.cmd("Copilot disable")
+    end,
   },
 }

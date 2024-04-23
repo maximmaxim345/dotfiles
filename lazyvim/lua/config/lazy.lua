@@ -7,11 +7,11 @@ end
 vim.opt.rtp:prepend(vim.env.LAZY or lazypath)
 
 -- Maybe fix neovim crash on exit
-vim.api.nvim_create_autocmd({ "VimLeave" }, {
-  callback = function()
-    vim.cmd("sleep 100m")
-  end,
-})
+-- vim.api.nvim_create_autocmd({ "VimLeave" }, {
+--   callback = function()
+--     vim.cmd("sleep 100m")
+--   end,
+-- })
 
 require("lazy").setup({
   spec = {

@@ -1,36 +1,36 @@
 return {
-  {
-    "karb94/neoscroll.nvim",
-    config = function()
-      require("neoscroll").setup({
-        mappings = { "<C-y>", "<C-e>", "zt", "zz", "zb" },
-        hide_cursor = true,
-        stop_eof = true,
-        respect_scrolloff = false,
-        cursor_scrolls_alone = true,
-        easing_function = "quadratic",
-        performance_mode = false,
-        time = 100,
-      })
-      local t = {}
-      t["<C-u>"] = { "scroll", { "-vim.wo.scroll", "true", "150" } }
-      t["<C-d>"] = { "scroll", { "vim.wo.scroll", "true", "150" } }
-      require("neoscroll.config").set_mappings(t)
-    end,
-    cond = not vim.g.neovide, -- neovide has its own scrolling
-    lazy = false,
-    keys = {
-      { "<leader>uNp", "<cmd>NeoscrollEnableGlobalPM<CR>", desc = "Enable performance mode" },
-      { "<leader>uNP", "<cmd>NeoscrollDisableGlobalPM<CR>", desc = "Disable performance mode" },
-    },
-  },
+  -- {
+  --   "karb94/neoscroll.nvim",
+  --   config = function()
+  --     require("neoscroll").setup({
+  --       mappings = { "<C-y>", "<C-e>", "zt", "zz", "zb" },
+  --       hide_cursor = true,
+  --       stop_eof = true,
+  --       respect_scrolloff = false,
+  --       cursor_scrolls_alone = true,
+  --       easing_function = "quadratic",
+  --       performance_mode = false,
+  --       time = 100,
+  --     })
+  --     local t = {}
+  --     t["<C-u>"] = { "scroll", { "-vim.wo.scroll", "true", "150" } }
+  --     t["<C-d>"] = { "scroll", { "vim.wo.scroll", "true", "150" } }
+  --     require("neoscroll.config").set_mappings(t)
+  --   end,
+  --   cond = not vim.g.neovide, -- neovide has its own scrolling
+  --   lazy = false,
+  --   keys = {
+  --     { "<leader>uNp", "<cmd>NeoscrollEnableGlobalPM<CR>", desc = "Enable performance mode" },
+  --     { "<leader>uNP", "<cmd>NeoscrollDisableGlobalPM<CR>", desc = "Disable performance mode" },
+  --   },
+  -- },
   {
     "anuvyklack/windows.nvim",
     dependencies = {
       "anuvyklack/middleclass",
       {
         "anuvyklack/animation.nvim",
-        enabled = not vim.g.neovide,
+        enabled = false, -- not vim.g.neovide,
       },
     },
     config = function()
@@ -118,17 +118,17 @@ return {
       { "<C-w><C-w>", "<cmd>WinShift<CR>", desc = "Move buffer" },
     },
   },
-  {
-    "shortcuts/no-neck-pain.nvim",
-    config = function()
-      require("no-neck-pain").setup({
-        width = 200,
-      })
-    end,
-    keys = {
-      { "<leader>bn", "<cmd>NoNeckPain<CR>", desc = "Toggle no-neck-pain" },
-    },
-  },
+  -- {
+  --   "shortcuts/no-neck-pain.nvim",
+  --   config = function()
+  --     require("no-neck-pain").setup({
+  --       width = 200,
+  --     })
+  --   end,
+  --   keys = {
+  --     { "<leader>bn", "<cmd>NoNeckPain<CR>", desc = "Toggle no-neck-pain" },
+  --   },
+  -- },
   {
     "folke/edgy.nvim",
     optional = true,

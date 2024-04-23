@@ -82,7 +82,7 @@ return {
   },
   {
     "zeioth/garbage-day.nvim",
-    enabled = false,
+    enabled = true,
     dependencies = "neovim/nvim-lspconfig",
     event = "VeryLazy",
     opts = {},
@@ -112,8 +112,12 @@ return {
   },
   {
     "zbirenbaum/copilot.lua",
+    optional = true,
     init = function()
-      vim.cmd("Copilot disable")
+      -- Only run if node is in the path
+      if vim.fn.executable("node") == 1 then
+        vim.cmd("Copilot disable")
+      end
     end,
   },
 }

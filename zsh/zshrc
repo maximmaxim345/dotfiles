@@ -52,14 +52,26 @@ source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
 autoload -Uz _zinit
 (( ${+_comps} )) && _comps[zinit]=_zinit
 
+# Configure Zinit to automatically recompile plugins when needed
+zinit ice lucid wait='0' atinit='zi creinstall -q'
+
 # Load plugins with zinit
 zinit light-mode for \
     zsh-users/zsh-autosuggestions \
     marlonrichert/zsh-autocomplete \
     zsh-users/zsh-syntax-highlighting \
     zsh-users/zsh-completions \
-    agkozak/zsh-z \
     zsh-users/zsh-history-substring-search
+
+# Check if zoxide is installed
+if command -v zoxide &> /dev/null; then
+    # Initialize zoxide
+    eval "$(zoxide init zsh)"
+else
+    # Load zsh-z plugin if zoxide is not installed
+    zinit light-mode for \
+        agkozak/zsh-z
+fi
 
 # Configure autocomplete and syntax highlighting
 WORDCHARS='*?_-.[]~=&;!#$%^(){}<>' 

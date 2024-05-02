@@ -8,8 +8,8 @@ import io
 from typing import Union, List
 
 ID: str = "nvim_config"
-NAME: str = "Neovim config"
-DESCRIPTION: str = "A config for neovim"
+NAME: str = "(old) Neovim config"
+DESCRIPTION: str = "A config for neovim, use the Lazyvim based config instead"
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = ["nvim_config_lazyvim"]
 

@@ -1,8 +1,5 @@
--- Exit if not in neovide
-if vim.g.neovide == nil then
-  return {}
-end
-
+-- It is not generally possible to detect if we run in a gui or not,
+-- therefore we always bind the keys for font size changes
 vim.api.nvim_set_keymap(
   "n",
   "<C-+>",
@@ -15,6 +12,12 @@ vim.api.nvim_set_keymap(
   ":lua GUIFONT.set_font_size(-1)<CR>",
   { noremap = true, silent = true, desc = "Decrease Font size" }
 )
+
+-- Exit if not in neovide
+if vim.g.neovide == nil then
+  return {}
+end
+
 vim.api.nvim_set_keymap(
   "n",
   "<F11>",

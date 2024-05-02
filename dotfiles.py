@@ -64,6 +64,8 @@ def restart_with_venv() -> None:
     venv_python = os.path.join(venv_dir, 'bin', 'python')
     # set the VIRTUAL_ENV environment variable to the venv directory
     os.environ['VIRTUAL_ENV'] = venv_dir
+    # Backup original sys.executable
+    os.environ['DF_ORIGINAL_EXECUTABLE'] = sys.executable
     os.execl(venv_python, venv_python, *sys.argv)
 
 # Relaunch this script in the venv if needed
@@ -78,13 +80,24 @@ if __name__ == '__main__':
 try:
     import textual
 except ImportError:
-    print("The venv is not working, trying to delete it, please run the script again")
+    # The venv was manually specified by the user, just give an error
+    if not os.environ.get("DF_ORIGINAL_EXECUTABLE"):
+        print("The venv is not working, try to run the script without specifying the venv, or fix the venv")
+        exit(1)
+    print("The venv is not working, trying to recreate it")
     venv_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),".venv")
     print("Deleting {}".format(venv_path))
     import shutil
     shutil.rmtree(venv_path, ignore_errors=True)
-    print("If the problem persists, please report")
-    exit(1)
+
+    if not os.environ.get("DF_VENV_RETRY"):
+        os.environ["DF_VENV_RETRY"] = "1" # Avoid infinite loop
+        # Use the original executable to restart the script
+        del os.environ["VIRTUAL_ENV"]
+        os.execl(os.environ['DF_ORIGINAL_EXECUTABLE'], os.environ['DF_ORIGINAL_EXECUTABLE'], *sys.argv)
+    else:
+        print("The venv is not working, please report this issue")
+        exit(1)
 
 if os.environ.get("TEXTUAL"):
     # The app is launched with textual devtools

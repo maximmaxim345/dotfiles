@@ -19,7 +19,7 @@ target_local_path = Path.home() / ".zshrc.local"
 
 
 def is_compatible() -> Union[bool, str]:
-    return True
+    return platform.system() in ["Linux", "Darwin"]
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

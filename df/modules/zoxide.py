@@ -38,7 +38,7 @@ def is_compatible() -> Union[bool, str]:
         "aarch64",
     ]
 
-
+# TODO: We could also support Windows here
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     latest_version = requests.get(release_url).url.split("/")[-1].lstrip("v")
     with tempfile.TemporaryDirectory() as temp_dir:

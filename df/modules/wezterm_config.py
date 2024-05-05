@@ -13,7 +13,7 @@ CONFLICTING: List[str] = []
 
 
 def is_compatible() -> Union[bool, str]:
-    return True
+    return platform.system() in ["Linux", "Darwin", "Windows"]
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

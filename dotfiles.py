@@ -40,6 +40,9 @@ def create_venv_if_needed() -> None:
     venv_dir = os.path.join(os.path.dirname(
         os.path.realpath(__file__)), '.venv')
     venv_pip = os.path.join(venv_dir, 'bin', 'pip')
+    if sys.platform == 'win32':
+        # On windows it's in a different location
+        venv_pip = os.path.join(venv_dir, 'Scripts', 'pip.exe')
     requirements = os.path.join(os.path.dirname(
         os.path.realpath(__file__)), 'requirements.txt')
 
@@ -54,6 +57,8 @@ def create_venv_if_needed() -> None:
         os.utime(venv_dir, None)
 
 
+import subprocess
+
 def restart_with_venv() -> None:
     """
     Update the current process to run in the venv created by
@@ -62,11 +67,14 @@ def restart_with_venv() -> None:
     venv_dir = os.path.join(os.path.dirname(
         os.path.realpath(__file__)), '.venv')
     venv_python = os.path.join(venv_dir, 'bin', 'python')
+    if sys.platform == 'win32':
+        # On windows it's in a different location
+        venv_python = os.path.join(venv_dir, 'Scripts', 'python.exe')
     # set the VIRTUAL_ENV environment variable to the venv directory
     os.environ['VIRTUAL_ENV'] = venv_dir
     # Backup original sys.executable
     os.environ['DF_ORIGINAL_EXECUTABLE'] = sys.executable
-    os.execl(venv_python, venv_python, *sys.argv)
+    subprocess.run([venv_python] + sys.argv, check=True)
 
 # Relaunch this script in the venv if needed
 

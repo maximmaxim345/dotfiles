@@ -16,10 +16,13 @@ CONFLICTING: List[str] = []
 
 dl_link = "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/FiraCode/Medium/FiraCodeNerdFont-Medium.ttf"
 font_name = "Fira Code Medium Nerd Font Complete.ttf"
-fonts_folder = Path.home() / ".local/share/fonts/"
+if platform.system() == "Windows":
+    fonts_folder = Path.home() / "AppData/Local/Microsoft/Windows/Fonts"
+else:
+    fonts_folder = Path.home() / ".local/share/fonts/"
 
 def is_compatible() -> Union[bool, str]:
-    return platform.system() == "Linux"
+    return platform.system() == "Linux" or platform.system() == "Windows"
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     # Download the font
@@ -35,12 +38,13 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         font_path.unlink(missing_ok=True)
         shutil.copy(download_path, font_path)
 
-        print("Updating font cache...")
-        # Update the font cache if fc-cache is installed
-        try:
-            subprocess.run(["fc-cache", "-f"], stdout=stdout, stderr=stdout, stdin=subprocess.DEVNULL)
-        except FileNotFoundError:
-            print("fc-cache is not installed. Font cache was not updated.")
+        if platform.system() == "Linux":
+            # Update the font cache if fc-cache is installed
+            print("Updating font cache...")
+            try:
+                subprocess.run(["fc-cache", "-f"], stdout=stdout, stderr=stdout, stdin=subprocess.DEVNULL)
+            except FileNotFoundError:
+                print("fc-cache is not installed. Font cache was not updated.")
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     # Delete the font file

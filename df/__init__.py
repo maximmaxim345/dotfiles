@@ -8,6 +8,7 @@ from df.config import ModuleConfig
 from pathlib import Path
 import shutil
 import requests
+import subprocess
 
 DOTFILES_DIR: str # The directory where the dotfiles are stored, can be used by modules
 DOTFILES_PATH: Path # The path to the dotfiles directory
@@ -85,9 +86,12 @@ def move_path(source: Path, target: Path) -> None:
 def symlink_path(source: Path, target: Path) -> None:
     """Symlink the source path to the target path"""
     # Use pathlib symlink, ensure parent exists
-    # TODO: Windows support
     ensure_parent_exists(target)
-    target.symlink_to(source)
+    # On windows we can use mklink for directories without the need for higher permissions
+    if os.name == 'nt' and source.is_dir():
+        subprocess.check_call('mklink /J "%s" "%s"' % (target, source), shell=True)
+    else:  # Unix/Linux
+        target.symlink_to(source)
 
 def create_backup(path: Path, config: ModuleConfig, key: str) -> None:
     """Create a backup of the given path if needed

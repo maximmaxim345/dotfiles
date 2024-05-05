@@ -21,6 +21,8 @@ bin_dir = Path.home() / ".local" / "bin"
 def is_compatible() -> Union[bool, str]:
     return platform.system() in ["Linux", "Darwin"]
 
+# TODO: We could instead of running the script, manually download the binary. This would allow us to support Windows
+
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_dir = Path(temp_dir)

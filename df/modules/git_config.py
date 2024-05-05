@@ -18,7 +18,8 @@ target_path = Path.home() / ".gitconfig"
 target_local_path = Path.home() / ".gitconfig.local"
 
 def is_compatible() -> Union[bool, str]:
-    return True
+    # TODO: Add Windows support, symlinking the file won't work without admin permissions (or dev mode)
+    return platform.system() in ["Linux", "Darwin"]
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     source_path = df.DOTFILES_PATH / "git/gitconfig"

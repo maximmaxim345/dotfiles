@@ -15,12 +15,16 @@ CONFLICTING: List[str] = ["nvim_config"]
 
 
 def is_compatible() -> Union[bool, str]:
-    return True
+    return platform.system() in ["Windows", "Darwin", "Linux"]
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     source_path = df.DOTFILES_PATH / "lazyvim"
     target_path = Path.home() / ".config" / "nvim"
+
+    if platform.system() == "Windows":
+        # On Windows, use the AppData directory for the config
+        target_path = Path.home() / "AppData" / "Local" / "nvim"
 
     df.create_backup(target_path, config, "old_path")
     df.symlink_path(source_path, target_path)
@@ -28,6 +32,10 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     target_path = Path.home() / ".config" / "nvim"
+
+    if platform.system() == "Windows":
+        target_path = Path.home() / "AppData" / "Local" / "nvim"
+
     df.restore_backup(target_path, config, "old_path")
 
 

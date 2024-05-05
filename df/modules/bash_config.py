@@ -17,7 +17,7 @@ CONFLICTING: List[str] = []
 target_path = Path.home() / ".bashrc"
 
 def is_compatible() -> Union[bool, str]:
-    return True
+    return platform.system() in ["Linux", "Darwin"]
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     source_path = df.DOTFILES_PATH / "bash/bashrc"

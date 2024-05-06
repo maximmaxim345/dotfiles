@@ -72,7 +72,6 @@ def restart_with_venv() -> None:
     os.environ['VIRTUAL_ENV'] = venv_dir
     # Backup original sys.executable
     os.environ['DF_ORIGINAL_EXECUTABLE'] = sys.executable
-    subprocess.run([venv_python] + sys.argv, check=True)
     if sys.platform == 'win32':
         # Windows does not support replacing the current process
         subprocess.run([venv_python] + sys.argv, check=True)

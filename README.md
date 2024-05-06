@@ -9,6 +9,19 @@ specific dotfiles can be selected for installation. This will however will not i
 system wide configurations. When launching for the first time, it will download the required
 dependencies automatically. The dependencies used are listed in ./requirements.txt.
 
+### Windows
+
+These dotfiles should also work on Windows, but requires some manual steps.
+- After installing a Font, restart the Service "Windows Font Cache Service" to make the font available. Or just restart the system.
+- At leas install following software with winget:
+```shell
+winget install Python Git.Git zig.zig ajeetdsouza.zoxide junegunn.fzf OpenJS.NodeJS Starship.Starship
+```
+- For a better experience, also install the following software with winget:
+```shell
+winget install Neovide.Neovide SomePythonThings.WingetUIStore 7zip.7zip GitHub.cli
+```
+
 ## Uninstallation
 
 To uninstall the dotfiles, use the Terminal GUI by starting "./dotfiles.py" and just remove the

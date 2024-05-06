@@ -38,7 +38,18 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         font_path.unlink(missing_ok=True)
         shutil.copy(download_path, font_path)
 
-        if platform.system() == "Linux":
+        if platform.system() == "Windows":
+            import winreg
+            # Register the font with Windows
+            print("Registering font...")
+            try:
+                key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts", 0, winreg.KEY_SET_VALUE)
+                winreg.SetValueEx(key, font_name[:-4], 0, winreg.REG_SZ, str(font_path))
+                winreg.CloseKey(key)
+            except OSError as e:
+                print(f"Error registering font: {e}")
+            print("It is recommended to restart your computer to apply the font changes.")
+        else:
             # Update the font cache if fc-cache is installed
             print("Updating font cache...")
             try:
@@ -49,6 +60,17 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     # Delete the font file
     font_path = fonts_folder / font_name
+
+    if platform.system() == "Windows":
+        import winreg
+        # Unregister the font with Windows
+        try:
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts", 0, winreg.KEY_SET_VALUE)
+            winreg.DeleteValue(key, font_name)
+            winreg.CloseKey(key)
+        except OSError as e:
+            print(f"Error unregistering font: {e}")
+    # Delete the font file    
     font_path.unlink(missing_ok=True)
 
 def has_update(config: ModuleConfig) -> Union[bool, str]:

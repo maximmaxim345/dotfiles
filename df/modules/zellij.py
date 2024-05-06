@@ -68,9 +68,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
-    # Run bob erase
-    subprocess.run(["bob", "erase"], stdout=stdout, stderr=stdout)
-    # Delete the bob executable
+    # Delete the zellij executable
     (Path.home() / ".local" / "bin" / "zellij").unlink(missing_ok=True)
 
 

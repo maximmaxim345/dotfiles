@@ -220,6 +220,9 @@ return {
       end
 
       local name = nil
+      if vim.fn.has("win32") == 1 then
+        return -- we don't support windows for now
+      end
 
       while cwd ~= "" do
         if idx[cwd] then

@@ -27,9 +27,9 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     import winreg
     key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_ALL_ACCESS)
     path_value, _ = winreg.QueryValueEx(key, "Path")
-    bob_exec_dir = str(bin_dir)
-    if bob_exec_dir not in path_value:
-        path_value += ";" + bob_exec_dir
+    bin_dir = str(bin_dir)
+    if bin_dir not in path_value:
+        path_value += ";" + bin_dir
     winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, path_value)
     winreg.CloseKey(key)
 
@@ -40,9 +40,9 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     import winreg
     key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_ALL_ACCESS)
     path_value, _ = winreg.QueryValueEx(key, "Path")
-    bob_exec_dir = str(bin_dir)
-    if bob_exec_dir in path_value:
-        path_value = path_value.replace(bob_exec_dir, "")
+    bin_dir = str(bin_dir)
+    if bin_dir in path_value:
+        path_value = path_value.replace(bin_dir, "")
         path_value = path_value.replace(";;", ";")
         winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, path_value)
     winreg.CloseKey(key)

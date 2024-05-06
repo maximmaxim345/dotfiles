@@ -54,7 +54,7 @@ end
 
 -- test if we are not on linux
 if not wezterm.target_triple:find("linux") then
-	return config
+	-- do nothing
 elseif file_exists(filepath) then
 	local success, stdout, stderr =
 		wezterm.run_child_process({ "flatpak-spawn", "--host", "distrobox", "list", "--no-color" })
@@ -82,7 +82,7 @@ end
 config.color_scheme = scheme_for_appearance(wezterm.gui.get_appearance())
 
 -- For example, changing the color scheme:
-config.font = wezterm.font("FiraCode Nerd Font")
+config.font = wezterm.font("FiraCode Nerd Font", {weight="Medium", stretch="Normal", style="Normal"})
 config.warn_about_missing_glyphs = false
 
 -- and finally, return the configuration to wezterm

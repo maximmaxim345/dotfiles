@@ -23,6 +23,7 @@ def is_compatible() -> Union[bool, str]:
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     source_path = df.DOTFILES_PATH / "starship.toml"
     if platform.system() == "Windows":
+        # Windows requires higher permissions to symlink files, so we'll set a system environment variable instead
         import winreg
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_ALL_ACCESS)
         try:

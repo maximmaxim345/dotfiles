@@ -73,13 +73,13 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         print("Installing topgrade...")
         bin_dir = Path.home() / ".local" / "bin"
         bin_dir.mkdir(parents=True, exist_ok=True)
-        topgrade_exec = str(bin_dir / "topgrade.exe") if pf == 'windows' else "topgrade"
+        topgrade_exec = (bin_dir / "topgrade.exe") if pf == 'windows' else (bin_dir / "topgrade")
         shutil.copy(topgrade_path, topgrade_exec)
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     bin_dir = Path.home() / ".local" / "bin"
-    topgrade_exec = str(bin_dir / "topgrade.exe") if platform.system() == 'Windows' else "topgrade"
+    topgrade_exec = (bin_dir / "topgrade.exe") if platform.system() == 'Windows' else (bin_dir / "topgrade")
     (bin_dir / topgrade_exec).unlink(missing_ok=True)
 
 

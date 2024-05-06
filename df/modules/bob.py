@@ -62,7 +62,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         bin_dir = Path.home() / ".local" / "bin"
         
         bin_dir.mkdir(parents=True, exist_ok=True)
-        bob_exec = str(bin_dir / "bob.exe") if pf == 'windows' else "bob"
+        bob_exec = (bin_dir / "bob.exe") if pf == 'windows' else (bin_dir / "bob")
         shutil.copy(bob_path, bob_exec)
 
         print("Installing latest stable version of NeoVim...")
@@ -77,7 +77,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     bin_dir = Path.home() / ".local" / "bin"
-    bob_exec = str(bin_dir / "bob.exe") if platform.system() == 'Windows' else "bob"
+    bob_exec = (bin_dir / "bob.exe") if platform.system() == 'Windows' else (bin_dir / "bob")
     # Run bob erase
     subprocess.run([bob_exec, "erase"], stdout=stdout, stderr=stdout)
     # Delete the bob executable

@@ -57,8 +57,6 @@ def create_venv_if_needed() -> None:
         os.utime(venv_dir, None)
 
 
-import subprocess
-
 def restart_with_venv() -> None:
     """
     Update the current process to run in the venv created by
@@ -75,6 +73,11 @@ def restart_with_venv() -> None:
     # Backup original sys.executable
     os.environ['DF_ORIGINAL_EXECUTABLE'] = sys.executable
     subprocess.run([venv_python] + sys.argv, check=True)
+    if sys.platform == 'win32':
+        # Windows does not support replacing the current process
+        subprocess.run([venv_python] + sys.argv, check=True)
+    else:
+        os.execl(venv_python, venv_python, *sys.argv)
 
 # Relaunch this script in the venv if needed
 
@@ -102,7 +105,12 @@ except ImportError:
         os.environ["DF_VENV_RETRY"] = "1" # Avoid infinite loop
         # Use the original executable to restart the script
         del os.environ["VIRTUAL_ENV"]
-        os.execl(os.environ['DF_ORIGINAL_EXECUTABLE'], os.environ['DF_ORIGINAL_EXECUTABLE'], *sys.argv)
+
+        if sys.platform == 'win32':
+            # Windows does not support replacing the current process
+            subprocess.run([os.environ['DF_ORIGINAL_EXECUTABLE']] + sys.argv, check=True)
+        else:
+            os.execl(os.environ['DF_ORIGINAL_EXECUTABLE'], os.environ['DF_ORIGINAL_EXECUTABLE'], *sys.argv)
     else:
         print("The venv is not working, please report this issue")
         exit(1)

@@ -58,7 +58,6 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
                 print("fc-cache is not installed. Font cache was not updated.")
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
-    # Delete the font file
     font_path = fonts_folder / font_name
 
     if platform.system() == "Windows":

@@ -66,7 +66,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         # Copy lazygit to the bin folder (create folder if it doesn't exist)
         bin_dir = Path.home() / ".local" / "bin"
         bin_dir.mkdir(parents=True, exist_ok=True)
-        lazygit_exec = str(bin_dir / "lazygit.exe") if pf == "Windows" else "lazygit"
+        lazygit_exec = (bin_dir / "lazygit.exe") if pf == "Windows" else (bin_dir / "lazygit")
         shutil.copy(lazygit_path, lazygit_exec)
         # Save the installed version
         config.set("version", version)

@@ -31,7 +31,7 @@ return {
     config = function()
       local function close_session()
         local session = require("possession.session")
-        if session.session_name then
+        if session.get_session_name() then
           session.autosave()
           session.close()
         else
@@ -261,10 +261,10 @@ return {
       table.insert(opts.sections.lualine_x, 2, {
         function()
           local icon = require("lazyvim.config").icons.kinds.Folder
-          return icon .. (Session.session_name or "")
+          return icon .. (Session.get_session_name() or "")
         end,
         cond = function()
-          return Session.session_name ~= nil
+          return Session.get_session_name() ~= nil
         end,
         color = Util.ui.fg("Special"),
       })

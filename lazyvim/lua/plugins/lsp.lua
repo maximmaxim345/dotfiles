@@ -88,4 +88,33 @@ return {
       })
     end,
   },
+  {
+    "neovim/nvim-lspconfig",
+    init = function()
+      local keys = require("lazyvim.plugins.lsp.keymaps").get()
+      -- change keymaps
+      keys[#keys + 1] = {
+        "gd",
+        function()
+          require("telescope.builtin").lsp_definitions({ reuse_win = false })
+        end,
+        desc = "Goto Definition",
+        has = "definition",
+      }
+      keys[#keys + 1] = {
+        "gI",
+        function()
+          require("telescope.builtin").lsp_implementations({ reuse_win = false })
+        end,
+        desc = "Goto Implementation",
+      }
+      keys[#keys + 1] = {
+        "gy",
+        function()
+          require("telescope.builtin").lsp_type_definitions({ reuse_win = false })
+        end,
+        desc = "Goto T[y]pe Definition",
+      }
+    end,
+  },
 }

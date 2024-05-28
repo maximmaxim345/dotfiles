@@ -7,35 +7,36 @@ vim.keymap.set("i", "<C-BS>", "<C-W>")
 vim.keymap.set("i", "<C-H>", "<C-W>")
 vim.keymap.set("i", "<S-Tab>", "<C-d>")
 
-local wk = require("which-key")
-
-wk.register({
-  -- Buffer management
-  -- ["<tab>"] = { "<cmd>BufferLineCycleNext<cr>", "Next buffer" },
-  -- ["<s-tab>"] = { "<cmd>BufferLineCyclePrev<cr>", "Previous buffer" },
-  ["<c-q>"] = { "<leader>bd", "Close buffer", noremap = false },
-  ["<leader>"] = {
-    cc = {
-      name = "Copilot",
-      e = { ":Copilot enable<CR>", "Enable copilot" },
-      d = { ":Copilot disable<CR>", "Disable copilot" },
-      f = {
-        name = "File specific settings",
-        e = { ":let b:copilot_enabled=v:true<CR>", "Enable copilot for the current file" },
-        d = { ":let b:copilot_enabled=v:false<CR>", "Disable copilot for the current file" },
+if not vim.g.vscode then
+  local wk = require("which-key")
+  wk.register({
+    -- Buffer management
+    -- ["<tab>"] = { "<cmd>BufferLineCycleNext<cr>", "Next buffer" },
+    -- ["<s-tab>"] = { "<cmd>BufferLineCyclePrev<cr>", "Previous buffer" },
+    ["<c-q>"] = { "<leader>bd", "Close buffer", noremap = false },
+    ["<leader>"] = {
+      cc = {
+        name = "Copilot",
+        e = { ":Copilot enable<CR>", "Enable copilot" },
+        d = { ":Copilot disable<CR>", "Disable copilot" },
+        f = {
+          name = "File specific settings",
+          e = { ":let b:copilot_enabled=v:true<CR>", "Enable copilot for the current file" },
+          d = { ":let b:copilot_enabled=v:false<CR>", "Disable copilot for the current file" },
+        },
+      },
+      b = {
+        ["<Left>"] = { "<cmd>BufferLineMovePrev<cr>", "Move buffer to left" },
+        ["<Right>"] = { "<cmd>BufferLineMoveNext<cr>", "Move buffer to right" },
+      },
+      uN = {
+        name = "Neoscroll",
       },
     },
-    b = {
-      ["<Left>"] = { "<cmd>BufferLineMovePrev<cr>", "Move buffer to left" },
-      ["<Right>"] = { "<cmd>BufferLineMoveNext<cr>", "Move buffer to right" },
-    },
-    uN = {
-      name = "Neoscroll",
-    },
-  },
-}, {
-  mode = "n",
-})
+  }, {
+    mode = "n",
+  })
+end
 
 vim.api.nvim_set_keymap("x", "<leader>p", '"_dP', { noremap = true, silent = true })
 

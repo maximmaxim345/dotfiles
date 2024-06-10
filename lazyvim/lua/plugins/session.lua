@@ -211,12 +211,15 @@ return {
 
       -- If we are in a folder with a session, show the load session button:
       local sessions = require("possession.session").list()
-      local cwd = vim.fn.getcwd()
+      local cwd = vim.uv.fs_realpath(vim.fn.getcwd())
 
       -- first index all paths
       local idx = {}
       for _, s in pairs(sessions) do
-        idx[s.cwd] = s.name
+        local real_cwd = vim.uv.fs_realpath(s.cwd)
+        if real_cwd then
+          idx[real_cwd] = s.name
+        end
       end
 
       local name = nil
@@ -224,12 +227,13 @@ return {
         return -- we don't support windows for now
       end
 
-      while cwd ~= "" do
+      while cwd and cwd ~= "" do
         if idx[cwd] then
           name = idx[cwd]
           break
         end
         cwd = cwd:match("^(.*)/[^/]*$") -- simulates cd ../
+        cwd = vim.uv.fs_realpath(cwd) -- resolve the real path after moving up
       end
 
       -- now show the button, if we found a session

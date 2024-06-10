@@ -176,10 +176,15 @@ keybinds {
     bind "Esc" {
       SwitchToMode "Locked"
     }
-    bind "Ctrl g" {
+    bind "g" {
       SwitchToMode "Normal"
     }
-    unbind "Ctrl q" 
+    bind "q" {
+      Quit
+    }
+    bind "M" {
+      ToggleMouseMode
+    }
     unbind "Alt n" 
     unbind "Alt h" "Alt Left" 
     unbind "Alt l" "Alt Right" 
@@ -191,9 +196,6 @@ keybinds {
     unbind "Alt ]" 
   }
   shared_except "normal" {
-    bind "Ctrl q" {
-      Quit 
-    }
     bind "Alt n" {
       NewPane 
     }
@@ -243,6 +245,10 @@ keybinds {
   shared_except "tmux" "locked" {
     unbind "Ctrl b"
   }
+  locked {
+        unbind "Ctrl g"
+        bind "Alt g" { SwitchToMode "normal"; }
+    }
 }
 
 plugins {
@@ -352,7 +358,7 @@ theme "nord"
 //   - true (default)
 //   - false
 //
-// mouse_mode false
+mouse_mode false
 
 // Configure the scroll back buffer size
 // This is the number of lines zellij stores for each pane in the scroll back

@@ -112,6 +112,12 @@ return {
   },
   {
     "zbirenbaum/copilot.lua",
+    config = function(_, opts)
+      if vim.fn.executable("node") == 1 then
+        require("copilot").setup(opts)
+        vim.cmd("silent Copilot disable")
+      end
+    end,
     optional = true,
   },
 }

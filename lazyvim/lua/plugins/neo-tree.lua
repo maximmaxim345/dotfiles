@@ -78,9 +78,9 @@ return {
     "nvim-telescope/telescope.nvim",
     keys = function(_, keys)
       local override = {
-        { "<leader><space>", Util.telescope("files"), desc = "Find Files (cwd)" },
-        { "<leader>fF", Util.telescope("files"), desc = "Find Files (cwd)" },
-        { "<leader>ff", Util.telescope("files", { cwd = false }), desc = "Find Files (root dir)" },
+        { "<leader><space>", Util.pick("files"), desc = "Find Files (cwd)" },
+        { "<leader>fF", Util.pick("files"), desc = "Find Files (cwd)" },
+        { "<leader>ff", Util.pick("files", { cwd = false }), desc = "Find Files (root dir)" },
       }
       overrideKeys(keys, override)
     end,

@@ -74,7 +74,7 @@ return {
             vim.api.nvim_command("wa")
           elseif choice == 2 then
             -- discard all changes
-            vim.api.nvim_command("bufdo e!")
+            vim.api.nvim_command("bufdo if filereadable(expand('%')) | e! | else | bd! | endif")
           else
             -- cancel, do nothing
             return false

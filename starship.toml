@@ -27,6 +27,7 @@ $docker_context\
 $time\
 [](fg:#33658A)\
 $hostname\
+$custom\
 $shell
 [](#52783c)\
 $directory\
@@ -162,7 +163,7 @@ format = '[ $symbol ($version) ]($style)'
 
 [time]
 disabled = false
-time_format = "%R" # Hour:Minute Format
+time_format = "%R"              # Hour:Minute Format
 style = "bg:#33658A fg:#FFFFFF"
 format = '[ $time ]($style)'
 
@@ -187,3 +188,10 @@ xonsh_indicator = " [[xonsh](bg:#1f9d48 fg:#FFFFFF)](#1f9d48)"
 nu_indicator = " [[nu](bg:#1f9d48 fg:#FFFFFF)](#1f9d48)"
 unknown_indicator = ""
 format = "$indicator"
+
+[custom.distrobox]
+description = "The activated toolbox container"
+command = "echo $(. /var/run/.containerenv; echo ${name} ${DISTTAG%container})"
+when = """ [[ -f /run/.containerenv ]] """
+format = " [[\uf4b7 $output](bg:#9D5B1E fg:#FFFFFF)](#9D5B1E)"
+disabled = false

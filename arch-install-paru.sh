@@ -3,6 +3,8 @@
 
 set -e
 
+sudo pacman -S --needed --noconfirm git
+
 # Function to clean up on error
 cleanup() {
 	echo "An error occurred. Cleaning up..."

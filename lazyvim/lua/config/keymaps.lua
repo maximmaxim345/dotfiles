@@ -13,30 +13,17 @@ end, { desc = "Terminal (cwd)" })
 
 if not vim.g.vscode then
   local wk = require("which-key")
-  wk.register({
-    -- Buffer management
-    -- ["<tab>"] = { "<cmd>BufferLineCycleNext<cr>", "Next buffer" },
-    -- ["<s-tab>"] = { "<cmd>BufferLineCyclePrev<cr>", "Previous buffer" },
-    ["<c-q>"] = { "<leader>bd", "Close buffer", noremap = false },
-    ["<leader>"] = {
-      cc = {
-        name = "Copilot",
-        e = { ":Copilot enable<CR>", "Enable copilot" },
-        d = { ":Copilot disable<CR>", "Disable copilot" },
-        f = {
-          name = "File specific settings",
-          e = { ":let b:copilot_enabled=v:true<CR>", "Enable copilot for the current file" },
-          d = { ":let b:copilot_enabled=v:false<CR>", "Disable copilot for the current file" },
-        },
-      },
-      b = {
-        ["<Left>"] = { "<cmd>BufferLineMovePrev<cr>", "Move buffer to left" },
-        ["<Right>"] = { "<cmd>BufferLineMoveNext<cr>", "Move buffer to right" },
-      },
-      uN = {
-        name = "Neoscroll",
-      },
-    },
+  wk.add({
+    { "<c-q>", "<leader>bd", desc = "Close buffer", remap = true },
+    { "<leader>b<Left>", "<cmd>BufferLineMovePrev<cr>", desc = "Move buffer to left" },
+    { "<leader>b<Right>", "<cmd>BufferLineMoveNext<cr>", desc = "Move buffer to right" },
+    { "<leader>cc", group = "Copilot" },
+    { "<leader>ccd", ":Copilot disable<CR>", desc = "Disable copilot" },
+    { "<leader>cce", ":Copilot enable<CR>", desc = "Enable copilot" },
+    { "<leader>ccf", group = "File specific settings" },
+    { "<leader>ccfd", ":let b:copilot_enabled=v:false<CR>", desc = "Disable copilot for the current file" },
+    { "<leader>ccfe", ":let b:copilot_enabled=v:true<CR>", desc = "Enable copilot for the current file" },
+    { "<leader>uN", group = "Neoscroll" },
   }, {
     mode = "n",
   })

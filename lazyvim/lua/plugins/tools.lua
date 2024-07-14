@@ -77,10 +77,6 @@ return {
     cmd = { "G", "Git", "Gdiffsplit", "Gwrite", "Gread", "Ggrep", "GMove", "GDelete", "GBrowse" },
   },
   {
-    "LunarVim/bigfile.nvim",
-    opts = {},
-  },
-  {
     "zeioth/garbage-day.nvim",
     enabled = true,
     dependencies = "neovim/nvim-lspconfig",

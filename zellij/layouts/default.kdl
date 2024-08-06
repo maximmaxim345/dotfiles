@@ -1,5 +1,5 @@
 layout {
-  pane size=1 split_direction="vertical" {
+  pane size=2 split_direction="vertical" {
     pane borderless=true {
       plugin location="zellij:tab-bar"
     }

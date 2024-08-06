@@ -52,6 +52,15 @@ function file_exists(name)
 	end
 end
 
+config.keys = {}
+for i = 0, 9 do
+	table.insert(config.keys, {
+		key = tostring(i),
+		mods = "ALT",
+		action = act.ActivateTab(i - 1), -- WezTerm uses 0-based indexing for tabs
+	})
+end
+
 -- test if we are not on linux
 if not wezterm.target_triple:find("linux") then
 	-- do nothing
@@ -82,7 +91,7 @@ end
 config.color_scheme = scheme_for_appearance(wezterm.gui.get_appearance())
 
 -- For example, changing the color scheme:
-config.font = wezterm.font("FiraCode Nerd Font", {weight="Medium", stretch="Normal", style="Normal"})
+config.font = wezterm.font("FiraCode Nerd Font", { weight = "Medium", stretch = "Normal", style = "Normal" })
 config.warn_about_missing_glyphs = false
 
 -- and finally, return the configuration to wezterm

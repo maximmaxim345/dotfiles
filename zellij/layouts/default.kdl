@@ -7,5 +7,7 @@ layout {
       plugin location="zellij:status-bar"
     }
   }
-  pane borderless=false
+  pane split_direction="vertical" {
+    pane
+  }
 }

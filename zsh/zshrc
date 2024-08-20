@@ -37,6 +37,8 @@ alias d="distrobox"
 alias n="nvim"
 alias nv="neovide"
 alias lg="lazygit"
+alias ls='ls --color=auto'
+alias ll='ls --color=auto -alh'
 
 # Install and setup Zinit, a flexible ZSH plugin manager
 if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
@@ -46,58 +48,52 @@ if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
         print -P "%F{33} %F{34}Installation successful.%f%b" || \
         print -P "%F{160} The clone has failed.%f%b"
 fi
-
-# Source Zinit and load plugins
 source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
 autoload -Uz _zinit
 (( ${+_comps} )) && _comps[zinit]=_zinit
-
-# Configure Zinit to automatically recompile plugins when needed
+zinit ice depth=1
 zinit ice lucid wait='0' atinit='zi creinstall -q'
 
 # Load plugins with zinit
 zinit light-mode for \
+    zsh-users/zsh-syntax-highlighting \
     zsh-users/zsh-autosuggestions \
     marlonrichert/zsh-autocomplete \
-    zsh-users/zsh-syntax-highlighting \
     zsh-users/zsh-completions \
     zsh-users/zsh-history-substring-search
 
-# Check if zoxide is installed
+# Use zoxide if possible
 if command -v zoxide &> /dev/null; then
-    # Initialize zoxide
     eval "$(zoxide init zsh)"
 else
-    # Load zsh-z plugin if zoxide is not installed
-    zinit light-mode for \
-        agkozak/zsh-z
+    zinit lightmode agkozak/zsh-z
 fi
 
 # Configure autocomplete and syntax highlighting
 WORDCHARS='*?_-.[]~=&;!#$%^(){}<>' 
 export ZSHZ_NO_RESOLVE_SYMLINKS=1
 export ZSHZ_CASE=smart
-zstyle ':autocomplete:*' delay 0
 setopt autocd
+zstyle ':completion:*' menu select
+zstyle ':completion:*' accept-exact '*(N)'
+zstyle ':completion:*' matcher-list '' 'm:{a-zA-Z}={A-Za-z}'
+zstyle ':completion:*' case-sensitive true
+zstyle ':autocomplete:*' delay 0
 
 # Configure history
 HISTFILE=~/.zsh_history
 HISTSIZE=10000
+HISTDUP=erase
 SAVEHIST=10000
 setopt appendhistory
 setopt sharehistory
 setopt incappendhistory
+setopt hist_ignore_space
+setopt hist_ignore_all_dups
+setopt hist_save_no_dups
+setopt hist_ignore_dups
+setopt hist_find_no_dups
 
-# Prefer case sensitive completion
-bindkey '\t' menu-select
-bindkey -M menuselect '^[[Z' reverse-menu-complete
-zstyle ':completion:*' accept-exact '*(N)'
-zstyle ':completion:*' matcher-list '' 'm:{a-zA-Z}={A-Za-z}'
-zstyle ':completion:*' case-sensitive true
-
-# Hide duplicates in history
-HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE=1
-setopt HIST_IGNORE_ALL_DUPS
 
 # Configure key bindings
 () {
@@ -111,6 +107,10 @@ setopt HIST_IGNORE_ALL_DUPS
       bindkey "$key" down-line-or-history
    done
 }
+bindkey '\t' menu-complete
+bindkey '^[[Z' reverse-menu-complete
+HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE=1
+HISTORY_SUBSTRING_SEARCH_FUZZY=1
 bindkey '^[[A' history-substring-search-up # or '\eOA'
 bindkey '^[[B' history-substring-search-down # or '\eOB'
 bindkey '^H' backward-kill-word

@@ -11,6 +11,10 @@ vim.keymap.set("n", "<c-/>", function()
   LazyVim.terminal()
 end, { desc = "Terminal (cwd)" })
 
+-- For terminals where c-/ does not work properly
+vim.keymap.set("", "<c-^>", "<c-/>", { remap = true })
+vim.keymap.set("t", "<c-^>", "<c-/>", { remap = true })
+
 if not vim.g.vscode then
   local wk = require("which-key")
   wk.add({

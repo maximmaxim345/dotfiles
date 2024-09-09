@@ -195,3 +195,4 @@ command = "echo $(. /var/run/.containerenv; echo ${name} ${DISTTAG%container})"
 when = """ [[ -f /run/.containerenv ]] """
 format = " [[\uf4b7 $output](bg:#9D5B1E fg:#FFFFFF)](#9D5B1E)"
 disabled = false
+os = "linux"

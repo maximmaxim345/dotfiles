@@ -23,6 +23,13 @@ if [[ -x "/home/linuxbrew/.linuxbrew/bin/brew" ]]; then
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 fi
 
+# Kitty specific tweaks/aliases
+if [[ $TERM == "xterm-kitty" ]]; then
+    alias ssh="kitten ssh"
+    alias klight="kitten themes --reload-in=all 'Atom One Light'"
+    alias kdark="kitten themes --reload-in=all 'Base2Tone Drawbridge Dark'"
+fi
+
 # Export environment variables
 export PATH
 export npm_config_prefix="$HOME/.local"

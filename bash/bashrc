@@ -1,24 +1,63 @@
-if [[ -d "/usr/local/bin" ]]; then
-    PATH="$PATH:/usr/local/bin"
-fi
-if [[ -d "$HOME/.local/bin" ]]; then
-    PATH="$HOME/.local/bin:$PATH"
-fi
-if [[ -d "$HOME/.cargo/bin" ]]; then
-    PATH="$HOME/.cargo/bin:$PATH"
-fi
-if [[ -f "$HOME/.cargo/env" ]]; then
-    . "$HOME/.cargo/env"
-fi
-# Add nvim to path (with highest priority)
-if [[ -d "$HOME/.local/share/bob/nvim-bin" ]]; then
-    PATH="$HOME/.local/share/bob/nvim-bin:$PATH"
+# Bashrc Configuration
+
+# Define directories to add to PATH
+directories=(
+    "/usr/local/bin"
+    "$HOME/.local/bin"
+    "$HOME/.cargo/bin"
+    "$HOME/.local/share/bob/nvim-bin" # Add nvim to path (with highest priority)
+)
+
+# Add directories to PATH if they exist
+for dir in "${directories[@]}"; do
+    [[ -d "$dir" ]] && PATH="$dir:$PATH"
+done
+
+# Initialize Starship, a cross-shell prompt
+if command -v starship &>/dev/null; then
+    eval "$(starship init bash)"
 fi
 
-eval "$(starship init bash)"
-bind 'TAB:menu-complete'
+# Add brew to path
+if [[ -x "/home/linuxbrew/.linuxbrew/bin/brew" ]]; then
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+fi
 
-# Aliases
+# Kitty specific tweaks/aliases
+if [[ $TERM == "xterm-kitty" ]]; then
+    alias ssh="kitten ssh"
+    alias klight="kitten themes --reload-in=all 'Atom One Light'"
+    alias kdark="kitten themes --reload-in=all 'Base2Tone Drawbridge Dark'"
+fi
 
-# distrobox
+# Export environment variables
+export PATH
+export npm_config_prefix="$HOME/.local"
+export NEOVIDE_MULTIGRID=1
+
+# Source local bashrc if it exists
+[[ -f ~/.bashrc.local ]] && source ~/.bashrc.local
+
+# Define aliases for common commands
 alias de="distrobox-enter"
+alias d="distrobox"
+alias n="nvim"
+alias nv="neovide"
+alias lg="lazygit"
+alias ls='ls --color=auto'
+alias ll='ls --color=auto -alh'
+
+# Use zoxide if possible
+if command -v zoxide &>/dev/null; then
+    eval "$(zoxide init bash)"
+fi
+
+# Configure history
+HISTFILE=~/.bash_history
+HISTSIZE=10000
+HISTFILESIZE=10000
+HISTCONTROL=ignoreboth:erasedups
+
+# Configure key bindings
+bind 'TAB:menu-complete'
+bind '"\e[Z":menu-complete-backward'

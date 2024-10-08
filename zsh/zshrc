@@ -65,9 +65,11 @@ zinit ice lucid wait='0' atinit='zi creinstall -q'
 zinit light-mode for \
     zsh-users/zsh-syntax-highlighting \
     zsh-users/zsh-autosuggestions \
-    marlonrichert/zsh-autocomplete \
     zsh-users/zsh-completions \
     zsh-users/zsh-history-substring-search
+
+zinit ice ver"adfade3"
+zinit light marlonrichert/zsh-autocomplete
 
 # Use zoxide if possible
 if command -v zoxide &> /dev/null; then

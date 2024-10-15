@@ -125,3 +125,10 @@ bindkey '^[[B' history-substring-search-down # or '\eOB'
 bindkey '^H' backward-kill-word
 bindkey '^[[1;5C' forward-word
 bindkey '^[[1;5D' backward-word
+
+# Improve tab completion
+bindkey '^ ' autosuggest-accept # accept on CTRL-Space
+zstyle ':completion:*' special-dirs true
+zstyle ':completion:*' accept-exact-dirs true
+zstyle ':completion:*' path-completion true
+zstyle ':completion:*' squeeze-slashes true

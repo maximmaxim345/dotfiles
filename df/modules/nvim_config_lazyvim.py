@@ -11,7 +11,7 @@ ID: str = "nvim_config_lazyvim"
 NAME: str = "Neovim config based on lazyvim"
 DESCRIPTION: str = "A config for neovim based on lazyvim"
 DEPENDENCIES: List[str] = []
-CONFLICTING: List[str] = ["nvim_config"]
+CONFLICTING: List[str] = []
 
 
 def is_compatible() -> Union[bool, str]:

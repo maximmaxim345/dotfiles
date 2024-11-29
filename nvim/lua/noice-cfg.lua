@@ -1,4 +1,0 @@
-require('noice').setup({
-    lsp = {
-    }
-})

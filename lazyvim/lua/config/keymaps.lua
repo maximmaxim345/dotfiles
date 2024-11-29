@@ -8,7 +8,7 @@ vim.keymap.set("i", "<C-H>", "<C-W>")
 vim.keymap.set("i", "<S-Tab>", "<C-d>")
 
 vim.keymap.set("n", "<c-/>", function()
-  LazyVim.terminal()
+  Snacks.terminal()
 end, { desc = "Terminal (cwd)" })
 
 -- For terminals where c-/ does not work properly

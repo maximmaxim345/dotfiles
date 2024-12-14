@@ -4,3 +4,4 @@
 
 -- remove folds saving
 vim.opt.sessionoptions = { "buffers", "curdir", "tabpages", "winsize", "help", "globals", "skiprtp" }
+vim.g.snacks_animate = false

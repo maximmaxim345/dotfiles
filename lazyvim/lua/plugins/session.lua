@@ -266,7 +266,7 @@ return {
         cond = function()
           return Session.get_session_name() ~= nil
         end,
-        color = Util.ui.fg("Special"),
+        color = { fg = Snacks.util.color("Special") },
       })
     end,
   },

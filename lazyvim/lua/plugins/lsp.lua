@@ -43,17 +43,24 @@ return {
             local function rerank(kind)
               -- Reranks completion options according to my preference:
               -- Text = 1, => Field
-              -- Method = 2, => Method
-              -- Function = 3, => Function
-              -- Constructor = 4, => Text
-              -- Field = 5, => Constructor
+              -- Method = 2, => Variable
+              -- Function = 3, => Method
+              -- Constructor = 4, => Function
+              -- Field = 5, => Text
+              -- Variable = 6 => Constructor
               -- ...
               if kind == type.Field then
                 return type.Text
-              elseif kind == type.Text then
+              elseif kind == type.Variable then
+                return type.Method
+              elseif kind == type.Method then
+                return type.Function
+              elseif kind == type.Function then
                 return type.Constructor
-              elseif kind == type.Constructor then
+              elseif kind == type.Text then
                 return type.Field
+              elseif kind == type.Constructor then
+                return type.Variable
               else
                 return kind
               end

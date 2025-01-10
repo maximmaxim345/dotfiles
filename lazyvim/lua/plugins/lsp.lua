@@ -22,7 +22,10 @@ return {
       completion = {
         list = {
           max_items = 200,
-          selection = "auto_insert",
+          selection = {
+            preselect = false,
+            auto_insert = true,
+          },
           cycle = {
             from_bottom = true,
           },

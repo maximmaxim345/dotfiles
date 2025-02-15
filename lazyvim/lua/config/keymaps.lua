@@ -14,6 +14,10 @@ end, { desc = "Terminal (cwd)" })
 -- For terminals where c-/ does not work properly
 vim.keymap.set("", "<c-^>", "<c-/>", { remap = true })
 vim.keymap.set("t", "<c-^>", "<c-/>", { remap = true })
+vim.keymap.set("", "<M-Up>", "<M-k>", { remap = true })
+vim.keymap.set("", "<M-Down>", "<M-j>", { remap = true })
+vim.keymap.set("v", "<M-Up>", "<M-k>", { remap = true })
+vim.keymap.set("v", "<M-Down>", "<M-j>", { remap = true })
 
 if not vim.g.vscode then
   local wk = require("which-key")

@@ -1,0 +1,37 @@
+layout {
+  pane size=2 split_direction="vertical" {
+    pane borderless=true {
+      plugin location="zellij:tab-bar"
+    }
+    pane borderless=true {
+      plugin location="zellij:status-bar"
+    }
+  }
+  pane split_direction="vertical" {
+    pane
+  }
+  swap_floating_layout {
+    floating_panes max_panes=1 {
+      pane {
+        x "10%"
+        y "10%"
+        width "80%"
+        height "80%"
+      }
+    }
+    floating_panes max_panes=2 {
+      pane {
+        x "10%"
+        y "10%"
+        width "40%"
+        height "80%"
+      }
+      pane {
+        x "50%"
+        y "10%"
+        width "40%"
+        height "80%"
+      }
+    }
+  }
+}

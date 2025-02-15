@@ -1,5 +1,3 @@
-default_mode "locked"
-
 keybinds {
   normal {
     bind "p" {
@@ -20,6 +18,9 @@ keybinds {
     bind "o" {
       SwitchToMode "Session"
     }
+    bind "Alt g" {
+      ToggleFocusFullscreen; SwitchToMode "locked";
+    }
     unbind "Ctrl p"
     unbind "Ctrl h"
     unbind "Ctrl t"
@@ -35,16 +36,16 @@ keybinds {
     bind "Alt N" {
       NewPane "Down"
     }
-    bind "Alt h" "Alt Left" {
+    bind "Alt h" {
       MoveFocusOrTab "Left"
     }
-    bind "Alt l" "Alt Right" {
+    bind "Alt l" {
       MoveFocusOrTab "Right"
     }
-    bind "Alt j" "Alt Down" {
+    bind "Alt j" {
       MoveFocus "Down"
     }
-    bind "Alt k" "Alt Up" {
+    bind "Alt k" {
       MoveFocus "Up"
     }
     bind "Alt =" "Alt +" {
@@ -70,18 +71,214 @@ keybinds {
       SwitchToMode "Normal"
     }
   }
+  normal {
+    // uncomment this and adjust key if using copy_on_select=false
+    bind "Alt c" { Copy; SwitchToMode "Locked"; }
+    bind "Q" { Quit; }
+    bind "d" { Detach; }
+    bind "q" { 
+      LaunchOrFocusPlugin "zj-quit" {
+        floating true
+      }
+      SwitchToMode "Locked"
+    }
+    bind "Alt f" { ToggleFloatingPanes; SwitchToMode "Locked"; }
+    bind "Alt h" {
+      LaunchOrFocusPlugin "session-manager" {
+        floating true
+      }; SwitchToMode "Locked";
+    }
+    bind "Alt n" { NewPane; SwitchToMode "Locked"; }
+    bind "Alt i" { MoveTab "Left"; SwitchToMode "Locked"; }
+    bind "Alt o" { MoveTab "Right"; SwitchToMode "Locked"; }
+    // bind "Alt h" "Alt Left" { MoveFocusOrTab "Left"; }
+    // bind "Alt l" "Alt Right" { MoveFocusOrTab "Right"; }
+    // bind "Alt j" "Alt Down" { MoveFocus "Down"; }
+    // bind "Alt k" "Alt Up" { MoveFocus "Up"; }
+    // bind "Alt =" "Alt +" { Resize "Increase"; }
+    // bind "Alt -" { Resize "Decrease"; }
+    // bind "Alt [" { PreviousSwapLayout; }
+    // bind "Alt ]" { NextSwapLayout; }
+    bind "h" {
+      LaunchOrFocusPlugin "zellij_forgot" {
+        "LOAD_ZELLIJ_BINDINGS" "true"
+        // "buy eggs" "5x"
+        // "learn rust" "5h"
+        // "clean up code" "tomorrow"
+        floating true
+      }; SwitchToMode "Locked";
+    }
+  }
+  locked {
+    unbind "Ctrl g"
+  }
+  resize {
+    unbind "Ctrl n"
+    bind "h" "Left" { Resize "Increase Left"; }
+    bind "j" "Down" { Resize "Increase Down"; }
+    bind "k" "Up" { Resize "Increase Up"; }
+    bind "l" "Right" { Resize "Increase Right"; }
+    bind "H" { Resize "Decrease Left"; }
+    bind "J" { Resize "Decrease Down"; }
+    bind "K" { Resize "Decrease Up"; }
+    bind "L" { Resize "Decrease Right"; }
+    bind "=" "+" { Resize "Increase"; }
+    bind "-" { Resize "Decrease"; }
+  }
+  pane {
+    unbind "Ctrl p"
+    bind "h" "Left" { MoveFocus "Left"; }
+    bind "l" "Right" { MoveFocus "Right"; }
+    bind "j" "Down" { MoveFocus "Down"; }
+    bind "k" "Up" { MoveFocus "Up"; }
+    bind "p" { SwitchFocus; SwitchToMode "locked"; }
+    bind "n" { NewPane; SwitchToMode "locked"; }
+    bind "d" { NewPane "Down"; SwitchToMode "locked"; }
+    bind "r" { NewPane "Right"; SwitchToMode "locked"; }
+    bind "x" { CloseFocus; SwitchToMode "locked"; }
+    bind "f" { ToggleFocusFullscreen; SwitchToMode "locked"; }
+    bind "z" { TogglePaneFrames; SwitchToMode "locked"; }
+    bind "w" { ToggleFloatingPanes; SwitchToMode "locked"; }
+    bind "e" { TogglePaneEmbedOrFloating; SwitchToMode "locked"; }
+    bind "c" { SwitchToMode "RenamePane"; PaneNameInput 0;}
+  }
+  move {
+    unbind "Ctrl h"
+    bind "n" "Tab" { MovePane; }
+    bind "p" { MovePaneBackwards; }
+    bind "h" "Left" { MovePane "Left"; }
+    bind "j" "Down" { MovePane "Down"; }
+    bind "k" "Up" { MovePane "Up"; }
+    bind "l" "Right" { MovePane "Right"; }
+  }
+  tab {
+    unbind "Ctrl t"
+    bind "r" { SwitchToMode "RenameTab"; TabNameInput 0; }
+    bind "h" "Left" "Up" "k" { GoToPreviousTab; }
+    bind "l" "Right" "Down" "j" { GoToNextTab; }
+    bind "Left" { MoveTab "Left"; }
+    bind "Right" { MoveTab "Right"; }
+    bind "n" { NewTab; SwitchToMode "locked"; }
+    bind "x" { CloseTab; SwitchToMode "locked"; }
+    bind "s" { ToggleActiveSyncTab; SwitchToMode "locked"; }
+    bind "b" { BreakPane; SwitchToMode "locked"; }
+    bind "]" { BreakPaneRight; SwitchToMode "locked"; }
+    bind "[" { BreakPaneLeft; SwitchToMode "locked"; }
+    bind "Up" { BreakPaneLeft; }
+    bind "Down" { BreakPaneRight; }
+    bind "1" { GoToTab 1; SwitchToMode "locked"; }
+    bind "2" { GoToTab 2; SwitchToMode "locked"; }
+    bind "3" { GoToTab 3; SwitchToMode "locked"; }
+    bind "4" { GoToTab 4; SwitchToMode "locked"; }
+    bind "5" { GoToTab 5; SwitchToMode "locked"; }
+    bind "6" { GoToTab 6; SwitchToMode "locked"; }
+    bind "7" { GoToTab 7; SwitchToMode "locked"; }
+    bind "8" { GoToTab 8; SwitchToMode "locked"; }
+    bind "9" { GoToTab 9; SwitchToMode "locked"; }
+    bind "Tab" { ToggleTab; }
+  }
+  scroll {
+    unbind "Ctrl s"
+    bind "e" { EditScrollback; SwitchToMode "locked"; }
+    bind "s" { SwitchToMode "EnterSearch"; SearchInput 0; }
+    bind "Ctrl c" { ScrollToBottom; SwitchToMode "locked"; }
+    bind "j" "Down" { ScrollDown; }
+    bind "k" "Up" { ScrollUp; }
+    bind "Ctrl f" "PageDown" "Right" "l" { PageScrollDown; }
+    bind "Ctrl b" "PageUp" "Left" "h" { PageScrollUp; }
+    bind "d" { HalfPageScrollDown; }
+    bind "u" { HalfPageScrollUp; }
+    // uncomment this and adjust key if using copy_on_select=false
+    bind "Alt c" { Copy; }
+  }
+  search {
+    unbind "Ctrl s"
+    bind "Ctrl c" { ScrollToBottom; SwitchToMode "locked"; }
+    bind "j" "Down" { ScrollDown; }
+    bind "k" "Up" { ScrollUp; }
+    bind "Ctrl f" "PageDown" "Right" "l" { PageScrollDown; }
+    bind "Ctrl b" "PageUp" "Left" "h" { PageScrollUp; }
+    bind "d" { HalfPageScrollDown; }
+    bind "u" { HalfPageScrollUp; }
+    bind "n" { Search "down"; }
+    bind "p" { Search "up"; }
+    bind "c" { SearchToggleOption "CaseSensitivity"; }
+    bind "w" { SearchToggleOption "Wrap"; }
+    bind "o" { SearchToggleOption "WholeWord"; }
+  }
+  entersearch {
+    bind "Ctrl c" "Esc" { SwitchToMode "Scroll"; }
+    bind "Enter" { SwitchToMode "Search"; }
+  }
+  renametab {
+    unbind "Ctrl c"
+    bind "Esc" { UndoRenameTab; SwitchToMode "Tab"; }
+  }
+  renamepane {
+    unbind "Ctrl c"
+    bind "Esc" { UndoRenamePane; SwitchToMode "Pane"; }
+  }
+  session {
+    unbind "Ctrl o"
+    unbind "Enter"
+    bind "Ctrl s" { SwitchToMode "Scroll"; }
+    bind "d" { Detach; }
+    bind "w" {
+      LaunchOrFocusPlugin "session-manager" {
+    floating true
+    move_to_focused_tab true
+      };
+      SwitchToMode "locked"
+    }
+    bind "c" {
+      LaunchOrFocusPlugin "configuration" {
+        floating true
+        move_to_focused_tab true
+      };
+      SwitchToMode "locked"
+    }
+    bind "p" {
+      LaunchOrFocusPlugin "plugin-manager" {
+        floating true
+        move_to_focused_tab true
+      };
+      SwitchToMode "locked"
+    }
+  }
+
+  "tmux" clear-defaults=true {}
 }
 
+// Plugin aliases - can be used to change the implementation of Zellij
+// changing these requires a restart to take effect
 plugins {
-    tab-bar { path "tab-bar"; }
-    status-bar { path "status-bar"; }
-    strider { path "strider"; }
-    compact-bar { path "compact-bar"; }
-    session-manager { path "session-manager"; }
+  tab-bar location="zellij:tab-bar"
+  status-bar location="zellij:status-bar"
+  strider location="zellij:strider"
+  compact-bar location="zellij:compact-bar"
+  session-manager location="zellij:session-manager"
+  filepicker location="zellij:strider" {
+  }
+  configuration location="zellij:configuration"
+  plugin-manager location="zellij:plugin-manager"
+  zj-quit location="https://github.com/cristiand391/zj-quit/releases/download/0.3.1/zj-quit.wasm" {
+    confirm_key "q"
+    cancel_key "Esc"
+  }
+  zellij_forgot location="https://github.com/karimould/zellij-forgot/releases/download/0.4.1/zellij_forgot.wasm" {
+  }
+}
+
+// Plugins to load in the background when a new session starts
+load_plugins {
+  zj-quit
+  zellij_forgot
+  session-manager
 }
 
 // Choose what to do when zellij receives SIGTERM, SIGINT, SIGQUIT or SIGHUP
 // eg. when terminal window with an active zellij session is closed
+// (Requires restart)
 // Options:
 //   - detach (Default)
 //   - quit
@@ -119,21 +316,24 @@ pane_frames false
 // auto_layout true
 
 // Whether sessions should be serialized to the cache folder (including their tabs/panes, cwds and running commands) so that they can later be resurrected
+// (Requires restart)
 // Options:
 //   - true (default)
 //   - false
 //
-// session_serialization false
+session_serialization true
 
 // Whether pane viewports are serialized along with the session, default is false
+// (Requires restart)
 // Options:
 //   - true
 //   - false (default)
-// serialize_pane_viewport true
+serialize_pane_viewport true
 
 // Scrollback lines to serialize along with the pane viewport when serializing sessions, 0
 // defaults to the scrollback size. If this number is higher than the scrollback size, it will
 // also default to the scrollback size. This does nothing if `serialize_pane_viewport` is not true.
+// (Requires restart)
 //
 // scrollback_lines_to_serialize 10000
 
@@ -177,26 +377,29 @@ theme "ansi"
 
 // The name of the default layout to load on startup
 // Default: "default"
+// (Requires restart)
 //
-// default_layout "compact"
+default_layout "a"
 
 // Choose the mode that zellij uses when starting up.
 // Default: normal
 //
-// default_mode "locked"
+default_mode "locked"
 
 // Toggle enabling the mouse mode.
 // On certain configurations, or terminals this could
 // potentially interfere with copying text.
+// (Requires restart)
 // Options:
 //   - true (default)
 //   - false
 //
-mouse_mode false
+mouse_mode true
 
 // Configure the scroll back buffer size
 // This is the number of lines zellij stores for each pane in the scroll back
 // buffer. Excess number of lines are discarded in a FIFO fashion.
+// (Requires restart)
 // Valid values: positive integers
 // Default value: 10000
 //
@@ -234,20 +437,37 @@ copy_on_select false
 // When attaching to an existing session with other users,
 // should the session be mirrored (true)
 // or should each user have their own cursor (false)
+// (Requires restart)
 // Default: false
 //
 // mirror_session true
 
 // The folder in which Zellij will look for layouts
+// (Requires restart)
 //
 // layout_dir "/path/to/my/layout_dir"
 
 // The folder in which Zellij will look for themes
+// (Requires restart)
 //
 // theme_dir "/path/to/my/theme_dir"
 
 // Enable or disable the rendering of styled and colored underlines (undercurl).
 // May need to be disabled for certain unsupported terminals
+// (Requires restart)
 // Default: true
 //
 // styled_underlines false
+
+// Enable or disable writing of session metadata to disk (if disabled, other sessions might not know
+// metadata info on this session)
+// (Requires restart)
+// Default: false
+//
+disable_session_metadata false
+
+// Enable or disable support for the enhanced Kitty Keyboard Protocol (the host terminal must also support it)
+// (Requires restart)
+// Default: true (if the host terminal supports it)
+//
+// support_kitty_keyboard_protocol false

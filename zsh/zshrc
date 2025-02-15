@@ -34,6 +34,7 @@ fi
 export PATH
 export npm_config_prefix="$HOME/.local"
 export NEOVIDE_MULTIGRID=1
+export EDITOR=nvim
 
 # Source local zshrc if it exists
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
@@ -46,6 +47,18 @@ alias nv="neovide"
 alias lg="lazygit"
 alias ls='ls --color=auto'
 alias ll='ls --color=auto -alh'
+alias zw="zellij -l welcome"
+dz() {
+    box="$1"
+    if [[ -z "$box" ]]; then
+        box="dev"
+    fi
+    if command -v distrobox-enter 2>&1 >/dev/null; then
+        distrobox-enter "$box" -- zellij -l welcome
+    else
+        zellij -l welcome
+    fi
+}
 
 # Install and setup Zinit, a flexible ZSH plugin manager
 if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then

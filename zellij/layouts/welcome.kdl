@@ -1,0 +1,5 @@
+layout {
+    pane {
+      plugin location="zellij:session-manager"
+    }
+}

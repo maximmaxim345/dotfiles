@@ -238,7 +238,7 @@ return {
           dashboard.button("<TAB>", " " .. ' Load Session "' .. name .. '"', ":SLoad " .. name .. "<CR>")
         button.opts.hl = "AlphaButtons"
         button.opts.hl_shortcut = "AlphaShortcut"
-        table.insert(dashboard.section.buttons.val, 2, button)
+        table.insert(dashboard.section.buttons.val, 1, button)
       end
 
       -- delete the "Restore Sessions Button"

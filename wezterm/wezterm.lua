@@ -92,6 +92,7 @@ config.color_scheme = scheme_for_appearance(wezterm.gui.get_appearance())
 
 -- For example, changing the color scheme:
 config.font = wezterm.font("FiraCode Nerd Font", { weight = "Medium", stretch = "Normal", style = "Normal" })
+config.font_size = 14
 config.warn_about_missing_glyphs = false
 
 -- and finally, return the configuration to wezterm

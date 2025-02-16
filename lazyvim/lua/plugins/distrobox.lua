@@ -106,9 +106,9 @@ end
 -- Helper functions for distrobox integration
 return {
   {
-    "goolord/alpha-nvim",
+    "folke/snacks.nvim",
     optional = true,
-    opts = function(_, dashboard)
+    opts = function(_, opts)
       -- distrobox integration
       local restart_request = os.getenv("NEOVIDE_RESTART_REQUEST_FILE")
       if restart_request ~= nil then
@@ -116,21 +116,25 @@ return {
         local file = io.open(restart_request, "r")
         local current = file:read("*all")
 
-        local text = "  Select Distrobox"
+        local icon = " "
+        local text = "Select Distrobox"
         if DISTROBOX.current ~= nil then
           text = text .. " (on " .. DISTROBOX.current .. ")"
         end
 
-        local button = dashboard.button("d", text, ":lua DISTROBOX.launch_selector()<CR>")
-        button.opts.hl = "AlphaButtons"
-        button.opts.hl_shortcut = "AlphaShortcut"
-        local location = 0
+        local button = {
+          icon = icon,
+          key = "d",
+          desc = text,
+          action = [[<cmd> lua DISTROBOX.launch_selector() <CR>]],
+        }
+        local location = 1
         -- Show as first item if we are not in a container
         if DISTROBOX.is_in_distrobox() then
-          location = 1
+          location = 2
         end
 
-        table.insert(dashboard.section.buttons.val, location, button)
+        table.insert(opts.dashboard.preset.keys, location, button)
       end
     end,
   },

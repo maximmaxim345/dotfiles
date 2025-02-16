@@ -200,20 +200,24 @@ return {
     },
   },
   {
-    "goolord/alpha-nvim",
+    "folke/snacks.nvim",
     optional = true,
-    opts = function(_, dashboard)
-      -- Session Selector
-      local button = dashboard.button("p", " " .. " Projects", ":Telescope possession list<CR>")
-      button.opts.hl = "AlphaButtons"
-      button.opts.hl_shortcut = "AlphaShortcut"
-      table.insert(dashboard.section.buttons.val, 1, button)
+    opts = function(_, opts)
+      -- Projects/Session Management
+      -- Add Projects button
+      local projects_button = {
+        icon = " ",
+        key = "p",
+        desc = "Projects",
+        action = [[<cmd>Telescope possession list<CR>]],
+      }
+      table.insert(opts.dashboard.preset.keys, 1, projects_button)
 
-      -- If we are in a folder with a session, show the load session button:
+      -- Session loading logic
       local sessions = require("possession.session").list()
       local cwd = vim.fn.getcwd()
 
-      -- first index all paths
+      -- Index all paths
       local idx = {}
       for _, s in pairs(sessions) do
         idx[s.cwd] = s.name
@@ -221,7 +225,7 @@ return {
 
       local name = nil
       if vim.fn.has("win32") == 1 then
-        return -- we don't support windows for now
+        return -- Windows not supported for now
       end
 
       while cwd ~= "" do
@@ -232,20 +236,22 @@ return {
         cwd = cwd:match("^(.*)/[^/]*$") -- simulates cd ../
       end
 
-      -- now show the button, if we found a session
+      -- Add session loading button if session found
       if name then
-        local button =
-          dashboard.button("<TAB>", " " .. ' Load Session "' .. name .. '"', ":SLoad " .. name .. "<CR>")
-        button.opts.hl = "AlphaButtons"
-        button.opts.hl_shortcut = "AlphaShortcut"
-        table.insert(dashboard.section.buttons.val, 1, button)
+        local session_button = {
+          icon = " ",
+          key = "<TAB>",
+          desc = 'Load Session "' .. name .. '"',
+          action = [[<cmd>SLoad ]] .. name .. [[<CR>]],
+        }
+        table.insert(opts.dashboard.preset.keys, 1, session_button)
       end
 
-      -- delete the "Restore Sessions Button"
-      for i, btn in ipairs(dashboard.section.buttons.val) do
-        if btn.val:match("Restore Session") then
-          -- remove it from the array
-          table.remove(dashboard.section.buttons.val, i)
+      -- Remove default "Restore Session" button
+      for i, btn in ipairs(opts.dashboard.preset.keys) do
+        if btn.desc:match("Restore Session") then
+          table.remove(opts.dashboard.preset.keys, i)
+          break
         end
       end
     end,

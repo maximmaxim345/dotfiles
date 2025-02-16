@@ -47,7 +47,7 @@ alias nv="neovide"
 alias lg="lazygit"
 alias ls='ls --color=auto'
 alias ll='ls --color=auto -alh'
-alias zw="zellij -l welcome"
+alias ze="zellij -l welcome"
 dz() {
     box="$1"
     if [[ -z "$box" ]]; then

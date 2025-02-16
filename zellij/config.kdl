@@ -18,9 +18,6 @@ keybinds {
     bind "o" {
       SwitchToMode "Session"
     }
-    bind "Alt g" {
-      ToggleFocusFullscreen; SwitchToMode "locked";
-    }
     unbind "Ctrl p"
     unbind "Ctrl h"
     unbind "Ctrl t"
@@ -78,15 +75,18 @@ keybinds {
     bind "d" { Detach; }
     bind "q" { 
       LaunchOrFocusPlugin "zj-quit" {
-        floating true
+        floating false
       }
       SwitchToMode "Locked"
     }
     bind "Alt f" { ToggleFloatingPanes; SwitchToMode "Locked"; }
-    bind "Alt h" {
+    bind "Alt g" {
       LaunchOrFocusPlugin "session-manager" {
-        floating true
+        floating false
       }; SwitchToMode "Locked";
+    }
+    bind "Alt h" {
+      ToggleFocusFullscreen; SwitchToMode "locked";
     }
     bind "Alt n" { NewPane; SwitchToMode "Locked"; }
     bind "Alt i" { MoveTab "Left"; SwitchToMode "Locked"; }

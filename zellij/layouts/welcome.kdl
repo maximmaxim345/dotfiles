@@ -3,3 +3,4 @@ layout {
       plugin location="zellij:session-manager"
     }
 }
+on_force_close "quit"

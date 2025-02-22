@@ -71,14 +71,8 @@ keybinds {
   normal {
     // uncomment this and adjust key if using copy_on_select=false
     bind "Alt c" { Copy; SwitchToMode "Locked"; }
-    bind "Q" { Quit; }
+    bind "q" { Quit; }
     bind "d" { Detach; }
-    bind "q" { 
-      LaunchOrFocusPlugin "zj-quit" {
-        floating false
-      }
-      SwitchToMode "Locked"
-    }
     bind "Alt f" { ToggleFloatingPanes; SwitchToMode "Locked"; }
     bind "Alt g" {
       LaunchOrFocusPlugin "session-manager" {
@@ -261,17 +255,12 @@ plugins {
   }
   configuration location="zellij:configuration"
   plugin-manager location="zellij:plugin-manager"
-  zj-quit location="https://github.com/cristiand391/zj-quit/releases/download/0.3.1/zj-quit.wasm" {
-    confirm_key "q"
-    cancel_key "Esc"
-  }
   zellij_forgot location="https://github.com/karimould/zellij-forgot/releases/download/0.4.1/zellij_forgot.wasm" {
   }
 }
 
 // Plugins to load in the background when a new session starts
 load_plugins {
-  zj-quit
   zellij_forgot
   session-manager
 }

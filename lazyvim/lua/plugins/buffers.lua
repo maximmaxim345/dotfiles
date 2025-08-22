@@ -156,4 +156,13 @@ return {
       },
     },
   },
+  {
+    "gbprod/yanky.nvim",
+    dependencies = {
+      { "kkharji/sqlite.lua" },
+    },
+    opts = {
+      system_clipboard = { sync_with_ring = false },
+    },
+  },
 }

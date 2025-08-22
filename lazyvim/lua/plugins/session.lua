@@ -1,3 +1,6 @@
+if vim.g.vscode then
+  return {}
+end
 -- Note the current colorscheme when it changes.
 -- This will also keep the colorscheme varianet like material-deep-ocean instead of material.
 COLORSCHEME = {

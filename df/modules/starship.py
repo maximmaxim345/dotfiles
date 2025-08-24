@@ -33,7 +33,18 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         bin_dir.mkdir(parents=True, exist_ok=True)
 
         print("Installing Starship...")
-        subprocess.run(["sh", script_path, "-b", bin_dir, "-y"], check=True, stdout=stdout, stderr=stdout, stdin=subprocess.DEVNULL)
+        result = subprocess.run(
+            ["sh", str(script_path), "-b", str(bin_dir), "-y"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
+            text=True,
+        )
+        if result.stdout:
+            stdout.write(result.stdout)
+        if result.stderr:
+            stdout.write(result.stderr)
         # Save the (probably) installed version
         latest_version = requests.get(release_url).url.split("/")[-1]
         config.set("version", latest_version)

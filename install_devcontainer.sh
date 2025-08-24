@@ -39,13 +39,10 @@ print_info "Starting DevContainer dotfiles installation..."
 # Modules to install (excluding GUI applications and system-specific tools)
 MODULES=(
     "bash_config"
-    "bob"
     "lazygit"
-    "neovide"
     "nvim_config_lazyvim"
     "starship"
     "starship_config"
-    "zellij_config"
     "zoxide"
     "zsh_config"
 )

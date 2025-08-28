@@ -1,12 +1,13 @@
-from df.config import ModuleConfig
-import df
+import io
 import platform
-import tempfile
 import shutil
 import subprocess
-import io
+import tempfile
 from pathlib import Path
-from typing import Union, List
+from typing import List, Union
+
+import df
+from df.config import ModuleConfig
 
 ID: str = "fira_code_nerd_font"
 NAME: str = "Fira Code Nerd Font"
@@ -21,8 +22,10 @@ if platform.system() == "Windows":
 else:
     fonts_folder = Path.home() / ".local/share/fonts/"
 
+
 def is_compatible() -> Union[bool, str]:
     return platform.system() == "Linux" or platform.system() == "Windows"
+
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     # Download the font
@@ -40,41 +43,63 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
         if platform.system() == "Windows":
             import winreg
+
             # Register the font with Windows
             print("Registering font...")
             try:
-                key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts", 0, winreg.KEY_SET_VALUE)
+                key = winreg.OpenKey(
+                    winreg.HKEY_CURRENT_USER,
+                    "Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts",
+                    0,
+                    winreg.KEY_SET_VALUE,
+                )
                 winreg.SetValueEx(key, font_name[:-4], 0, winreg.REG_SZ, str(font_path))
                 winreg.CloseKey(key)
             except OSError as e:
                 print(f"Error registering font: {e}")
-            print("It is recommended to restart your computer to apply the font changes.")
+            print(
+                "It is recommended to restart your computer to apply the font changes."
+            )
         else:
             # Update the font cache if fc-cache is installed
             print("Updating font cache...")
             try:
-                subprocess.run(["fc-cache", "-f"], stdout=stdout, stderr=stdout, stdin=subprocess.DEVNULL)
+                subprocess.run(
+                    ["fc-cache", "-f"],
+                    stdout=stdout,
+                    stderr=stdout,
+                    stdin=subprocess.DEVNULL,
+                )
             except FileNotFoundError:
                 print("fc-cache is not installed. Font cache was not updated.")
+
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     font_path = fonts_folder / font_name
 
     if platform.system() == "Windows":
         import winreg
+
         # Unregister the font with Windows
         try:
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts", 0, winreg.KEY_SET_VALUE)
+            key = winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER,
+                r"Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts",
+                0,
+                winreg.KEY_SET_VALUE,
+            )
             winreg.DeleteValue(key, font_name)
             winreg.CloseKey(key)
         except OSError as e:
             print(f"Error unregistering font: {e}")
-    # Delete the font file    
+    # Delete the font file
     font_path.unlink(missing_ok=True)
+
 
 def has_update(config: ModuleConfig) -> Union[bool, str]:
     # We don't have a version number, so we can't check for updates
     return False
+
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     pass

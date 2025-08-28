@@ -5,11 +5,11 @@ Designed for automated installs in devcontainers and headless environments.
 """
 
 import argparse
-import sys
 import io
+import sys
 import traceback
-from typing import List
 from pathlib import Path
+from typing import List
 
 import df
 import df.config

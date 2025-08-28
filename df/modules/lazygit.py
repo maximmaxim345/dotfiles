@@ -1,13 +1,14 @@
-from df.config import ModuleConfig
-import df
-import platform
-import tempfile
-import shutil
-import subprocess
-import requests
 import io
+import platform
+import shutil
+import tempfile
 from pathlib import Path
-from typing import Union, List
+from typing import List, Union
+
+import requests
+
+import df
+from df.config import ModuleConfig
 
 ID: str = "lazygit"
 NAME: str = "LazyGit"
@@ -40,8 +41,9 @@ def dl_link(version: str, os: str, arch: str) -> str:
 
 
 def is_compatible() -> Union[bool, str]:
-    return (platform.system() == "Linux" and platform.machine() in ["x86_64"]) \
-            or (platform.system() == "Windows" and platform.machine() in ["AMD64", "x86_64"])
+    return (platform.system() == "Linux" and platform.machine() in ["x86_64"]) or (
+        platform.system() == "Windows" and platform.machine() in ["AMD64", "x86_64"]
+    )
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -54,19 +56,25 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
             arch = "x86_64"
         version = latest_version()
         link = dl_link(version, pf, arch)
-        download_path = temp_dir / ("lazygit.zip" if pf == "Windows" else "lazygit.tar.gz")
+        download_path = temp_dir / (
+            "lazygit.zip" if pf == "Windows" else "lazygit.tar.gz"
+        )
         df.download_file(link, download_path)
         print("Unpacking lazygit...")
         shutil.unpack_archive(download_path, temp_dir)
 
         print("Installing lazygit...")
-        lazygit_path = temp_dir / "lazygit.exe" if pf == "Windows" else temp_dir / "lazygit"
+        lazygit_path = (
+            temp_dir / "lazygit.exe" if pf == "Windows" else temp_dir / "lazygit"
+        )
         if pf != "Windows":
             lazygit_path.chmod(0o755)
         # Copy lazygit to the bin folder (create folder if it doesn't exist)
         bin_dir = Path.home() / ".local" / "bin"
         bin_dir.mkdir(parents=True, exist_ok=True)
-        lazygit_exec = (bin_dir / "lazygit.exe") if pf == "Windows" else (bin_dir / "lazygit")
+        lazygit_exec = (
+            (bin_dir / "lazygit.exe") if pf == "Windows" else (bin_dir / "lazygit")
+        )
         shutil.copy(lazygit_path, lazygit_exec)
         # Save the installed version
         config.set("version", version)

@@ -1,9 +1,10 @@
-import df
-from df.config import ModuleConfig
+import io
 import platform
 from pathlib import Path
-import io
-from typing import Union, List
+from typing import List, Union
+
+import df
+from df.config import ModuleConfig
 
 ID: str = "zellij_config"
 NAME: str = "Zellij Config"

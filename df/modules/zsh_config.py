@@ -1,12 +1,11 @@
-from df.config import ModuleConfig
-import platform
-import tempfile
-import subprocess
-import shutil
 import io
+import platform
+import shutil
 from pathlib import Path
+from typing import List, Union
+
 import df
-from typing import Union, List
+from df.config import ModuleConfig
 
 ID: str = "zsh_config"
 NAME: str = "Zsh Config"

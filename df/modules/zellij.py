@@ -1,13 +1,14 @@
-from df.config import ModuleConfig
-import df
-import platform
-import tempfile
-import shutil
-import subprocess
-import requests
 import io
+import platform
+import shutil
+import tempfile
 from pathlib import Path
-from typing import Union, List
+from typing import List, Union
+
+import requests
+
+import df
+from df.config import ModuleConfig
 
 ID: str = "zellij"
 NAME: str = "Zellij"

@@ -1,12 +1,11 @@
-from df.config import ModuleConfig
+import io
 import platform
-import tempfile
-import subprocess
 import shutil
 from pathlib import Path
+from typing import List, Union
+
 import df
-import io
-from typing import Union, List
+from df.config import ModuleConfig
 
 ID: str = "tmux_config"
 NAME: str = "Tmux config"
@@ -17,8 +16,10 @@ CONFLICTING: List[str] = []
 target_path = Path.home() / ".tmux.conf"
 target_local_path = Path.home() / ".tmux.conf.local"
 
+
 def is_compatible() -> Union[bool, str]:
     return platform.system() in ("Linux", "Darwin")
+
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     source_path = df.DOTFILES_PATH / "tmux/oh-my-tmux/.tmux.conf"
@@ -34,14 +35,18 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         print("Local tmux config already exists, not overwriting")
         print(f"Look at {source_local_path} for an example")
 
+
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     df.restore_backup(target_path, config, "old_path")
     print("Keeping local tmux config (~/.tmux.conf.local), you can delete it manually")
 
+
 # Optional functions for modules that can be updated
+
 
 def has_update(config: ModuleConfig) -> Union[bool, str]:
     return False
+
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     pass

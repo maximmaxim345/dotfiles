@@ -1,16 +1,20 @@
-from df.config import ModuleConfig
-import platform
-import tempfile
-import subprocess
-import requests
 import io
+import platform
+import subprocess
+import tempfile
 from pathlib import Path
+from typing import List, Union
+
+import requests
+
 import df
-from typing import Union, List
+from df.config import ModuleConfig
 
 ID: str = "starship"
 NAME: str = "Starship"
-DESCRIPTION: str = "The minimal, blazing-fast, and infinitely customizable prompt for any shell!"
+DESCRIPTION: str = (
+    "The minimal, blazing-fast, and infinitely customizable prompt for any shell!"
+)
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 
@@ -18,10 +22,13 @@ release_url = "https://github.com/starship/starship/releases/latest"
 script_link = "https://starship.rs/install.sh"
 bin_dir = Path.home() / ".local" / "bin"
 
+
 def is_compatible() -> Union[bool, str]:
     return platform.system() in ["Linux", "Darwin"]
 
+
 # TODO: We could instead of running the script, manually download the binary. This would allow us to support Windows
+
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -55,9 +62,11 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     starship_path = bin_dir / "starship"
     starship_path.unlink(missing_ok=True)
 
+
 def has_update(config: ModuleConfig) -> Union[bool, str]:
     latest_version = requests.get(release_url).url.split("/")[-1]
     return config.get("version") != latest_version
+
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     install(config, stdout)

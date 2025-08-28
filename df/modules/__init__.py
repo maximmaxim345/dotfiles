@@ -1,8 +1,9 @@
-import os
 import glob
 import importlib.util
-import re
 import io
+import os
+import re
+
 io.TextIOWrapper
 
 MODULES = {}
@@ -49,8 +50,7 @@ MODULES = {}
 #
 # See the _template.py file for an example module
 # it is recommended to name the module file after the module ID
-module_files = glob.glob(os.path.join(
-    os.path.dirname(__file__), "*.py"))
+module_files = glob.glob(os.path.join(os.path.dirname(__file__), "*.py"))
 
 # import all modules and register them in the modules list
 for module_file in module_files:
@@ -82,7 +82,9 @@ for module in MODULES.values():
             raise ValueError(f"Module '{module.ID}' has invalid dependencies")
         # check if the dependency exists
         if dependency not in MODULES.keys():
-            raise ValueError(f"Module '{module.ID}' has an invalid dependency '{dependency}'")
+            raise ValueError(
+                f"Module '{module.ID}' has an invalid dependency '{dependency}'"
+            )
     # check if module.CONFLICTING is a list of strings
     if not isinstance(module.CONFLICTING, list):
         raise ValueError(f"Module '{module.ID}' has invalid conflicting modules")
@@ -91,7 +93,9 @@ for module in MODULES.values():
             raise ValueError(f"Module '{module.ID}' has invalid conflicting modules")
         # check if the conflicting module exists
         if conflicting not in MODULES.keys():
-            raise ValueError(f"Module '{module.ID}' has an invalid conflicting module '{conflicting}'")
+            raise ValueError(
+                f"Module '{module.ID}' has an invalid conflicting module '{conflicting}'"
+            )
     # for functions, we only check if they exist
     # we don't check if they have the correct signature
     # because running the function has unwanted side effects

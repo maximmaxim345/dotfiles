@@ -239,4 +239,3 @@ fi
 # add user to video group for light
 # install xf86-video-intel for intel graphics
 # enable lightdm
-

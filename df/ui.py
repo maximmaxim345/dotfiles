@@ -1,18 +1,21 @@
 import asyncio
-from textual.app import App, ComposeResult
-from textual.css.query import NoMatches
-from textual.message import Message
-from textual.screen import Screen
-from textual.widgets import LoadingIndicator, Static, Button, TextLog
-from textual.reactive import reactive
-from textual.containers import Container
-from textual.binding import Binding
-import df.config
 import os
 import re
 import traceback
+from typing import List, Union
+
+from textual.app import App, ComposeResult
+from textual.binding import Binding
+from textual.containers import Container
+from textual.css.query import NoMatches
+from textual.message import Message
+from textual.reactive import reactive
+from textual.screen import Screen
+from textual.widgets import Button, LoadingIndicator, Static, TextLog
+
+import df.config
 from df.modules import MODULES
-from typing import Union, List
+
 
 class ModuleItem(Static):
     """A Widget representing a module that can be installed/removed/updated."""
@@ -65,8 +68,12 @@ class ModuleItem(Static):
             id="module-description",
         )
         yield Container(
-            Button("Install without dependencies", id="install-no-deps", variant="warning"),
-            Button("Update without dependencies", id="update-no-deps", variant="warning"),
+            Button(
+                "Install without dependencies", id="install-no-deps", variant="warning"
+            ),
+            Button(
+                "Update without dependencies", id="update-no-deps", variant="warning"
+            ),
             Button("Install", id="install", variant="success"),
             Button("Update", id="update", variant="warning"),
             Button("Remove", id="remove", variant="error"),
@@ -88,7 +95,9 @@ class ModuleItem(Static):
             # compose will use the new value
             pass
 
-    def watch_queued_action(self, old_action: Union[str, None], new_action: Union[str, None]) -> None:
+    def watch_queued_action(
+        self, old_action: Union[str, None], new_action: Union[str, None]
+    ) -> None:
         if old_action == new_action:
             return
         if new_action is None:
@@ -97,9 +106,16 @@ class ModuleItem(Static):
             self.add_class("module-changed")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id in ["install", "update", "remove", "install-no-deps", "update-no-deps"]:
+        if event.button.id in [
+            "install",
+            "update",
+            "remove",
+            "install-no-deps",
+            "update-no-deps",
+        ]:
             action = event.button.id
             self.post_message(self.ActionPressed(self.module, action))
+
 
 class QueuedActionItem(Static):
     """A Widget representing a queued action."""
@@ -114,6 +130,7 @@ class QueuedActionItem(Static):
     def compose(self) -> ComposeResult:
         yield Static(f"{self.action} {self.module_name}")
         yield LoadingIndicator()
+
 
 class InstallationScreen(Screen):
     """Screen for showing the installation progress."""
@@ -148,7 +165,7 @@ class InstallationScreen(Screen):
             if not line:
                 break
             text = line.decode()
-            text = re.sub(r'\x1b\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]', '', text)
+            text = re.sub(r"\x1b\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]", "", text)
             self.print_log(text, end="")
 
         loop.remove_reader(fd)
@@ -159,7 +176,7 @@ class InstallationScreen(Screen):
         for child in container.query(QueuedActionItem):
             child.remove()
         self.queued_action_items = []
-        for (action, module_id) in actions:
+        for action, module_id in actions:
             module = MODULES[module_id]
             item = QueuedActionItem(action, module)
             item.add_class("queued")
@@ -257,6 +274,7 @@ class InstallationScreen(Screen):
             self.query("#title").first(Static).update("Failed to apply changes!")
             self.query("#quit").first(Button).disabled = False
             self.query("#retry").first(Button).disabled = False
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "quit":
             self.app.exit()
@@ -277,17 +295,34 @@ class ErrorQueueingScreen(Screen):
         self.error = impossibleActionError
 
     def compose(self) -> ComposeResult:
-        yield Static(f"Error while {self.error.action} {MODULES[self.error.module_id].NAME}", id="title")
+        yield Static(
+            f"Error while {self.error.action} {MODULES[self.error.module_id].NAME}",
+            id="title",
+        )
         self.textlog = TextLog(id="log")
         for conflict in self.error.conflicts:
             if conflict.reason == "incompatible":
-                self.textlog.write(f"{MODULES[conflict.module_id].NAME} is incompatible with this system.", shrink=False, scroll_end=True)
+                self.textlog.write(
+                    f"{MODULES[conflict.module_id].NAME} is incompatible with this system.",
+                    shrink=False,
+                    scroll_end=True,
+                )
             elif conflict.reason == "conflicting":
-                conflicting_as_text = ", ".join([MODULES[id].NAME for id in conflict.conflicts_with])
+                conflicting_as_text = ", ".join(
+                    [MODULES[id].NAME for id in conflict.conflicts_with]
+                )
                 if len(conflict.conflicts_with) == 1:
-                    self.textlog.write(f"{MODULES[conflict.module_id].NAME} conflicts with the installed module \"{conflicting_as_text}\".", shrink=False, scroll_end=True)
+                    self.textlog.write(
+                        f'{MODULES[conflict.module_id].NAME} conflicts with the installed module "{conflicting_as_text}".',
+                        shrink=False,
+                        scroll_end=True,
+                    )
                 else:
-                    self.textlog.write(f"{MODULES[conflict.module_id].NAME} conflicts the following installed modules: {conflicting_as_text}.", shrink=False, scroll_end=True)
+                    self.textlog.write(
+                        f"{MODULES[conflict.module_id].NAME} conflicts the following installed modules: {conflicting_as_text}.",
+                        shrink=False,
+                        scroll_end=True,
+                    )
         yield Container(self.textlog, id="conflicts-log")
         yield Container(
             Button("Back", id="back", variant="primary", disabled=False),
@@ -297,6 +332,7 @@ class ErrorQueueingScreen(Screen):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "back":
             self.app.pop_screen()
+
 
 class DotfilesApp(App):
     """A Terminal UI for managing dotfiles."""
@@ -341,7 +377,9 @@ class DotfilesApp(App):
                 module_config = self.Config.get_module(module_id)
                 is_installed = module_config.get_installed()
                 self.modules_installed[module_id] = is_installed
-                self.modules_installed_version[module_id] = module_config.get_installed_version()
+                self.modules_installed_version[module_id] = (
+                    module_config.get_installed_version()
+                )
                 if is_installed and hasattr(module, "has_update"):
                     updates_to_check.append(module_id)
                 else:
@@ -354,6 +392,7 @@ class DotfilesApp(App):
 
         # Check for updates
         import concurrent.futures
+
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = []
             for module_id in updates_to_check:
@@ -362,19 +401,24 @@ class DotfilesApp(App):
                 future = executor.submit(module.has_update, module_config)
                 futures.append(future)
 
-            for future, module_id in zip(futures, updates_to_check):
+            for future, module_id in zip(futures, updates_to_check, strict=False):
                 try:
                     self.modules_has_update[module_id] = future.result()
                 except Exception as e:
                     self.modules_has_update[module_id] = False
-                    print(f"Error while checking for updates for {MODULES[module_id].NAME}: {e}")
+                    print(
+                        f"Error while checking for updates for {MODULES[module_id].NAME}: {e}"
+                    )
 
         # Now add modules, which have a different (module) version than the installed version
         for module_id, module in MODULES.items():
-            if self.modules_installed[module_id] and hasattr(module, "VERSION") and module.VERSION is not None:
+            if (
+                self.modules_installed[module_id]
+                and hasattr(module, "VERSION")
+                and module.VERSION is not None
+            ):
                 if self.modules_installed_version[module_id] != module.VERSION:
                     self.modules_has_update[module_id] = True
-
 
     def compose(self) -> ComposeResult:
         yield Static("Dotfiles Manager", id="title")
@@ -382,25 +426,29 @@ class DotfilesApp(App):
         yield Container(
             Container(
                 Static("Updatable", classes="category-header"),
-                id="updatable", classes="category",
+                id="updatable",
+                classes="category",
             ),
             Container(
                 Static("Installed", classes="category-header"),
-                id="installed", classes="category",
+                id="installed",
+                classes="category",
             ),
             Container(
                 Static("Not Installed", classes="category-header"),
-                id="not_installed", classes="category",
+                id="not_installed",
+                classes="category",
             ),
             Container(
                 Static("Incompatible", classes="category-header"),
-                id="incompatible", classes="category",
+                id="incompatible",
+                classes="category",
             ),
             id="categories",
         )
         yield Container(
             Static("Queued Actions", classes="queued-actions-header"),
-            id="queued_actions"
+            id="queued_actions",
         )
         yield Container(
             Button("Quit", id="quit", variant="error"),
@@ -409,7 +457,7 @@ class DotfilesApp(App):
             Button("Apply Changes", id="apply", variant="success"),
             id="actions",
         )
-    
+
     def watch_advanced(self, old_advanced: bool, new_advanced: bool) -> None:
         if old_advanced == new_advanced:
             return
@@ -438,7 +486,7 @@ class DotfilesApp(App):
                 # Otherwise, remove it from the old category
                 widget.remove()
             except NoMatches:
-                pass # The module is not in this category
+                pass  # The module is not in this category
 
         # At this point, the module is not in any category
         # Create the widget, it does not exist
@@ -493,7 +541,9 @@ class DotfilesApp(App):
                     widget.style = "not-installed"
                     continue
                 else:
-                    conflicting_as_text = ", ".join([MODULES[id].NAME for id in conflicting])
+                    conflicting_as_text = ", ".join(
+                        [MODULES[id].NAME for id in conflicting]
+                    )
                     reason = f"Conflicts with {conflicting_as_text}"
             else:
                 if compatible == False:
@@ -550,10 +600,18 @@ class DotfilesApp(App):
         class Conflict:
             action: str
             module_id: str
-            reason: str # "incompatible" or "conflicting"
-            conflicts_with: List[str] # If reason is "conflicting", this are the conflicting modules
+            reason: str  # "incompatible" or "conflicting"
+            conflicts_with: List[
+                str
+            ]  # If reason is "conflicting", this are the conflicting modules
 
-            def __init__(self, action: str, module_id: str, reason: str, conflicts_with: List[str] = []) -> None:
+            def __init__(
+                self,
+                action: str,
+                module_id: str,
+                reason: str,
+                conflicts_with: List[str] = [],
+            ) -> None:
                 super().__init__()
                 self.action = action
                 self.module_id = module_id
@@ -569,7 +627,9 @@ class DotfilesApp(App):
         """
         conflicts: List[Conflict]
 
-        def __init__(self, action: str, module_id: str, conflicts: List[Conflict]) -> None:
+        def __init__(
+            self, action: str, module_id: str, conflicts: List[Conflict]
+        ) -> None:
             super().__init__()
             self.action = action
             self.module_id = module_id
@@ -582,12 +642,14 @@ class DotfilesApp(App):
         we only uninstall modules. (If the user wants to resolve the conflict)
         Throws ImpossibleActionError if the action is cannot be applied.
         """
+
         class State:
             def __init__(self):
                 self.modules_installed = {}
                 self.queued_actions = []
                 self.modules_has_update = {}
                 self.conflicts = []
+
         if state is None:
             topmost = True
             state = State()
@@ -609,19 +671,25 @@ class DotfilesApp(App):
             # Queue the module itself
             if not state.modules_installed[module_id]:
                 if not self.modules_is_compatible[module_id]:
-                    state.conflicts.append(self.ImpossibleActionError.Conflict(action, module_id, "incompatible"))
+                    state.conflicts.append(
+                        self.ImpossibleActionError.Conflict(
+                            action, module_id, "incompatible"
+                        )
+                    )
 
                 state.modules_installed[module_id] = True
                 # Remove previous actions for this module
                 shouldAppend = True
-                for (a, id) in state.queued_actions:
+                for a, id in state.queued_actions:
                     if id != module_id:
                         continue
                     if a == "remove":
                         # It was allready installed
                         shouldAppend = False
                     break
-                state.queued_actions = [a for a in state.queued_actions if a[1] != module_id]
+                state.queued_actions = [
+                    a for a in state.queued_actions if a[1] != module_id
+                ]
                 if shouldAppend:
                     state.queued_actions.append((action, module_id))
         elif action == "update" or action == "update-no-deps":
@@ -634,9 +702,11 @@ class DotfilesApp(App):
                         self.queue_action(dependency_id, "install", state=state)
             # Queue the module itself
             if state.modules_has_update[module_id]:
-                state.modules_has_update[module_id] = False # Mark as up to date
+                state.modules_has_update[module_id] = False  # Mark as up to date
                 # Remove previous actions for this module
-                state.queued_actions = [a for a in state.queued_actions if a[1] != module_id]
+                state.queued_actions = [
+                    a for a in state.queued_actions if a[1] != module_id
+                ]
                 state.queued_actions.append((action, module_id))
         elif action == "remove":
             # Queue the module itself
@@ -644,14 +714,16 @@ class DotfilesApp(App):
                 state.modules_installed[module_id] = False
                 # Remove previous actions for this module
                 shouldAppend = True
-                for (a, id) in state.queued_actions:
+                for a, id in state.queued_actions:
                     if id != module_id:
                         continue
                     if a == "install" or a == "install-no-deps":
                         # It is not installed, we dont need to remove it
                         shouldAppend = False
                     break
-                state.queued_actions = [a for a in state.queued_actions if a[1] != module_id]
+                state.queued_actions = [
+                    a for a in state.queued_actions if a[1] != module_id
+                ]
                 if shouldAppend:
                     state.queued_actions.append((action, module_id))
             # Recursively queue modules that depend on this module for removal
@@ -661,7 +733,7 @@ class DotfilesApp(App):
 
         # Check if all actions we do are uninstall actions
         all_uninstall = True
-        for (a, id) in state.queued_actions:
+        for a, id in state.queued_actions:
             if a != "remove":
                 all_uninstall = False
                 break
@@ -673,19 +745,30 @@ class DotfilesApp(App):
                 # A module is incompatible, we cannot apply the action
                 # But we make an exception if we only uninstall things
                 if not all_uninstall:
-                    state.conflicts.append(self.ImpossibleActionError.Conflict(action, module_id, "incompatible"))
+                    state.conflicts.append(
+                        self.ImpossibleActionError.Conflict(
+                            action, module_id, "incompatible"
+                        )
+                    )
             for incompatible_id in module.CONFLICTING:
                 # Same here, just also save the conflicting module
                 if state.modules_installed[incompatible_id] and not all_uninstall:
                     # If we allready have this conflict, just add the conflicting module to the list
                     added = False
                     for conflict in state.conflicts:
-                        if conflict.module_id == module_id and conflict.reason == "conflicting":
+                        if (
+                            conflict.module_id == module_id
+                            and conflict.reason == "conflicting"
+                        ):
                             conflict.conflicts_with.append(incompatible_id)
                             added = True
                             break
                     if not added:
-                        state.conflicts.append(self.ImpossibleActionError.Conflict(action, module_id, "conflicting", [incompatible_id]))
+                        state.conflicts.append(
+                            self.ImpossibleActionError.Conflict(
+                                action, module_id, "conflicting", [incompatible_id]
+                            )
+                        )
         # Throw an error if we have conflicts
         if len(state.conflicts) > 0:
             raise self.ImpossibleActionError(action, module_id, state.conflicts)
@@ -699,7 +782,13 @@ class DotfilesApp(App):
         # Update the config, as if the action was applied
         action = message.action
         id = message.module_id
-        if action in ["install", "update", "remove", "install-no-deps", "update-no-deps"]:
+        if action in [
+            "install",
+            "update",
+            "remove",
+            "install-no-deps",
+            "update-no-deps",
+        ]:
             try:
                 self.queue_action(id, action)
             except self.ImpossibleActionError as e:

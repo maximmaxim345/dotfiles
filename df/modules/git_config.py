@@ -1,10 +1,10 @@
-import shutil
-from df.config import ModuleConfig
-import platform
 import io
+import shutil
 from pathlib import Path
+from typing import List, Union
+
 import df
-from typing import Union, List
+from df.config import ModuleConfig
 
 ID: str = "git_config"
 NAME: str = "Git Config"

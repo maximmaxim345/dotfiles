@@ -3,8 +3,8 @@
 # Run this script with --help to see the available options
 
 import os
-import sys
 import subprocess
+import sys
 
 # To remove the hassle of having to install dependencies
 # for this script, it will automatically create a venv

@@ -1,7 +1,7 @@
 import json
 from os import path
-import df
-from typing import Union, List
+from typing import List, Union
+
 
 class ModuleConfig:
     """
@@ -53,7 +53,6 @@ class ModuleConfig:
         self.config.config["modules"][self.id]["installed"] = True
         self.config.modified = True
 
-
     def get(self, key, default=None):
         """
         Get a config value. If the value does not exist, the default value
@@ -85,6 +84,7 @@ class ModuleConfig:
         except KeyError:
             pass
 
+
 class Config:
     """
     Wrapper class for the config file. The config file is loaded when the
@@ -115,7 +115,7 @@ class Config:
         """
         return self.config["modules"].keys()
 
-    def get_module(self, id:str) -> ModuleConfig:
+    def get_module(self, id: str) -> ModuleConfig:
         """
         Returns the config entry for the module with the given id
         The returned entry is mutable, so changes to it will be saved to the

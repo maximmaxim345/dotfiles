@@ -1,11 +1,10 @@
-from df.config import ModuleConfig
-import platform
-import tempfile
-import subprocess
-from pathlib import Path
-import df
 import io
-from typing import Union, List
+import platform
+from pathlib import Path
+from typing import List, Union
+
+import df
+from df.config import ModuleConfig
 
 ID: str = "nvim_config_lazyvim"
 NAME: str = "Neovim config based on lazyvim"

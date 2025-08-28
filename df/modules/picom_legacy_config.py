@@ -8,9 +8,7 @@ from df.config import ModuleConfig
 
 ID: str = "picom_legacy_config"
 NAME: str = "Picom Config for Legacy Systems"
-DESCRIPTION: str = (
-    "Configures picom (jonaburg's fork) with animations and without modern features"
-)
+DESCRIPTION: str = "Configures picom (jonaburg's fork) with animations and without modern features"
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = ["picom_config"]
 

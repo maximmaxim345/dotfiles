@@ -70,7 +70,7 @@ class ModuleConfig:
         try:
             json.dumps(value)
         except TypeError:
-            raise ValueError("Value is not json serializable")
+            raise ValueError("Value is not json serializable") from None
         self.config.config["modules"][self.id]["data"][key] = value
         self.config.modified = True
 

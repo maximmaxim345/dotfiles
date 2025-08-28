@@ -10,9 +10,7 @@ from df.config import ModuleConfig
 
 ID: str = "oh_my_zsh"
 NAME: str = "Oh My Zsh"
-DESCRIPTION: str = (
-    "Oh My Zsh is an open source, community-driven framework for managing your Zsh configuration."
-)
+DESCRIPTION: str = "Oh My Zsh is an open source, community-driven framework for managing your Zsh configuration."
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 

@@ -38,10 +38,7 @@ def dl_link(pltform: str, arch: str) -> str:
     if pltform == "linux":
         libc, version = platform.libc_ver()
         libc = "gnu" if libc == "glibc" else "musl"
-        return (
-            url
-            + f"/download/topgrade-{latest_version}-x86_64-unknown-linux-{libc}.tar.gz"
-        )
+        return url + f"/download/topgrade-{latest_version}-x86_64-unknown-linux-{libc}.tar.gz"
     elif pltform == "windows":
         return url + f"/download/topgrade-{latest_version}-x86_64-pc-windows-msvc.zip"
     else:
@@ -49,9 +46,9 @@ def dl_link(pltform: str, arch: str) -> str:
 
 
 def is_compatible() -> Union[bool, str]:
-    return (
-        platform.system() == "Linux" and platform.machine() in ["x86_64", "aarch64"]
-    ) or (platform.system() == "Windows" and platform.machine() == "AMD64")
+    return (platform.system() == "Linux" and platform.machine() in ["x86_64", "aarch64"]) or (
+        platform.system() == "Windows" and platform.machine() == "AMD64"
+    )
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -78,19 +75,13 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         print("Installing topgrade...")
         bin_dir = Path.home() / ".local" / "bin"
         bin_dir.mkdir(parents=True, exist_ok=True)
-        topgrade_exec = (
-            (bin_dir / "topgrade.exe") if pf == "windows" else (bin_dir / "topgrade")
-        )
+        topgrade_exec = (bin_dir / "topgrade.exe") if pf == "windows" else (bin_dir / "topgrade")
         shutil.copy(topgrade_path, topgrade_exec)
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     bin_dir = Path.home() / ".local" / "bin"
-    topgrade_exec = (
-        (bin_dir / "topgrade.exe")
-        if platform.system() == "Windows"
-        else (bin_dir / "topgrade")
-    )
+    topgrade_exec = (bin_dir / "topgrade.exe") if platform.system() == "Windows" else (bin_dir / "topgrade")
     (bin_dir / topgrade_exec).unlink(missing_ok=True)
 
 

@@ -27,9 +27,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         # Windows requires higher permissions to symlink files, so we'll set a system environment variable instead
         import winreg
 
-        key = winreg.OpenKey(
-            winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_ALL_ACCESS
-        )
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_ALL_ACCESS)
         try:
             old_value, _ = winreg.QueryValueEx(key, "STARSHIP_CONFIG")
             config.set("old_starship_config", old_value)
@@ -47,9 +45,7 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     if platform.system() == "Windows":
         import winreg
 
-        key = winreg.OpenKey(
-            winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_ALL_ACCESS
-        )
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_ALL_ACCESS)
         old_value = config.get("old_starship_config", None)
         if old_value is not None:
             winreg.SetValueEx(key, "STARSHIP_CONFIG", 0, winreg.REG_SZ, old_value)

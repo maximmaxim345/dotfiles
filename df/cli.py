@@ -55,9 +55,7 @@ def resolve_dependencies(module_ids: List[str], output: CLIOutput) -> List[str]:
 
     def visit(module_id: str):
         if module_id in visiting:
-            raise ValueError(
-                f"Circular dependency detected involving module '{module_id}'"
-            )
+            raise ValueError(f"Circular dependency detected involving module '{module_id}'")
         if module_id in visited:
             return
 
@@ -83,9 +81,7 @@ def resolve_dependencies(module_ids: List[str], output: CLIOutput) -> List[str]:
     return resolved
 
 
-def check_conflicts(
-    module_ids: List[str], config: df.config.Config, output: CLIOutput
-) -> bool:
+def check_conflicts(module_ids: List[str], config: df.config.Config, output: CLIOutput) -> bool:
     """
     Check for conflicts between modules to be installed and already installed modules.
     Returns True if conflicts are found, False otherwise.
@@ -94,7 +90,7 @@ def check_conflicts(
     installed_modules = set()
 
     # Get currently installed modules
-    for module_id, module in MODULES.items():
+    for module_id, _module in MODULES.items():
         module_config = config.get_module(module_id)
         if module_config.get_installed():
             installed_modules.add(module_id)
@@ -106,18 +102,14 @@ def check_conflicts(
         # Check if this module conflicts with any installed modules
         for conflict in module.CONFLICTING:
             if conflict in installed_modules:
-                output.error(
-                    f"Module '{module_id}' conflicts with already installed module '{conflict}'"
-                )
+                output.error(f"Module '{module_id}' conflicts with already installed module '{conflict}'")
                 conflicts_found = True
 
         # Check if any installed modules conflict with this module
         for installed_module_id in installed_modules:
             installed_module = MODULES[installed_module_id]
             if module_id in installed_module.CONFLICTING:
-                output.error(
-                    f"Module '{module_id}' conflicts with already installed module '{installed_module_id}'"
-                )
+                output.error(f"Module '{module_id}' conflicts with already installed module '{installed_module_id}'")
                 conflicts_found = True
 
     return conflicts_found
@@ -135,18 +127,14 @@ def check_compatibility(module_ids: List[str], output: CLIOutput) -> bool:
         compatibility = module.is_compatible()
 
         if compatibility is not True:
-            reason = (
-                compatibility if isinstance(compatibility, str) else "Unknown reason"
-            )
+            reason = compatibility if isinstance(compatibility, str) else "Unknown reason"
             output.error(f"Module '{module_id}' is not compatible: {reason}")
             incompatible_found = True
 
     return not incompatible_found
 
 
-def install_module(
-    module_id: str, config: df.config.Config, output: CLIOutput, force: bool = False
-) -> bool:
+def install_module(module_id: str, config: df.config.Config, output: CLIOutput, force: bool = False) -> bool:
     """
     Install a single module.
     Returns True on success, False on failure.
@@ -160,9 +148,7 @@ def install_module(
 
     # Check if already installed
     if module_config.get_installed() and not force:
-        output.verbose_info(
-            f"Module '{module_id}' is already installed (use --force to reinstall)"
-        )
+        output.verbose_info(f"Module '{module_id}' is already installed (use --force to reinstall)")
         return True
 
     try:
@@ -192,9 +178,7 @@ def install_module(
         return False
 
 
-def uninstall_module(
-    module_id: str, config: df.config.Config, output: CLIOutput
-) -> bool:
+def uninstall_module(module_id: str, config: df.config.Config, output: CLIOutput) -> bool:
     """
     Uninstall a single module.
     Returns True on success, False on failure.
@@ -421,7 +405,7 @@ def cmd_update(args, config: df.config.Config, output: CLIOutput) -> int:
 
     # If no modules specified, update all installed modules
     if not modules_to_update:
-        for module_id, module in MODULES.items():
+        for module_id, _module in MODULES.items():
             module_config = config.get_module(module_id)
             if module_config.get_installed():
                 modules_to_update.append(module_id)
@@ -490,19 +474,15 @@ Examples:
   dotfiles update                           # Update all installed modules
   dotfiles list                             # List all modules
   dotfiles list --installed                # List only installed modules
-  
+
 For devcontainers, use:
   dotfiles install --quiet --force git_config nvim_config_lazyvim
         """,
     )
 
     # Global options
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Enable verbose output"
-    )
-    parser.add_argument(
-        "-q", "--quiet", action="store_true", help="Suppress informational output"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
+    parser.add_argument("-q", "--quiet", action="store_true", help="Suppress informational output")
     parser.add_argument(
         "--continue-on-error",
         action="store_true",
@@ -514,12 +494,8 @@ For devcontainers, use:
 
     # Install command
     install_parser = subparsers.add_parser("install", help="Install modules")
-    install_parser.add_argument(
-        "modules", nargs="*", help="Module IDs to install (or --all for all compatible)"
-    )
-    install_parser.add_argument(
-        "--all", action="store_true", help="Install all compatible modules"
-    )
+    install_parser.add_argument("modules", nargs="*", help="Module IDs to install (or --all for all compatible)")
+    install_parser.add_argument("--all", action="store_true", help="Install all compatible modules")
     install_parser.add_argument(
         "--no-deps",
         action="store_true",
@@ -537,15 +513,11 @@ For devcontainers, use:
 
     # Update command
     update_parser = subparsers.add_parser("update", help="Update modules")
-    update_parser.add_argument(
-        "modules", nargs="*", help="Module IDs to update (default: all installed)"
-    )
+    update_parser.add_argument("modules", nargs="*", help="Module IDs to update (default: all installed)")
 
     # List command
     list_parser = subparsers.add_parser("list", help="List modules")
-    list_parser.add_argument(
-        "--installed", action="store_true", help="Show only installed modules"
-    )
+    list_parser.add_argument("--installed", action="store_true", help="Show only installed modules")
 
     # GUI command (for backwards compatibility)
     subparsers.add_parser("gui", help="Launch graphical interface")
@@ -567,9 +539,7 @@ For devcontainers, use:
             if module.is_compatible() is True:
                 compatible_modules.append(module_id)
         parsed_args.modules = compatible_modules
-        output.verbose_info(
-            f"Installing all compatible modules: {', '.join(compatible_modules)}"
-        )
+        output.verbose_info(f"Installing all compatible modules: {', '.join(compatible_modules)}")
 
     # Execute command
     try:

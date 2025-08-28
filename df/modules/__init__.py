@@ -1,10 +1,7 @@
 import glob
 import importlib.util
-import io
 import os
 import re
-
-io.TextIOWrapper
 
 MODULES = {}
 
@@ -82,9 +79,7 @@ for module in MODULES.values():
             raise ValueError(f"Module '{module.ID}' has invalid dependencies")
         # check if the dependency exists
         if dependency not in MODULES.keys():
-            raise ValueError(
-                f"Module '{module.ID}' has an invalid dependency '{dependency}'"
-            )
+            raise ValueError(f"Module '{module.ID}' has an invalid dependency '{dependency}'")
     # check if module.CONFLICTING is a list of strings
     if not isinstance(module.CONFLICTING, list):
         raise ValueError(f"Module '{module.ID}' has invalid conflicting modules")
@@ -93,9 +88,7 @@ for module in MODULES.values():
             raise ValueError(f"Module '{module.ID}' has invalid conflicting modules")
         # check if the conflicting module exists
         if conflicting not in MODULES.keys():
-            raise ValueError(
-                f"Module '{module.ID}' has an invalid conflicting module '{conflicting}'"
-            )
+            raise ValueError(f"Module '{module.ID}' has an invalid conflicting module '{conflicting}'")
     # for functions, we only check if they exist
     # we don't check if they have the correct signature
     # because running the function has unwanted side effects

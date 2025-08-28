@@ -23,9 +23,7 @@ def latest_version() -> str:
     """
     Returns the latest version of lazygit
     """
-    version = requests.get(
-        "https://api.github.com/repos/jesseduffield/lazygit/releases/latest"
-    ).json()["tag_name"]
+    version = requests.get("https://api.github.com/repos/jesseduffield/lazygit/releases/latest").json()["tag_name"]
     return version.lstrip("v")
 
 
@@ -56,25 +54,19 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
             arch = "x86_64"
         version = latest_version()
         link = dl_link(version, pf, arch)
-        download_path = temp_dir / (
-            "lazygit.zip" if pf == "Windows" else "lazygit.tar.gz"
-        )
+        download_path = temp_dir / ("lazygit.zip" if pf == "Windows" else "lazygit.tar.gz")
         df.download_file(link, download_path)
         print("Unpacking lazygit...")
         shutil.unpack_archive(download_path, temp_dir)
 
         print("Installing lazygit...")
-        lazygit_path = (
-            temp_dir / "lazygit.exe" if pf == "Windows" else temp_dir / "lazygit"
-        )
+        lazygit_path = temp_dir / "lazygit.exe" if pf == "Windows" else temp_dir / "lazygit"
         if pf != "Windows":
             lazygit_path.chmod(0o755)
         # Copy lazygit to the bin folder (create folder if it doesn't exist)
         bin_dir = Path.home() / ".local" / "bin"
         bin_dir.mkdir(parents=True, exist_ok=True)
-        lazygit_exec = (
-            (bin_dir / "lazygit.exe") if pf == "Windows" else (bin_dir / "lazygit")
-        )
+        lazygit_exec = (bin_dir / "lazygit.exe") if pf == "Windows" else (bin_dir / "lazygit")
         shutil.copy(lazygit_path, lazygit_exec)
         # Save the installed version
         config.set("version", version)

@@ -2,6 +2,7 @@
 # Dotfiles installer/updater/manager
 # Run this script with --help to see the available options
 
+import importlib.util
 import os
 import subprocess
 import sys
@@ -41,9 +42,7 @@ def create_venv_if_needed() -> None:
     if sys.platform == "win32":
         # On windows it's in a different location
         venv_pip = os.path.join(venv_dir, "Scripts", "pip.exe")
-    requirements = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "requirements.txt"
-    )
+    requirements = os.path.join(os.path.dirname(os.path.realpath(__file__)), "requirements.txt")
 
     if not os.path.exists(venv_dir):
         # Create venv
@@ -72,7 +71,7 @@ def restart_with_venv() -> None:
     os.environ["DF_ORIGINAL_EXECUTABLE"] = sys.executable
     if sys.platform == "win32":
         # Windows does not support replacing the current process
-        subprocess.run([venv_python] + sys.argv, check=True)
+        _ = subprocess.run([venv_python] + sys.argv, check=True)
     else:
         os.execl(venv_python, venv_python, *sys.argv)
 
@@ -86,14 +85,10 @@ if __name__ == "__main__":
         exit()  # This line is never reached
 
 # Test if the venv is working
-try:
-    import textual
-except ImportError:
+if importlib.util.find_spec("textual") is None:
     # The venv was manually specified by the user, just give an error
     if not os.environ.get("DF_ORIGINAL_EXECUTABLE"):
-        print(
-            "The venv is not working, try to run the script without specifying the venv, or fix the venv"
-        )
+        print("The venv is not working, try to run the script without specifying the venv, or fix the venv")
         exit(1)
     print("The venv is not working, trying to recreate it")
     venv_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".venv")
@@ -109,9 +104,7 @@ except ImportError:
 
         if sys.platform == "win32":
             # Windows does not support replacing the current process
-            subprocess.run(
-                [os.environ["DF_ORIGINAL_EXECUTABLE"]] + sys.argv, check=True
-            )
+            _ = subprocess.run([os.environ["DF_ORIGINAL_EXECUTABLE"]] + sys.argv, check=True)
         else:
             os.execl(
                 os.environ["DF_ORIGINAL_EXECUTABLE"],

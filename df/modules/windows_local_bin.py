@@ -24,9 +24,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     print("Adding ~/.local/bin to the PATH")
     import winreg
 
-    key = winreg.OpenKey(
-        winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_ALL_ACCESS
-    )
+    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_ALL_ACCESS)
     path_value, _ = winreg.QueryValueEx(key, "Path")
     bin_dir = str(bin_dir)
     if bin_dir not in path_value:
@@ -40,9 +38,7 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
     import winreg
 
-    key = winreg.OpenKey(
-        winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_ALL_ACCESS
-    )
+    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_ALL_ACCESS)
     path_value, _ = winreg.QueryValueEx(key, "Path")
     bin_dir = str(bin_dir)
     if bin_dir in path_value:

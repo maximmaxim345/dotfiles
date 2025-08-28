@@ -12,9 +12,7 @@ from df.config import ModuleConfig
 
 ID: str = "starship"
 NAME: str = "Starship"
-DESCRIPTION: str = (
-    "The minimal, blazing-fast, and infinitely customizable prompt for any shell!"
-)
+DESCRIPTION: str = "The minimal, blazing-fast, and infinitely customizable prompt for any shell!"
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 

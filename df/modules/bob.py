@@ -41,9 +41,9 @@ def subfolder_name(platform: str, arch: str) -> str:
 
 
 def is_compatible() -> Union[bool, str]:
-    return (
-        platform.system() == "Linux" and platform.machine() in ["x86_64", "aarch64"]
-    ) or (platform.system() == "Windows" and platform.machine() == "AMD64")
+    return (platform.system() == "Linux" and platform.machine() in ["x86_64", "aarch64"]) or (
+        platform.system() == "Windows" and platform.machine() == "AMD64"
+    )
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -84,9 +84,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     bin_dir = Path.home() / ".local" / "bin"
-    bob_exec = (
-        (bin_dir / "bob.exe") if platform.system() == "Windows" else (bin_dir / "bob")
-    )
+    bob_exec = (bin_dir / "bob.exe") if platform.system() == "Windows" else (bin_dir / "bob")
     # Run bob erase
     subprocess.run([bob_exec, "erase"], stdout=stdout, stderr=stdout)
     # Delete the bob executable

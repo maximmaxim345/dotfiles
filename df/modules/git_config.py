@@ -53,6 +53,4 @@ def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     config.set("version", "1")
     print("Git config template updated at ~/.gitconfig")
     print("Please update your name, email, and other settings manually")
-    print(
-        "You need to manually bring in your local git config (~/.gitconfig.local) if you want to keep those changes"
-    )
+    print("You need to manually bring in your local git config (~/.gitconfig.local) if you want to keep those changes")

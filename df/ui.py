@@ -68,12 +68,8 @@ class ModuleItem(Static):
             id="module-description",
         )
         yield Container(
-            Button(
-                "Install without dependencies", id="install-no-deps", variant="warning"
-            ),
-            Button(
-                "Update without dependencies", id="update-no-deps", variant="warning"
-            ),
+            Button("Install without dependencies", id="install-no-deps", variant="warning"),
+            Button("Update without dependencies", id="update-no-deps", variant="warning"),
             Button("Install", id="install", variant="success"),
             Button("Update", id="update", variant="warning"),
             Button("Remove", id="remove", variant="error"),
@@ -95,9 +91,7 @@ class ModuleItem(Static):
             # compose will use the new value
             pass
 
-    def watch_queued_action(
-        self, old_action: Union[str, None], new_action: Union[str, None]
-    ) -> None:
+    def watch_queued_action(self, old_action: Union[str, None], new_action: Union[str, None]) -> None:
         if old_action == new_action:
             return
         if new_action is None:
@@ -308,9 +302,7 @@ class ErrorQueueingScreen(Screen):
                     scroll_end=True,
                 )
             elif conflict.reason == "conflicting":
-                conflicting_as_text = ", ".join(
-                    [MODULES[id].NAME for id in conflict.conflicts_with]
-                )
+                conflicting_as_text = ", ".join([MODULES[id].NAME for id in conflict.conflicts_with])
                 if len(conflict.conflicts_with) == 1:
                     self.textlog.write(
                         f'{MODULES[conflict.module_id].NAME} conflicts with the installed module "{conflicting_as_text}".',
@@ -377,9 +369,7 @@ class DotfilesApp(App):
                 module_config = self.Config.get_module(module_id)
                 is_installed = module_config.get_installed()
                 self.modules_installed[module_id] = is_installed
-                self.modules_installed_version[module_id] = (
-                    module_config.get_installed_version()
-                )
+                self.modules_installed_version[module_id] = module_config.get_installed_version()
                 if is_installed and hasattr(module, "has_update"):
                     updates_to_check.append(module_id)
                 else:
@@ -406,17 +396,11 @@ class DotfilesApp(App):
                     self.modules_has_update[module_id] = future.result()
                 except Exception as e:
                     self.modules_has_update[module_id] = False
-                    print(
-                        f"Error while checking for updates for {MODULES[module_id].NAME}: {e}"
-                    )
+                    print(f"Error while checking for updates for {MODULES[module_id].NAME}: {e}")
 
         # Now add modules, which have a different (module) version than the installed version
         for module_id, module in MODULES.items():
-            if (
-                self.modules_installed[module_id]
-                and hasattr(module, "VERSION")
-                and module.VERSION is not None
-            ):
+            if self.modules_installed[module_id] and hasattr(module, "VERSION") and module.VERSION is not None:
                 if self.modules_installed_version[module_id] != module.VERSION:
                     self.modules_has_update[module_id] = True
 
@@ -528,7 +512,7 @@ class DotfilesApp(App):
             # be installed
             compatible = self.modules_is_compatible[module_id]
             reason = None
-            if compatible == True:
+            if compatible:
                 # The module says it is compatible, check if there are any
                 # conflicting modules
                 conflicting = []
@@ -541,12 +525,10 @@ class DotfilesApp(App):
                     widget.style = "not-installed"
                     continue
                 else:
-                    conflicting_as_text = ", ".join(
-                        [MODULES[id].NAME for id in conflicting]
-                    )
+                    conflicting_as_text = ", ".join([MODULES[id].NAME for id in conflicting])
                     reason = f"Conflicts with {conflicting_as_text}"
             else:
-                if compatible == False:
+                if not compatible:
                     reason = "Not compatible with this system"
                 else:
                     reason = compatible
@@ -560,7 +542,7 @@ class DotfilesApp(App):
         queud_action = {}
         for action, module_id in self.queued_actions:
             queud_action[module_id] = action
-        for module_id, module in MODULES.items():
+        for module_id, _module in MODULES.items():
             widget = self.query(f"#module_{module_id}").first(ModuleItem)
             if module_id in queud_action:
                 widget.queued_action = queud_action[module_id]
@@ -601,17 +583,17 @@ class DotfilesApp(App):
             action: str
             module_id: str
             reason: str  # "incompatible" or "conflicting"
-            conflicts_with: List[
-                str
-            ]  # If reason is "conflicting", this are the conflicting modules
+            conflicts_with: List[str]  # If reason is "conflicting", this are the conflicting modules
 
             def __init__(
                 self,
                 action: str,
                 module_id: str,
                 reason: str,
-                conflicts_with: List[str] = [],
+                conflicts_with: List[str] | None = None,
             ) -> None:
+                if conflicts_with is None:
+                    conflicts_with = []
                 super().__init__()
                 self.action = action
                 self.module_id = module_id
@@ -627,9 +609,7 @@ class DotfilesApp(App):
         """
         conflicts: List[Conflict]
 
-        def __init__(
-            self, action: str, module_id: str, conflicts: List[Conflict]
-        ) -> None:
+        def __init__(self, action: str, module_id: str, conflicts: List[Conflict]) -> None:
             super().__init__()
             self.action = action
             self.module_id = module_id
@@ -651,13 +631,12 @@ class DotfilesApp(App):
                 self.conflicts = []
 
         if state is None:
-            topmost = True
             state = State()
             state.modules_installed = self.modules_installed.copy()
             state.queued_actions = self.queued_actions.copy()
             state.modules_has_update = self.modules_has_update.copy()
         else:
-            topmost = False
+            pass
         # The order of actions is important, since we only show possible
         # actions, we can assume that the action is valid at this point
         if action == "install" or action == "install-no-deps":
@@ -671,11 +650,7 @@ class DotfilesApp(App):
             # Queue the module itself
             if not state.modules_installed[module_id]:
                 if not self.modules_is_compatible[module_id]:
-                    state.conflicts.append(
-                        self.ImpossibleActionError.Conflict(
-                            action, module_id, "incompatible"
-                        )
-                    )
+                    state.conflicts.append(self.ImpossibleActionError.Conflict(action, module_id, "incompatible"))
 
                 state.modules_installed[module_id] = True
                 # Remove previous actions for this module
@@ -687,9 +662,7 @@ class DotfilesApp(App):
                         # It was allready installed
                         shouldAppend = False
                     break
-                state.queued_actions = [
-                    a for a in state.queued_actions if a[1] != module_id
-                ]
+                state.queued_actions = [a for a in state.queued_actions if a[1] != module_id]
                 if shouldAppend:
                     state.queued_actions.append((action, module_id))
         elif action == "update" or action == "update-no-deps":
@@ -704,9 +677,7 @@ class DotfilesApp(App):
             if state.modules_has_update[module_id]:
                 state.modules_has_update[module_id] = False  # Mark as up to date
                 # Remove previous actions for this module
-                state.queued_actions = [
-                    a for a in state.queued_actions if a[1] != module_id
-                ]
+                state.queued_actions = [a for a in state.queued_actions if a[1] != module_id]
                 state.queued_actions.append((action, module_id))
         elif action == "remove":
             # Queue the module itself
@@ -721,9 +692,7 @@ class DotfilesApp(App):
                         # It is not installed, we dont need to remove it
                         shouldAppend = False
                     break
-                state.queued_actions = [
-                    a for a in state.queued_actions if a[1] != module_id
-                ]
+                state.queued_actions = [a for a in state.queued_actions if a[1] != module_id]
                 if shouldAppend:
                     state.queued_actions.append((action, module_id))
             # Recursively queue modules that depend on this module for removal
@@ -733,7 +702,7 @@ class DotfilesApp(App):
 
         # Check if all actions we do are uninstall actions
         all_uninstall = True
-        for a, id in state.queued_actions:
+        for a, _id in state.queued_actions:
             if a != "remove":
                 all_uninstall = False
                 break
@@ -745,29 +714,20 @@ class DotfilesApp(App):
                 # A module is incompatible, we cannot apply the action
                 # But we make an exception if we only uninstall things
                 if not all_uninstall:
-                    state.conflicts.append(
-                        self.ImpossibleActionError.Conflict(
-                            action, module_id, "incompatible"
-                        )
-                    )
+                    state.conflicts.append(self.ImpossibleActionError.Conflict(action, module_id, "incompatible"))
             for incompatible_id in module.CONFLICTING:
                 # Same here, just also save the conflicting module
                 if state.modules_installed[incompatible_id] and not all_uninstall:
                     # If we allready have this conflict, just add the conflicting module to the list
                     added = False
                     for conflict in state.conflicts:
-                        if (
-                            conflict.module_id == module_id
-                            and conflict.reason == "conflicting"
-                        ):
+                        if conflict.module_id == module_id and conflict.reason == "conflicting":
                             conflict.conflicts_with.append(incompatible_id)
                             added = True
                             break
                     if not added:
                         state.conflicts.append(
-                            self.ImpossibleActionError.Conflict(
-                                action, module_id, "conflicting", [incompatible_id]
-                            )
+                            self.ImpossibleActionError.Conflict(action, module_id, "conflicting", [incompatible_id])
                         )
         # Throw an error if we have conflicts
         if len(state.conflicts) > 0:

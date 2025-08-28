@@ -15,7 +15,9 @@ DESCRIPTION: str = "Fira Code: free monospaced font with programming ligatures"
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 
-dl_link = "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/FiraCode/Medium/FiraCodeNerdFont-Medium.ttf"
+dl_link = (
+    "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/FiraCode/Medium/FiraCodeNerdFont-Medium.ttf"
+)
 font_name = "Fira Code Medium Nerd Font Complete.ttf"
 if platform.system() == "Windows":
     fonts_folder = Path.home() / "AppData/Local/Microsoft/Windows/Fonts"
@@ -57,9 +59,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
                 winreg.CloseKey(key)
             except OSError as e:
                 print(f"Error registering font: {e}")
-            print(
-                "It is recommended to restart your computer to apply the font changes."
-            )
+            print("It is recommended to restart your computer to apply the font changes.")
         else:
             # Update the font cache if fc-cache is installed
             print("Updating font cache...")

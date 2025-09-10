@@ -61,15 +61,36 @@ install_system_packages() {
     case "$DISTRO" in
         alpine)
             print_info "Detected Alpine. Installing python3, py3-pip and py3-virtualenv via apk..."
-               ${SUDO:-} apk add --no-cache python3 py3-pip py3-virtualenv gh || return 1
+            ${SUDO:-} apk add --no-cache python3 py3-pip py3-virtualenv || return 1
             ;;
         debian)
             print_info "Detected Debian/Ubuntu. Installing python3, python3-pip and python3-venv via apt..."
             ${SUDO:-} apt-get update -qq
-            DEBIAN_FRONTEND=noninteractive ${SUDO:-} apt-get install -y python3 python3-pip python3-venv gh || return 1
+            DEBIAN_FRONTEND=noninteractive ${SUDO:-} apt-get install -y python3 python3-pip python3-venv || return 1
             ;;
         *)
             print_warning "Unknown distro; please ensure python3, pip and venv support are installed manually."
+            ;;
+    esac
+}
+
+install_github_cli() {
+    case "$DISTRO" in
+        alpine)
+            # GitHub CLI is not available in Alpine's main repos, try to install via alternative method
+            print_info "Attempting to install GitHub CLI for Alpine..."
+            if ! ${SUDO:-} apk add --no-cache github-cli 2>/dev/null; then
+                print_warning "GitHub CLI not available in Alpine repositories. Skipping installation."
+                print_info "You can install it manually later if needed: https://cli.github.com/"
+                return 0
+            fi
+            ;;
+        debian)
+            print_info "Installing GitHub CLI for Debian/Ubuntu..."
+            DEBIAN_FRONTEND=noninteractive ${SUDO:-} apt-get install -y gh || return 1
+            ;;
+        *)
+            print_warning "Unknown distro; GitHub CLI installation skipped."
             ;;
     esac
 }
@@ -130,7 +151,7 @@ if ! command -v gh >/dev/null 2>&1; then
     print_info "GitHub CLI (gh) not found; attempting to install via package manager..."
     ensure_root
     detect_distro
-    install_system_packages || print_warning "Automatic gh install failed; please install GitHub CLI manually (https://cli.github.com/)."
+    install_github_cli || print_warning "Automatic gh install failed; please install GitHub CLI manually (https://cli.github.com/)."
 fi
 
 # Modules to install (excluding GUI applications and system-specific tools)

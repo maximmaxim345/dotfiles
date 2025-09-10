@@ -127,13 +127,32 @@ ensure_python3_available() {
 }
 
 create_and_activate_venv() {
+    # Always create and use our own .venv, even if already in another venv
+    if [ -n "$VIRTUAL_ENV" ]; then
+        print_info "Currently in virtual environment: $VIRTUAL_ENV"
+        print_info "Deactivating to create dotfiles-specific venv"
+        # Deactivate current venv
+        unset VIRTUAL_ENV
+        unset -f deactivate 2>/dev/null || true
+        # Reset PATH to remove venv paths
+        if [ -n "$_OLD_VIRTUAL_PATH" ]; then
+            export PATH="$_OLD_VIRTUAL_PATH"
+            unset _OLD_VIRTUAL_PATH
+        fi
+    fi
+
     if [ ! -d ".venv" ]; then
         print_info "Creating .venv using ${PY} -m venv .venv"
         "$PY" -m venv .venv
     fi
+    
     # shellcheck disable=SC1091
     . .venv/bin/activate
     pip install --upgrade pip setuptools wheel >/dev/null 2>&1 || true
+    
+    # Install dotfiles dependencies in the venv
+    print_info "Installing dotfiles dependencies in .venv"
+    pip install -r requirements.txt >/dev/null 2>&1 || true
 }
 
 # Sanity check: ensure we're in repo root

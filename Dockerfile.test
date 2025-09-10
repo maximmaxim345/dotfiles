@@ -1,0 +1,19 @@
+FROM alpine:latest
+
+# Install bash which is required by the install script
+RUN apk add --no-cache bash
+
+# Set up basic environment
+WORKDIR /dotfiles
+
+# Copy the entire dotfiles directory
+COPY . /dotfiles/
+
+# Make install script executable
+RUN chmod +x /dotfiles/install.sh
+
+# Run the installation script
+RUN /dotfiles/install.sh
+
+# Keep container running for inspection if needed
+CMD ["/bin/sh"]

@@ -1,145 +1,148 @@
 DotfilesApp {
-    layout: horizontal;
+  layout: vertical;
+}
+
+#main-content {
+  layout: horizontal;
 }
 
 #categories {
-    layout: vertical;
+  layout: vertical;
+  width: 1fr;
 }
 
 .category {
-    height: auto;
-    border: round $accent;
-    background: $background;
+  height: auto;
+  border: round $accent;
+  background: $background;
 }
 
 .category-header {
-    content-align: center bottom;
-    border-bottom: round $accent;
+  content-align: center bottom;
+  border-bottom: round $accent;
 }
 
 ModuleItem {
-    layout: horizontal;
-    background: $primary-background;
-    margin-bottom: 1;
+  layout: horizontal;
+  background: $primary-background;
+  margin-bottom: 1;
 }
 
 ModuleItem.module-changed {
-    border-left: thick $secondary;
+  border-left: thick $secondary;
 }
 
 #module-description {
-    height: auto;
+  height: auto;
 }
 
 #module-description > #name {
-    content-align: center top;
-    background: $primary-background-lighten-1;
+  content-align: center top;
+  background: $primary-background-lighten-1;
 }
 
 #module-actions {
-    layout: horizontal;
-    width: auto;
-    dock: right;
+  layout: horizontal;
+  width: auto;
+  dock: right;
 }
 
 #module-actions > Button {
-    display: none;
-    height: 100%;
+  display: none;
+  height: 100%;
 }
 
 .module-style-not-installed #install {
-    display: block;
+  display: block;
 }
 
 .module-style-installed #remove {
-    display: block;
+  display: block;
 }
 
 .module-style-updatable #update {
-    display: block;
+  display: block;
 }
 
 .advanced > .module-style-updatable #update-no-deps {
-    display: block;
+  display: block;
 }
 
 .module-style-updatable #remove {
-    display: block;
+  display: block;
 }
 
 .advanced > .module-style-not-installed #install-no-deps {
-    display: block;
+  display: block;
 }
 
 .queued-actions-header {
-    content-align: center bottom;
-    border-bottom: round $secondary;
+  content-align: center bottom;
+  border-bottom: round $secondary;
 }
 
 #queued_actions {
-    border: round #181;
-    height: auto;
-    border: round $secondary;
-    max-height: 50%;
+  border: round $secondary;
+  height: auto;
+  width: 25;
 }
 
-
 #actions {
-    layout: horizontal;
-    height: auto;
+  layout: horizontal;
+  height: auto;
 }
 
 #actions > #apply {
-    dock: right;
+  dock: right;
 }
 
-#title{
-    content-align: center top;
-    border-bottom: round $accent;
+#title {
+  content-align: center top;
+  border-bottom: round $accent;
 }
 
 InstallationScreen > #buttons {
-    layout: horizontal;
-    height: auto;
-    /* dock: bottom; */
+  layout: horizontal;
+  height: auto;
+  /* dock: bottom; */
 }
 
 #log {
-    border: round $accent;
+  border: round $accent;
 }
 
 #buttons > #quit {
-    dock: right;
+  dock: right;
 }
 
 QueuedActionItem.queued {
 }
 
 QueuedActionItem.installing {
-    color: $warning;
-    /* border-left: solid $warning; */
+  color: $warning;
+  /* border-left: solid $warning; */
 }
 
 QueuedActionItem.installed {
-    color: $success;
-    border-left: solid $success;
+  color: $success;
+  border-left: solid $success;
 }
 
 QueuedActionItem.failed {
-    color: $error;
-    border-left: thick $error;
+  color: $error;
+  border-left: thick $error;
 }
 
 ErrorQueueingScreen > #buttons {
-    layout: horizontal;
-    height: auto;
-    /* dock: bottom; */
+  layout: horizontal;
+  height: auto;
+  /* dock: bottom; */
 }
 
 #buttons > #back {
-    dock: right;
+  dock: right;
 }
 
 #conflicts-log {
-    border: round $accent;
+  border: round $accent;
 }

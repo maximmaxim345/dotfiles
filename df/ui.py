@@ -122,7 +122,7 @@ class QueuedActionItem(Static):
         self.module_name = module.NAME
 
     def compose(self) -> ComposeResult:
-        yield Static(f"{self.action} {self.module_name}")
+        yield Static(f"- {self.action} {self.module_name}")
         yield LoadingIndicator()
 
 
@@ -406,33 +406,36 @@ class DotfilesApp(App):
 
     def compose(self) -> ComposeResult:
         yield Static("Dotfiles Manager", id="title")
-        # Add Containers which will have the modules
+        # Create main content area with categories on left and queued actions on right
         yield Container(
             Container(
-                Static("Updatable", classes="category-header"),
-                id="updatable",
-                classes="category",
+                Container(
+                    Static("Updatable", classes="category-header"),
+                    id="updatable",
+                    classes="category",
+                ),
+                Container(
+                    Static("Installed", classes="category-header"),
+                    id="installed",
+                    classes="category",
+                ),
+                Container(
+                    Static("Not Installed", classes="category-header"),
+                    id="not_installed",
+                    classes="category",
+                ),
+                Container(
+                    Static("Incompatible", classes="category-header"),
+                    id="incompatible",
+                    classes="category",
+                ),
+                id="categories",
             ),
             Container(
-                Static("Installed", classes="category-header"),
-                id="installed",
-                classes="category",
+                Static("Queued Actions", classes="queued-actions-header"),
+                id="queued_actions",
             ),
-            Container(
-                Static("Not Installed", classes="category-header"),
-                id="not_installed",
-                classes="category",
-            ),
-            Container(
-                Static("Incompatible", classes="category-header"),
-                id="incompatible",
-                classes="category",
-            ),
-            id="categories",
-        )
-        yield Container(
-            Static("Queued Actions", classes="queued-actions-header"),
-            id="queued_actions",
+            id="main-content",
         )
         yield Container(
             Button("Quit", id="quit", variant="error"),

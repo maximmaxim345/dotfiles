@@ -1,4 +1,4 @@
 textual==0.17.1
 requests>=2.32.0
 mypy==1.11.2
-types-requests
+types-requests==2.32.4.20250913

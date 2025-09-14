@@ -14,7 +14,7 @@ CONFLICTING: List[str] = []
 
 
 def is_compatible() -> Union[bool, str]:
-    # Only compatible with Linux
+    # This module is only compatible with Linux desktop environments
     return platform.system() == "Linux"
 
 

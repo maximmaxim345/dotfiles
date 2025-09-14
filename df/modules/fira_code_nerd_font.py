@@ -21,12 +21,14 @@ dl_link = (
 font_name = "Fira Code Medium Nerd Font Complete.ttf"
 if platform.system() == "Windows":
     fonts_folder = Path.home() / "AppData/Local/Microsoft/Windows/Fonts"
+elif platform.system() == "Darwin":
+    fonts_folder = Path.home() / "Library/Fonts"
 else:
     fonts_folder = Path.home() / ".local/share/fonts/"
 
 
 def is_compatible() -> Union[bool, str]:
-    return platform.system() == "Linux" or platform.system() == "Windows"
+    return platform.system() in ["Linux", "Windows", "Darwin"]
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

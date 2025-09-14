@@ -19,7 +19,7 @@ oh_my_zsh_path = Path.home() / ".oh-my-zsh"
 
 
 def is_compatible() -> Union[bool, str]:
-    return platform.system() in ("Linux", "Darwin")
+    return platform.system() in ["Linux", "Darwin"]
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

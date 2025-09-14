@@ -13,7 +13,11 @@ from df.config import ModuleConfig
 
 ID: str = "neovide"
 NAME: str = "Neovide"
-DESCRIPTION: str = "No Nonsense Neovim Client in Rust, with additional distrobox integration"
+DESCRIPTION: str = (
+    "No Nonsense Neovim Client in Rust, with additional distrobox integration. "
+    "For macOS and Windows, please install Neovide using your preferred package manager "
+    "(e.g., Homebrew, Scoop, or Chocolatey)."
+)
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 

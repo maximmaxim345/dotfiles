@@ -28,45 +28,61 @@ def dl_link(version: str, platform: str, arch: str) -> str:
         return url + f"zoxide-{version}-{arch}-unknown-linux-musl.tar.gz"
     elif platform == "darwin":
         return url + f"zoxide-{version}-{arch}-apple-darwin.tar.gz"
+    elif platform == "windows":
+        return url + f"zoxide-{version}-x86_64-pc-windows-msvc.zip"
     else:
         raise ValueError(f"Unsupported platform {platform}")
 
 
 def is_compatible() -> Union[bool, str]:
-    # We only support Linux/Mac with x86_64 and aarch64
-    return platform.system() in ["Linux", "Darwin"] and platform.machine() in [
-        "x86_64",
-        "aarch64",
-    ]
+    return (platform.system() in ["Linux", "Darwin"] and platform.machine() in ["x86_64", "aarch64"]) or (
+        platform.system() == "Windows" and platform.machine() == "AMD64"
+    )
 
 
-# TODO: We could also support Windows here
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     latest_version = requests.get(release_url).url.split("/")[-1].lstrip("v")
     with tempfile.TemporaryDirectory() as temp_dir:
         print("Downloading zoxide...")
         temp_dir = Path(temp_dir)
-        download_path = temp_dir / "zoxide.tar.gz"
         pf = platform.system().lower()
         arch = platform.machine().lower()
+        if arch == "amd64":
+            arch = "x86_64"
         link = dl_link(latest_version, pf, arch)
-        df.download_file(link, download_path)
-        print("Unpacking zoxide...")
-        shutil.unpack_archive(download_path, temp_dir)
+        if pf == "windows":
+            download_path = temp_dir / "zoxide.zip"
+            df.download_file(link, download_path)
+            print("Unpacking zoxide...")
+            shutil.unpack_archive(download_path, temp_dir)
+            zoxide_path = temp_dir / "zoxide.exe"
+        else:
+            download_path = temp_dir / "zoxide.tar.gz"
+            df.download_file(link, download_path)
+            print("Unpacking zoxide...")
+            shutil.unpack_archive(download_path, temp_dir)
+            zoxide_path = temp_dir / "zoxide"
+            zoxide_path.chmod(0o755)
 
         print("Installing zoxide...")
-        zoxide_path = temp_dir / "zoxide"
-        zoxide_path.chmod(0o755)
         # Copy zoxide to the bin folder (create folder if it doesn't exist)
-        (Path.home() / ".local" / "bin").mkdir(parents=True, exist_ok=True)
-        shutil.copy(zoxide_path, Path.home() / ".local" / "bin" / "zoxide")
+        bin_dir = Path.home() / ".local" / "bin"
+        bin_dir.mkdir(parents=True, exist_ok=True)
+        if pf == "windows":
+            shutil.copy(zoxide_path, bin_dir / "zoxide.exe")
+        else:
+            shutil.copy(zoxide_path, bin_dir / "zoxide")
         # Save the installed version
         config.set("version", latest_version)
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     # Delete the zoxide executable
-    (Path.home() / ".local" / "bin" / "zoxide").unlink(missing_ok=True)
+    bin_dir = Path.home() / ".local" / "bin"
+    if platform.system() == "Windows":
+        (bin_dir / "zoxide.exe").unlink(missing_ok=True)
+    else:
+        (bin_dir / "zoxide").unlink(missing_ok=True)
 
 
 def has_update(config: ModuleConfig) -> Union[bool, str]:

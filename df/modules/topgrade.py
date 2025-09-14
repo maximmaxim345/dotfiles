@@ -23,31 +23,27 @@ def dl_link(pltform: str, arch: str) -> str:
     """
     Returns the download link for the latest version
     """
-    # Typical file names:
-    # topgrade-v13.0.0-aarch64-unknown-linux-gnu.tar.gz
-    # topgrade-v13.0.0-aarch64-unknown-linux-musl.tar.gz
-    # topgrade-v13.0.0-armv7-unknown-linux-gnueabihf.tar.gz
-    # topgrade-v13.0.0-x86_64-apple-darwin.tar.gz
-    # topgrade-v13.0.0-x86_64-pc-windows-msvc.zip
-    # topgrade-v13.0.0-x86_64-unknown-linux-gnu.tar.gz
-    # topgrade-v13.0.0-x86_64-unknown-linux-musl.tar.gz
-
-    url = "https://github.com/topgrade-rs/topgrade/releases/latest"
-    response = requests.get(url)
+    api_url = "https://github.com/topgrade-rs/topgrade/releases/latest"
+    response = requests.get(api_url)
     latest_version = response.url.split("/")[-1]
+    download_base = "https://github.com/topgrade-rs/topgrade/releases/download"
     if pltform == "linux":
         libc, version = platform.libc_ver()
         libc = "gnu" if libc == "glibc" else "musl"
-        return url + f"/download/topgrade-{latest_version}-x86_64-unknown-linux-{libc}.tar.gz"
+        return f"{download_base}/{latest_version}/topgrade-{latest_version}-{arch}-unknown-linux-{libc}.tar.gz"
     elif pltform == "windows":
-        return url + f"/download/topgrade-{latest_version}-x86_64-pc-windows-msvc.zip"
+        return f"{download_base}/{latest_version}/topgrade-{latest_version}-x86_64-pc-windows-msvc.zip"
+    elif pltform == "darwin":
+        return f"{download_base}/{latest_version}/topgrade-{latest_version}-{arch}-apple-darwin.tar.gz"
     else:
         raise ValueError(f"Unsupported platform {pltform}")
 
 
 def is_compatible() -> Union[bool, str]:
-    return (platform.system() == "Linux" and platform.machine() in ["x86_64", "aarch64"]) or (
-        platform.system() == "Windows" and platform.machine() == "AMD64"
+    return (
+        (platform.system() == "Linux" and platform.machine() in ["x86_64", "aarch64"])
+        or (platform.system() == "Darwin" and platform.machine() in ["x86_64", "aarch64"])
+        or (platform.system() == "Windows" and platform.machine() == "AMD64")
     )
 
 
@@ -57,6 +53,8 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         temp_dir = Path(temp_dir)
         pf = platform.system().lower()
         arch = platform.machine().lower()
+        if arch == "amd64":
+            arch = "x86_64"
         link = dl_link(pf, arch)
         if pf == "windows":
             download_path = temp_dir / "topgrade.zip"

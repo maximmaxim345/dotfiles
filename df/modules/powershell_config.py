@@ -14,19 +14,25 @@ CONFLICTING: List[str] = []
 
 
 def is_compatible() -> Union[bool, str]:
-    return platform.system() == "Windows"
+    return platform.system() in ["Windows", "Linux", "Darwin"]
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
-    source_path = df.DOTFILES_PATH / "PowerShell"
-    target_path = Path.home() / "Documents" / "WindowsPowerShell"
+    source_path = df.DOTFILES_PATH / "PowerShell" / "Microsoft.PowerShell_profile.ps1"
+    if platform.system() == "Windows":
+        target_path = Path.home() / "Documents" / "WindowsPowerShell" / "Microsoft.PowerShell_profile.ps1"
+    else:
+        target_path = Path.home() / ".config" / "powershell" / "profile.ps1"
 
     df.create_backup(target_path, config, "old_path")
     df.symlink_path(source_path, target_path)
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
-    target_path = Path.home() / "Documents" / "PowerShell"
+    if platform.system() == "Windows":
+        target_path = Path.home() / "Documents" / "WindowsPowerShell" / "Microsoft.PowerShell_profile.ps1"
+    else:
+        target_path = Path.home() / ".config" / "powershell" / "profile.ps1"
 
     df.restore_backup(target_path, config, "old_path")
 

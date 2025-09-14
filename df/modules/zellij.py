@@ -39,6 +39,7 @@ def dl_link(platform: str, arch: str) -> str:
 
 def is_compatible() -> Union[bool, str]:
     # We only support Linux/Mac with x86_64 and aarch64
+    # Zellij does not have official Windows support yet
     return platform.system() in ["Linux", "Darwin"] and platform.machine() in [
         "x86_64",
         "aarch64",

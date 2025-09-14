@@ -44,9 +44,9 @@ def is_compatible() -> Union[bool, str]:
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     latest_version = requests.get(release_url).url.split("/")[-1].lstrip("v")
-    with tempfile.TemporaryDirectory() as temp_dir:
+    with tempfile.TemporaryDirectory() as temp_dir_str:
         print("Downloading zoxide...")
-        temp_dir = Path(temp_dir)
+        temp_dir = Path(temp_dir_str)
         pf = platform.system().lower()
         arch = platform.machine().lower()
         if arch == "amd64":
@@ -89,7 +89,8 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 def has_update(config: ModuleConfig) -> Union[bool, str]:
     latest_version = requests.get(release_url).url.split("/")[-1].lstrip("v")
-    return config.get("version") != latest_version
+    current_version = config.get("version", "")
+    return str(current_version) != latest_version
 
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

@@ -24,21 +24,21 @@ class CLIOutput:
         self.verbose = verbose
         self.quiet = quiet
 
-    def info(self, message: str):
+    def info(self, message: str) -> None:
         """Print info message unless quiet mode"""
         if not self.quiet:
             print(f"[INFO] {message}")
 
-    def verbose_info(self, message: str):
+    def verbose_info(self, message: str) -> None:
         """Print verbose info message only in verbose mode"""
         if self.verbose and not self.quiet:
             print(f"[VERBOSE] {message}")
 
-    def error(self, message: str):
+    def error(self, message: str) -> None:
         """Print error message (always shown)"""
         print(f"[ERROR] {message}", file=sys.stderr)
 
-    def warning(self, message: str):
+    def warning(self, message: str) -> None:
         """Print warning message unless quiet mode"""
         if not self.quiet:
             print(f"[WARN] {message}")
@@ -53,7 +53,7 @@ def resolve_dependencies(module_ids: List[str], output: CLIOutput) -> List[str]:
     visited = set()
     visiting = set()
 
-    def visit(module_id: str):
+    def visit(module_id: str) -> None:
         if module_id in visiting:
             raise ValueError(f"Circular dependency detected involving module '{module_id}'")
         if module_id in visited:
@@ -275,7 +275,7 @@ def update_module(module_id: str, config: df.config.Config, output: CLIOutput) -
         return False
 
 
-def list_modules(config: df.config.Config, output: CLIOutput, show_all: bool = True):
+def list_modules(config: df.config.Config, output: CLIOutput, show_all: bool = True) -> None:
     """List all available modules with their status"""
 
     if output.quiet:
@@ -319,7 +319,7 @@ def list_modules(config: df.config.Config, output: CLIOutput, show_all: bool = T
             print()
 
 
-def cmd_install(args, config: df.config.Config, output: CLIOutput) -> int:
+def cmd_install(args: argparse.Namespace, config: df.config.Config, output: CLIOutput) -> int:
     """Handle the install command"""
 
     if not args.modules:
@@ -372,7 +372,7 @@ def cmd_install(args, config: df.config.Config, output: CLIOutput) -> int:
     return 0
 
 
-def cmd_uninstall(args, config: df.config.Config, output: CLIOutput) -> int:
+def cmd_uninstall(args: argparse.Namespace, config: df.config.Config, output: CLIOutput) -> int:
     """Handle the uninstall command"""
 
     if not args.modules:
@@ -398,7 +398,7 @@ def cmd_uninstall(args, config: df.config.Config, output: CLIOutput) -> int:
     return 0
 
 
-def cmd_update(args, config: df.config.Config, output: CLIOutput) -> int:
+def cmd_update(args: argparse.Namespace, config: df.config.Config, output: CLIOutput) -> int:
     """Handle the update command"""
 
     modules_to_update = args.modules if args.modules else []
@@ -437,7 +437,7 @@ def cmd_update(args, config: df.config.Config, output: CLIOutput) -> int:
     return 0
 
 
-def cmd_list(args, config: df.config.Config, output: CLIOutput) -> int:
+def cmd_list(args: argparse.Namespace, config: df.config.Config, output: CLIOutput) -> int:
     """Handle the list command"""
     list_modules(config, output, show_all=not args.installed)
     return 0

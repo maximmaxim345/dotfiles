@@ -1,6 +1,6 @@
 import json
 from os import path
-from typing import List, Union
+from typing import Any, List, Union
 
 
 class ModuleConfig:
@@ -11,7 +11,7 @@ class ModuleConfig:
     config file
     """
 
-    def __init__(self, config: object, id: str, cfg: dict):
+    def __init__(self, config: "Config", id: str, cfg: dict):
         """Initialize the config entry
         config: The Config object (used to update the config file)
         id: The id of the module
@@ -26,9 +26,9 @@ class ModuleConfig:
         """
         Returns True if the module is installed
         """
-        return self.config.config["modules"][self.id]["installed"]
+        return bool(self.config.config["modules"][self.id]["installed"])
 
-    def set_installed(self, installed: bool):
+    def set_installed(self, installed: bool) -> None:
         """
         Set the installed status of the module
         """
@@ -40,11 +40,12 @@ class ModuleConfig:
         Returns the installed version of the module
         """
         try:
-            return self.config.config["modules"][self.id]["installed_version"]
+            version = self.config.config["modules"][self.id]["installed_version"]
+            return str(version) if version is not None else None
         except KeyError:
             return None
 
-    def set_installed_version(self, version: str):
+    def set_installed_version(self, version: str) -> None:
         """
         Set the installed version of the module
         This will also set the installed status to True
@@ -53,14 +54,14 @@ class ModuleConfig:
         self.config.config["modules"][self.id]["installed"] = True
         self.config.modified = True
 
-    def get(self, key, default=None):
+    def get(self, key: str, default: Any = None) -> Any:
         """
         Get a config value. If the value does not exist, the default value
         is returned
         """
         return self.config.config["modules"][self.id]["data"].get(key, default)
 
-    def set(self, key, value):
+    def set(self, key: str, value: Any) -> None:
         """
         Set a config value
         """
@@ -74,7 +75,7 @@ class ModuleConfig:
         self.config.config["modules"][self.id]["data"][key] = value
         self.config.modified = True
 
-    def unset(self, key):
+    def unset(self, key: str) -> None:
         """
         Remove a config value, if it exists
         """
@@ -101,7 +102,7 @@ class Config:
                 self.modified = False  # The config has not been modified yet
         self.config.setdefault("modules", {})
 
-    def save(self):
+    def save(self) -> None:
         """
         Save the config file to disk
         """
@@ -113,7 +114,7 @@ class Config:
         """
         Returns the list of all module ids, that have a config entry
         """
-        return self.config["modules"].keys()
+        return list(self.config["modules"].keys())
 
     def get_module(self, id: str) -> ModuleConfig:
         """

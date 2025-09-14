@@ -43,7 +43,8 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 
 def has_update(config: ModuleConfig) -> Union[bool, str]:
-    return config.get("version") != "1"
+    version = config.get("version", "")
+    return str(version) != "1"
 
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

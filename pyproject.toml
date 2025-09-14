@@ -14,3 +14,35 @@ select = ["E", "F", "W", "C", "B", "C90", "I"]
 [tool.ruff]
 line-length = 130
 target-version = 'py310'
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Start lenient, can be stricter later
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+show_column_numbers = true
+
+# Windows-only modules that are only imported on Windows
+[[tool.mypy.overrides]]
+module = "winreg"
+ignore_missing_imports = true
+
+# Windows-specific dotfiles modules with registry access
+[[tool.mypy.overrides]]
+module = [
+    "df.modules.windows_local_bin",
+    "df.modules.starship_config",
+    "df.modules.fira_code_nerd_font", 
+    "df.modules.monaspace_argon_font"
+]
+ignore_errors = true

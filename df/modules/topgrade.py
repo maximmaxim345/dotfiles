@@ -48,9 +48,9 @@ def is_compatible() -> Union[bool, str]:
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
-    with tempfile.TemporaryDirectory() as temp_dir:
+    with tempfile.TemporaryDirectory() as temp_dir_str:
         print("Downloading topgrade...")
-        temp_dir = Path(temp_dir)
+        temp_dir = Path(temp_dir_str)
         pf = platform.system().lower()
         arch = platform.machine().lower()
         if arch in ["amd64", "AMD64"]:

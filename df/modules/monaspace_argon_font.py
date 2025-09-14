@@ -43,8 +43,8 @@ def is_compatible() -> Union[bool, str]:
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     # Download and install all fonts
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_dir = Path(temp_dir)
+    with tempfile.TemporaryDirectory() as temp_dir_str:
+        temp_dir = Path(temp_dir_str)
 
         for dl_link, font_name, registry_name in fonts:
             print(f"Downloading {font_name}...")

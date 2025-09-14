@@ -23,7 +23,8 @@ def latest_version() -> str:
     """
     Returns the latest version of lazygit
     """
-    version = requests.get("https://api.github.com/repos/jesseduffield/lazygit/releases/latest").json()["tag_name"]
+    response = requests.get("https://api.github.com/repos/jesseduffield/lazygit/releases/latest").json()
+    version = str(response["tag_name"])
     return version.lstrip("v")
 
 
@@ -49,9 +50,9 @@ def is_compatible() -> Union[bool, str]:
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
-    with tempfile.TemporaryDirectory() as temp_dir:
+    with tempfile.TemporaryDirectory() as temp_dir_str:
         print("Downloading lazygit...")
-        temp_dir = Path(temp_dir)
+        temp_dir = Path(temp_dir_str)
         pf = platform.system()
         arch = platform.machine()
         if pf == "Windows" and arch == "AMD64":
@@ -84,7 +85,8 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 
 def has_update(config: ModuleConfig) -> Union[bool, str]:
-    return config.get("version") != latest_version()
+    current_version = config.get("version", "")
+    return str(current_version) != latest_version()
 
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

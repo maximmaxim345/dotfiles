@@ -33,9 +33,9 @@ def is_compatible() -> Union[bool, str]:
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     # Download the font
-    with tempfile.TemporaryDirectory() as temp_dir:
+    with tempfile.TemporaryDirectory() as temp_dir_str:
         print("Downloading font...")
-        temp_dir = Path(temp_dir)
+        temp_dir = Path(temp_dir_str)
         download_path = temp_dir / font_name
         df.download_file(dl_link, download_path)
         print("Installing font...")

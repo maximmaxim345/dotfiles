@@ -17,7 +17,7 @@ target_path = Path.home() / ".termux/termux.properties"
 target_path_font = Path.home() / ".termux/font.ttf"
 
 
-def running_in_termux():
+def running_in_termux() -> bool:
     prefix = os.environ.get("PREFIX")
     version = os.environ.get("TERMUX_VERSION")
     if prefix and version:

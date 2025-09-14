@@ -32,8 +32,8 @@ def is_compatible() -> Union[bool, str]:
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     if platform.system() == "Windows":
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_dir = Path(temp_dir)
+        with tempfile.TemporaryDirectory() as temp_dir_str:
+            temp_dir = Path(temp_dir_str)
             print("Downloading Starship...")
             latest_version = requests.get(release_url).url.split("/")[-1]
             arch = platform.machine().lower()
@@ -53,8 +53,8 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
             shutil.copy(temp_dir / "starship.exe", bin_dir / "starship.exe")
             config.set("version", latest_version)
     else:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_dir = Path(temp_dir)
+        with tempfile.TemporaryDirectory() as temp_dir_str:
+            temp_dir = Path(temp_dir_str)
             script_path = temp_dir / "install.sh"
 
             print("Downloading Starship installer...")
@@ -89,7 +89,8 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 def has_update(config: ModuleConfig) -> Union[bool, str]:
     latest_version = requests.get(release_url).url.split("/")[-1]
-    return config.get("version") != latest_version
+    current_version = config.get("version", "")
+    return str(current_version) != latest_version
 
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

@@ -2,7 +2,7 @@ import asyncio
 import os
 import re
 import traceback
-from typing import List, Union
+from typing import Any, List, Union
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -38,14 +38,14 @@ class ModuleItem(Static):
     class ActionPressed(Message):
         """Sent when a action is pressed."""
 
-        def __init__(self, module, action) -> None:
+        def __init__(self, module: Any, action: str) -> None:
             super().__init__()
             self.module_id = module.ID
             self.module_name = module.NAME
             self.module = module
             self.action = action
 
-    def __init__(self, module, *args, **kwargs):
+    def __init__(self, module: Any, *args: Any, **kwargs: Any) -> None:
         self.module = module
         self.module_name = module.NAME
         self.module_description = module.DESCRIPTION
@@ -131,7 +131,7 @@ class InstallationScreen(Screen):
 
     CSS_PATH = "ui.css"
 
-    def __init__(self, Config: df.config.Config, queued_actions, *args, **kwargs):
+    def __init__(self, Config: df.config.Config, queued_actions: List[Any], *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.Config = Config
         self.queued_actions = queued_actions
@@ -191,7 +191,7 @@ class InstallationScreen(Screen):
             id="buttons",
         )
 
-    def print_log(self, *args, sep=" ", end="\n") -> None:
+    def print_log(self, *args: Any, sep: str = " ", end: str = "\n") -> None:
         s = sep.join(map(str, args))
         s += end
         self.textlog.write(s, shrink=False, scroll_end=True)
@@ -201,7 +201,7 @@ class InstallationScreen(Screen):
         asyncio.create_task(self.pipe_log())
         asyncio.create_task(self.run_installation())
 
-    async def run_installation(self, resume_at=None) -> None:
+    async def run_installation(self, resume_at: Union[int, None] = None) -> None:
         self.add_queued_actions(self.queued_actions)
         success = True
         for i, (action, module_id) in enumerate(self.queued_actions):
@@ -216,7 +216,7 @@ class InstallationScreen(Screen):
             self.print_log(f"Running {action} on {module.NAME}...")
             try:
                 # Replace print with a function that writes to the textlog
-                module.print = self.print_log
+                module.print = self.print_log  # type: ignore[attr-defined]
                 # Run the action inside the module
                 config = self.Config.get_module(module_id)
                 if action == "install" or action == "install-no-deps":
@@ -356,7 +356,7 @@ class DotfilesApp(App):
     def reset_to_system_state(self) -> None:
         """Reset the state of the app to match the system state.
         The UI will not be updated, call update_modules_list to do that."""
-        self.queued_actions = []
+        self.queued_actions: List[Any] = []
         self.modules_installed = {}
         self.modules_installed_version = {}
         self.modules_has_update = {}
@@ -455,7 +455,7 @@ class DotfilesApp(App):
             else:
                 container.remove_class("advanced")
 
-    def add_module_to_category(self, module_id, category: str) -> ModuleItem:
+    def add_module_to_category(self, module_id: str, category: str) -> ModuleItem:
         """Idempotently add a module to a category.
         Will remove the module from any other category it is in.
         If the module does not exist, it will be created.
@@ -538,7 +538,7 @@ class DotfilesApp(App):
             # Add to Incompatible
             widget = self.add_module_to_category(module_id, "incompatible")
             widget.style = "incompatible"
-            widget.info = reason
+            widget.info = str(reason)
             continue
 
         # Mark modules, which are queued as changed
@@ -618,7 +618,7 @@ class DotfilesApp(App):
             self.module_id = module_id
             self.conflicts = conflicts
 
-    def queue_action(self, module_id: str, action: str, state=None) -> None:
+    def queue_action(self, module_id: str, action: str, state: Any = None) -> None:
         """Try to Queue the action.
         This function is fail-safe, it will not queue an action that results
         in a invalid state. We only allow getting into an invalid state if

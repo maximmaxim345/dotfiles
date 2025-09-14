@@ -32,9 +32,9 @@ def is_compatible() -> Union[bool, str]:
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     # Download the font
-    with tempfile.TemporaryDirectory() as temp_dir:
+    with tempfile.TemporaryDirectory() as temp_dir_str:
         print("Downloading Neovide...")
-        temp_dir = Path(temp_dir)
+        temp_dir = Path(temp_dir_str)
         download_path = temp_dir / "neovide.AppImage"
         link = f"{release_url}/download/neovide.AppImage"
         df.download_file(link, download_path)
@@ -108,7 +108,8 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 def has_update(config: ModuleConfig) -> Union[bool, str]:
     latest_version = requests.get(release_url).url.split("/")[-1]
-    return config.get("version") != latest_version
+    current_version = config.get("version", "")
+    return str(current_version) != latest_version
 
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

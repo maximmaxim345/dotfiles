@@ -55,6 +55,8 @@ for module_file in module_files:
         continue
     module_name = os.path.basename(module_file)[:-3]
     spec = importlib.util.spec_from_file_location(module_name, module_file)
+    if spec is None or spec.loader is None:
+        raise ValueError(f"Could not load module from {module_file}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     # test if module.ID is a string from a-z, 0-9 and _

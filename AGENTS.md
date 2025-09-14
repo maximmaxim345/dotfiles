@@ -143,6 +143,54 @@ The `config.json` file is stored in the root of the dotfiles directory and conta
 
 This section provides more detailed information for developers who want to create or modify modules.
 
+### Testing and Development
+
+When working on the dotfiles system, you have several options for testing:
+
+#### CLI Testing
+
+For testing the dotfiles application itself, run it directly since it has automatic virtual environment management:
+
+```bash
+# The dotfiles.py script automatically sets up and activates the environment
+python ./dotfiles.py list
+python ./dotfiles.py --help
+```
+
+#### Using run-in-env.sh for Other Tools
+
+The `run-in-env.sh` script is useful for running **other tools** that need access to the dotfiles virtual environment. **Do not use it for dotfiles.py itself** as that script already handles environment management automatically.
+
+Common use cases for `run-in-env.sh`:
+
+```bash
+# Run pre-commit hooks (formatting, linting, etc.)
+./scripts/run-in-env.sh pre-commit run -a
+
+# Run other Python scripts that depend on the dotfiles environment
+./scripts/run-in-env.sh python some_other_script.py
+```
+
+This script automatically activates the Python virtual environment and runs the command, so you don't need to manually source the environment or worry about activation.
+
+#### GUI Testing
+
+**Important**: When making changes to the UI (`df/ui.py`, `df/ui.css`), always ask the user to test the graphical interface manually to ensure the changes work correctly. The TUI cannot be automatically tested, so manual verification by the user is essential.
+
+Ask the user to run:
+
+```bash
+# Launch the TUI directly (automatic environment management)
+python ./dotfiles.py
+```
+
+And test various interactions including:
+
+- Module installation/removal/updates
+- UI layout and responsiveness
+- Queued actions behavior
+- Error handling and conflict resolution
+
 ### Creating a New Module
 
 To add a new module to the system, follow these steps:

@@ -26,12 +26,14 @@ def dl_link(platform: str, arch: str) -> str:
     """
     Returns the download link for the latest version of bob for the given platform and architecture.
     """
-    if arch == "amd64":
+    if arch in ["amd64", "AMD64"]:
         arch = "x86_64"
     elif arch == "aarch64":
         arch = "arm"
-    if platform == "darwin":
+    if platform.lower() == "darwin":
         platform = "macos"
+    else:
+        platform = platform.lower()
     return f"{release_url}/download/bob-{platform}-{arch}.zip"
 
 

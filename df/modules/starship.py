@@ -15,6 +15,8 @@ ID: str = "starship"
 NAME: str = "Starship"
 DESCRIPTION: str = "The minimal, blazing-fast, and infinitely customizable prompt for any shell!"
 DEPENDENCIES: List[str] = []
+if platform.system() == "Windows":
+    DEPENDENCIES = ["windows_local_bin"]
 CONFLICTING: List[str] = []
 
 release_url = "https://github.com/starship/starship/releases/latest"
@@ -23,7 +25,9 @@ bin_dir = Path.home() / ".local" / "bin"
 
 
 def is_compatible() -> Union[bool, str]:
-    return platform.system() in ["Linux", "Darwin", "Windows"]
+    return (platform.system() in ["Linux", "Darwin"] and platform.machine() in ["x86_64", "aarch64"]) or (
+        platform.system() == "Windows" and platform.machine() in ["AMD64", "x86_64"]
+    )
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -32,8 +36,13 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
             temp_dir = Path(temp_dir)
             print("Downloading Starship...")
             latest_version = requests.get(release_url).url.split("/")[-1]
+            arch = platform.machine().lower()
+            if arch in ["amd64", "x86_64"]:
+                arch = "x86_64"
+            elif arch == "aarch64":
+                arch = "aarch64"
             download_url = (
-                f"https://github.com/starship/starship/releases/download/{latest_version}/starship-x86_64-pc-windows-msvc.zip"
+                f"https://github.com/starship/starship/releases/download/{latest_version}/starship-{arch}-pc-windows-msvc.zip"
             )
             download_path = temp_dir / "starship.zip"
             df.download_file(download_url, download_path)

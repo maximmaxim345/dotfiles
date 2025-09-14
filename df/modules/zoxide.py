@@ -14,6 +14,8 @@ ID: str = "zoxide"
 NAME: str = "Zoxide"
 DESCRIPTION: str = "A smarter cd command. Supports all major shells."
 DEPENDENCIES: List[str] = []
+if platform.system() == "Windows":
+    DEPENDENCIES = ["windows_local_bin"]
 CONFLICTING: List[str] = []
 
 release_url = "https://github.com/ajeetdsouza/zoxide/releases/latest"
@@ -29,7 +31,7 @@ def dl_link(version: str, platform: str, arch: str) -> str:
     elif platform == "darwin":
         return url + f"zoxide-{version}-{arch}-apple-darwin.tar.gz"
     elif platform == "windows":
-        return url + f"zoxide-{version}-x86_64-pc-windows-msvc.zip"
+        return url + f"zoxide-{version}-{arch}-pc-windows-msvc.zip"
     else:
         raise ValueError(f"Unsupported platform {platform}")
 

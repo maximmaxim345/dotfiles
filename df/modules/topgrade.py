@@ -53,7 +53,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         temp_dir = Path(temp_dir)
         pf = platform.system().lower()
         arch = platform.machine().lower()
-        if arch == "amd64":
+        if arch in ["amd64", "AMD64"]:
             arch = "x86_64"
         link = dl_link(pf, arch)
         if pf == "windows":

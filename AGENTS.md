@@ -1,18 +1,28 @@
 # Dotfiles Management System
 
-This document provides an overview of the dotfiles management system, how it works, and how to use it.
+This repository contains my dotfiles and a custom dotfiles management system written in Python.
+This document provides an overview of the dotfiles management system, how it works, how to use it, and guidelines for how to extend it by creating new modules.
 
 ## Overview
 
 The dotfiles management system is a Python-based tool designed to simplify the installation, uninstallation, and management of dotfiles and associated configurations. It uses a modular architecture where each piece of software or configuration is treated as a "module." The system provides both a Terminal User Interface (TUI) and a Command-Line Interface (CLI) for managing these modules.
 
-The main entry point is the `dotfiles.py` script. It automatically handles the creation of a Python virtual environment and the installation of dependencies, ensuring that the tool is ready to run without manual setup.
+The main entry point for running the system is the `dotfiles.py` script. It automatically handles the creation of a Python virtual environment and the installation of dependencies, ensuring that the tool is ready to run without manual setup.
+Running `./dotfiles.py` without any arguments launches the TUI, while passing commands and arguments allows for CLI usage.
+For testing, run `python ./dotfiles.py` in the repository root. It is not necessary to create and activate a virtual environment manually, as the script handles this automatically.
 
 ## Core Concepts
 
 ### Modules
 
 Modules are the building blocks of the dotfiles management system. Each module is a Python file located in the `df/modules/` directory and represents a single piece of software or configuration that can be managed.
+
+Modules can do various tasks, most commonly:
+
+1. **Installation Modules**: These modules handle the installation of software in a operating system-agnostic way. They typically download binaries, extract them, and place them in a directory that is included in the user's PATH (like `~/.local/bin`). Like `bob`, `lazygit`, `zoxide`, etc. Or also `fira_code_nerd_font` which downloads and installs a font.
+2. **Configuration Modules**: These modules manage configuration files for software. They typically create symbolic links to the configuration stored in this repository, ensuring that the user's environment is set up consistently. Like `lazygit_config`, `zshrc`, etc. Some highly user specific configuration modules that is not compatible with symlinks may also copy files instead of symlinking them, like `git_config`. In that case uninstalling the module should not delete the users configuration. Read more about `df/modules/git_config.py` for an example of that if working on a similar module.
+
+For config modules, the configuration of the software is expected to be stored in this repository, see the files in the root of the repository for examples.
 
 A module is defined by the following attributes:
 
@@ -34,6 +44,8 @@ Optionally, a module can also implement the following functions for updates:
 - `has_update(config: ModuleConfig) -> Union[bool, str]`: Checks if an update is available for the module.
 - `update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None`: Contains the logic for updating the module.
 
+See `df/modules/_template.py` for a template which should be used as a starting point for creating new modules.
+
 ### Dependencies and Conflicts
 
 The system automatically handles dependencies and conflicts between modules:
@@ -43,56 +55,15 @@ The system automatically handles dependencies and conflicts between modules:
 
 ### Compatibility
 
-Before installing a module, the system checks if it is compatible with the current operating system and environment. This is done by calling the `is_compatible()` function within each module. The TUI will show incompatible modules in a separate category.
+Before suggesting or installing a module, the system checks if it is compatible with the current operating system and environment. This is done by calling the `is_compatible()` function within each module. The TUI will show incompatible modules in a separate category.
+Common compatibility checks may include verifying the operating system, checking for the presence of required commands, or ensuring that certain files exist.
 
 ### Configuration
 
-The state of the installed modules is stored in a `config.json` file in the root of the project. This file keeps track of which modules are installed and their versions. The `df/config.py` file provides a `Config` class to interact with this configuration.
-
-### Module Types and Patterns
-
-The dotfiles system supports several types of modules with different patterns:
-
-#### Configuration Modules
-
-These modules manage configuration files by creating symlinks from the dotfiles directory to the appropriate locations:
-
-- `git_config`: Symlinks git configuration
-- `zsh_config`: Manages zsh configuration
-- `alacritty_config`: Terminal emulator configuration
-- `awesome_config`: Window manager configuration
-
-#### Binary Download Modules
-
-These modules download and install pre-built binaries from GitHub releases:
-
-- `bob`: NeoVim version manager
-- `lazygit`: Terminal UI for git
-- `zoxide`: Smart cd replacement
-- `starship`: Cross-shell prompt
-- `zellij`: Terminal multiplexer
-- `neovide`: NeoVim GUI
-- `topgrade`: System update manager
-
-#### Font Modules
-
-These modules download and install fonts:
-
-- `fira_code_nerd_font`: Fira Code Nerd Font
-- `monaspace_argon_font`: Monaspace Argon font
-
-#### Installation Script Modules
-
-These modules run installation scripts from external sources:
-
-- `oh_my_zsh`: Zsh framework installer
-
-#### Platform-Specific Modules
-
-Some modules are only compatible with certain platforms:
-
-- `windows_local_bin`: Windows-specific PATH setup
-- `termux_config`: Android/Termux configuration
+The state of the installed modules is stored in a `config.json` file in the root of the project (excluded by the `.gitignore` and a `.dockerignore` file). This file keeps track of which modules are installed and their versions.
+The `df/config.py` file provides a `ModuleConfig` class to interact with this configuration.
+`ModuleConfig` instances are passed to the `install`, `uninstall`, and `update` functions of each module, allowing them to read and write their specific configuration data about the installed state. Installed state and version (through the global `VERSION` variable) are already automatically stored and do not need to be handled manually. But for example, backup paths can be stored in the module's configuration.
+For backup purposes, it is recommended to store the original configuration files in a separate location before making any changes. For that purpose, the `create_backup` and `restore_backup` helper functions are provided in the `df` package.
 
 ## Usage
 
@@ -191,6 +162,8 @@ To add a new module to the system, follow these steps:
    - `has_update()`: This function should check if a new version of the module is available.
    - `update()`: This function should perform the update.
 
+For good examples of modules, refer to existing modules in the `df/modules/` directory. Specifically `df/modules/starship_config.py` and `df/modules/starship.py` are good examples of the framework and should be read first before creating new modules.
+
 ### Helper Functions
 
 The `df` package provides several helper functions that can be used in your modules. You can import them from the `df` package (e.g., `from df import download_file`).
@@ -209,11 +182,6 @@ The `df` package provides several helper functions that can be used in your modu
 - `restore_backup(path: Path, config: ModuleConfig, key: str) -> None`: Restores a backup created with `create_backup`. Understands special markers for empty directories.
 - `is_backup_required(path: Path) -> bool`: Checks if a path needs to be backed up (files, non-empty directories, symlinks).
 - `find_backup_path(original: Path) -> Path`: Finds a non-conflicting backup path by appending `.old`, `.old1`, `.old2`, etc.
-
-#### Global Variables
-
-- `DOTFILES_DIR: str`: The directory where the dotfiles are stored (string).
-- `DOTFILES_PATH: Path`: The Path object for the dotfiles directory.
 
 ### Best Practices
 
@@ -260,7 +228,7 @@ Here are some tips for debugging your modules:
 Common platform detection problems:
 
 - `platform.system()` returns "Darwin" for macOS, "Linux", or "Windows"
-- `platform.machine()` returns "x86_64", "aarch64", "AMD64" etc.
+- `platform.machine()` returns "x86_64", "aarch64", "arm64", "AMD64" etc.
 - Architecture normalization may be needed for different projects
 
 #### Module Update Patterns

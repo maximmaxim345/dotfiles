@@ -52,8 +52,8 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         subprocess.run(
             [neovide_path, "--appimage-extract"],
             cwd=temp_dir,
-            stdout=stdout,
-            stderr=stdout,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             check=True,
         )
         # Copy the folder to the local lib folder

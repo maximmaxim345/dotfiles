@@ -86,8 +86,8 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
         print("Installing latest stable version of NeoVim...")
         # Run bob install
-        subprocess.run([bob_exec, "install", "stable"], stdout=stdout, stderr=stdout)
-        subprocess.run([bob_exec, "use", "stable"], stdout=stdout, stderr=stdout)
+        subprocess.run([bob_exec, "install", "stable"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run([bob_exec, "use", "stable"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # Save the installed version
         latest_version = requests.get(release_url).url.split("/")[-1]
@@ -98,7 +98,7 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     bin_dir = Path.home() / ".local" / "bin"
     bob_exec = (bin_dir / "bob.exe") if platform.system() == "Windows" else (bin_dir / "bob")
     # Run bob erase
-    subprocess.run([bob_exec, "erase"], stdout=stdout, stderr=stdout)
+    subprocess.run([bob_exec, "erase"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     # Delete the bob executable
     (Path.home() / ".local" / "bin" / "bob").unlink(missing_ok=True)
 

@@ -45,8 +45,8 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     try:
         subprocess.run(
             ["termux-reload-settings"],
-            stdout=stdout,
-            stderr=stdout,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             stdin=subprocess.DEVNULL,
         )
     except FileNotFoundError:
@@ -61,8 +61,8 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     try:
         subprocess.run(
             ["termux-reload-settings"],
-            stdout=stdout,
-            stderr=stdout,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             stdin=subprocess.DEVNULL,
         )
     except FileNotFoundError:

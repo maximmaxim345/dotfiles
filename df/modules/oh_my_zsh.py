@@ -29,8 +29,8 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         ret = subprocess.run(
             ["zsh", oh_my_zsh_path / "tools" / "upgrade.sh"],
             check=False,
-            stdout=stdout,
-            stderr=stdout,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
         if ret.returncode == 0:
             print("Oh My Zsh updated!")
@@ -49,8 +49,8 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
                 env={
                     "ZSH": str(oh_my_zsh_path),
                 },
-                stdout=stdout,
-                stderr=stdout,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 stdin=subprocess.DEVNULL,
             )
             print("Oh My Zsh installed!")

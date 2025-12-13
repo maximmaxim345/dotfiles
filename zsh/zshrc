@@ -59,6 +59,31 @@ dz() {
     fi
 }
 
+# gw wrapper - auto-cd after new/rm/cd
+if command -v gw &>/dev/null; then
+    gw() {
+        local output pwd_before
+        pwd_before="$PWD"
+        output=$(command gw "$@")
+        echo "$output"
+
+        # Check last line for "Run: cd ..."
+        local last_line cd_path
+        last_line=$(echo "$output" | tail -1)
+        if [[ "$last_line" == "Run: cd "* ]]; then
+            cd_path="${last_line#Run: cd }"
+            cd "$cd_path" && echo "→ Changed to $(pwd)"
+        # For gw rm: if current directory no longer exists, go to main repo
+        elif [[ ! -d "$pwd_before" ]]; then
+            local main_repo
+            main_repo=$(echo "$output" | grep "Changed to main repo:" | sed 's/.*Changed to main repo: //')
+            if [[ -n "$main_repo" && -d "$main_repo" ]]; then
+                cd "$main_repo" && echo "→ Changed to $(pwd)"
+            fi
+        fi
+    }
+fi
+
 # Install and setup Zinit, a flexible ZSH plugin manager
 if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
     print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"

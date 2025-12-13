@@ -464,16 +464,16 @@ cmd_remove() {
 
     # Optionally offer to delete the branch
     if [[ -n "$wt_branch" ]] && [[ "$wt_branch" != "HEAD" ]]; then
-        echo -n "Delete branch '$wt_branch'? [y/N] "
+        echo -n "Delete branch '$wt_branch'? (yes/Enter to skip): "
         read -r delete_branch
-        if [[ "$delete_branch" =~ ^[Yy]$ ]]; then
+        if [[ "$delete_branch" == "yes" ]]; then
             if git -C "$main_repo" branch -d "$wt_branch" 2>/dev/null; then
                 print_success "Deleted branch '$wt_branch'"
             else
                 print_warning "Branch '$wt_branch' has unmerged changes"
-                echo -n "Force delete? [y/N] "
+                echo -n "Force delete? (yes/Enter to skip): "
                 read -r force_delete
-                if [[ "$force_delete" =~ ^[Yy]$ ]]; then
+                if [[ "$force_delete" == "yes" ]]; then
                     git -C "$main_repo" branch -D "$wt_branch"
                     print_success "Force deleted branch '$wt_branch'"
                 fi

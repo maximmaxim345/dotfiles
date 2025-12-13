@@ -325,8 +325,147 @@ cmd_list() {
 }
 
 cmd_remove() {
-    print_error "Not implemented yet"
-    exit 1
+    require_git_repo
+
+    local main_repo current_dir
+    main_repo=$(get_main_repo)
+    current_dir=$(pwd)
+
+    local force=false
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -f|--force)
+                force=true
+                shift
+                ;;
+            -h|--help)
+                echo "Usage: gw rm [-f|--force]"
+                echo ""
+                echo "Options:"
+                echo "  -f, --force  Skip clean check (still requires confirmation for dirty)"
+                exit 0
+                ;;
+            *)
+                print_error "Unknown option: $1"
+                exit 1
+                ;;
+        esac
+    done
+
+    local wt_to_remove=""
+
+    # Check if we're in a worktree (not main repo)
+    if [[ "$current_dir" != "$main_repo" ]]; then
+        # We're in a worktree - remove current
+        wt_to_remove="$current_dir"
+    else
+        # We're in main repo - show picker
+        local worktrees=()
+        local wt_info=()
+
+        while IFS= read -r line; do
+            local wt_path
+            wt_path=$(echo "$line" | awk '{print $1}')
+
+            # Skip the main repo
+            if [[ "$wt_path" == "$main_repo" ]]; then
+                continue
+            fi
+
+            worktrees+=("$wt_path")
+
+            # Get branch and status for display
+            local wt_branch uncommitted status_str
+            wt_branch=$(git -C "$wt_path" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+            uncommitted=$(git -C "$wt_path" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+
+            if [[ "$uncommitted" -gt 0 ]]; then
+                status_str="[${uncommitted} uncommitted]"
+            else
+                status_str="[clean]"
+            fi
+
+            # Calculate relative path
+            local rel_path
+            rel_path=$(realpath --relative-to="$main_repo" "$wt_path")
+            wt_info+=("$rel_path ($wt_branch) $status_str")
+
+        done < <(git -C "$main_repo" worktree list --porcelain | grep '^worktree ' | sed 's/worktree //')
+
+        if [[ ${#worktrees[@]} -eq 0 ]]; then
+            print_info "No worktrees to remove"
+            exit 0
+        fi
+
+        echo "Worktrees:"
+        for i in "${!wt_info[@]}"; do
+            echo "  $((i+1))) ${wt_info[$i]}"
+        done
+        echo ""
+
+        echo -n "Remove which worktree? "
+        read -r choice
+
+        if ! [[ "$choice" =~ ^[0-9]+$ ]] || [[ "$choice" -lt 1 ]] || [[ "$choice" -gt ${#worktrees[@]} ]]; then
+            print_error "Invalid selection"
+            exit 1
+        fi
+
+        wt_to_remove="${worktrees[$((choice-1))]}"
+    fi
+
+    # Check if worktree is clean
+    local uncommitted
+    uncommitted=$(git -C "$wt_to_remove" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+
+    if [[ "$uncommitted" -gt 0 ]] && [[ "$force" != true ]]; then
+        print_warning "Worktree has $uncommitted uncommitted changes!"
+        echo ""
+        git -C "$wt_to_remove" status --short
+        echo ""
+        echo -n "Type 'yes' to force delete: "
+        read -r confirm
+        if [[ "$confirm" != "yes" ]]; then
+            print_info "Cancelled"
+            exit 0
+        fi
+    fi
+
+    # Get the branch name before removing
+    local wt_branch
+    wt_branch=$(git -C "$wt_to_remove" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+
+    # Remove the worktree
+    print_info "Removing worktree at $wt_to_remove..."
+
+    # If we're inside the worktree, we need to cd out first
+    if [[ "$current_dir" == "$wt_to_remove"* ]]; then
+        cd "$main_repo"
+        print_info "Changed to main repo: $main_repo"
+    fi
+
+    git -C "$main_repo" worktree remove --force "$wt_to_remove"
+
+    print_success "Removed worktree at $wt_to_remove"
+
+    # Optionally offer to delete the branch
+    if [[ -n "$wt_branch" ]] && [[ "$wt_branch" != "HEAD" ]]; then
+        echo -n "Delete branch '$wt_branch'? [y/N] "
+        read -r delete_branch
+        if [[ "$delete_branch" =~ ^[Yy]$ ]]; then
+            if git -C "$main_repo" branch -d "$wt_branch" 2>/dev/null; then
+                print_success "Deleted branch '$wt_branch'"
+            else
+                print_warning "Branch '$wt_branch' has unmerged changes"
+                echo -n "Force delete? [y/N] "
+                read -r force_delete
+                if [[ "$force_delete" =~ ^[Yy]$ ]]; then
+                    git -C "$main_repo" branch -D "$wt_branch"
+                    print_success "Force deleted branch '$wt_branch'"
+                fi
+            fi
+        fi
+    fi
 }
 
 cmd_setup() {

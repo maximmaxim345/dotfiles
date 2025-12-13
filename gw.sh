@@ -190,8 +190,54 @@ cmd_remove() {
 }
 
 cmd_setup() {
-    print_error "Not implemented yet"
-    exit 1
+    require_git_repo
+
+    local main_repo
+    main_repo=$(get_main_repo)
+
+    local setup_script="$main_repo/.worktree-setup.sh"
+    local git_exclude="$main_repo/.git/info/exclude"
+
+    # Create template if doesn't exist
+    if [[ ! -f "$setup_script" ]]; then
+        cat > "$setup_script" << 'TEMPLATE'
+#!/bin/bash
+# This script runs after creating a new worktree
+# Working directory is the new worktree root
+
+# Examples:
+# npm install
+# pip install -e .
+# cp ../.env .env
+
+TEMPLATE
+        print_info "Created new setup script: $setup_script"
+    fi
+
+    # Ensure it's in .git/info/exclude
+    if ! grep -qF '.worktree-setup.sh' "$git_exclude" 2>/dev/null; then
+        echo '.worktree-setup.sh' >> "$git_exclude"
+        print_info "Added .worktree-setup.sh to .git/info/exclude"
+    fi
+
+    # Make executable
+    chmod +x "$setup_script"
+
+    # Open in editor
+    local editor="${EDITOR:-${VISUAL:-vim}}"
+    if ! command -v "$editor" &>/dev/null; then
+        editor="nano"
+    fi
+    if ! command -v "$editor" &>/dev/null; then
+        editor="vi"
+    fi
+
+    print_info "Opening $setup_script in $editor..."
+    "$editor" "$setup_script"
+
+    # Ensure it's still executable after editing
+    chmod +x "$setup_script"
+    print_success "Setup script saved"
 }
 
 main "$@"

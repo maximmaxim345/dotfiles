@@ -544,8 +544,76 @@ TEMPLATE
 }
 
 cmd_cd() {
-    print_error "Not implemented yet"
-    exit 1
+    require_git_repo
+
+    local main_repo
+    main_repo=$(get_main_repo)
+
+    # Build list of all worktrees
+    local worktrees=()
+    local wt_info=()
+
+    while IFS= read -r wt_path; do
+        [[ -z "$wt_path" ]] && continue
+
+        worktrees+=("$wt_path")
+
+        # Get branch and status for display
+        local wt_branch uncommitted status_str is_main=""
+        wt_branch=$(git -C "$wt_path" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+        uncommitted=$(git -C "$wt_path" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+
+        if [[ "$wt_path" == "$main_repo" ]]; then
+            is_main=" [main]"
+        fi
+
+        if [[ "$uncommitted" -gt 0 ]]; then
+            status_str="[${uncommitted} uncommitted]"
+        else
+            status_str="[clean]"
+        fi
+
+        # Calculate relative path
+        local rel_path
+        rel_path=$(get_relative_path "$wt_path" "$(pwd)")
+        wt_info+=("$rel_path ($wt_branch)$is_main $status_str")
+
+    done < <(git -C "$main_repo" worktree list --porcelain | grep '^worktree ' | sed 's/worktree //')
+
+    if [[ ${#worktrees[@]} -eq 0 ]]; then
+        print_info "No worktrees found"
+        exit 0
+    fi
+
+    if [[ ${#worktrees[@]} -eq 1 ]]; then
+        print_info "Only one worktree exists (current)"
+        exit 0
+    fi
+
+    echo "Worktrees:"
+    for i in "${!wt_info[@]}"; do
+        echo "  $((i+1))) ${wt_info[$i]}"
+    done
+    echo ""
+
+    echo -n "Switch to which worktree? "
+    read -r choice
+
+    if [[ -z "$choice" ]]; then
+        print_info "Cancelled"
+        exit 0
+    fi
+
+    if ! [[ "$choice" =~ ^[0-9]+$ ]] || [[ "$choice" -lt 1 ]] || [[ "$choice" -gt ${#worktrees[@]} ]]; then
+        print_error "Invalid selection"
+        exit 1
+    fi
+
+    local selected_path="${worktrees[$((choice-1))]}"
+    local rel_path
+    rel_path=$(get_relative_path "$selected_path" "$(pwd)")
+
+    echo "Run: cd $rel_path"
 }
 
 main "$@"

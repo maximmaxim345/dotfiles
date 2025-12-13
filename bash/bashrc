@@ -56,13 +56,13 @@ if command -v gw &>/dev/null; then
         # Run command with output to both terminal and file
         command gw "$@" 2>&1 | tee "$tmpfile"
 
-        # Check last line for "Run: cd ..."
-        local last_line cd_path
-        last_line=$(tail -1 "$tmpfile")
+        # Check for "Run: cd ..." in output
+        local cd_line cd_path
+        cd_line=$(grep "^Run: cd " "$tmpfile" | tail -1)
         rm -f "$tmpfile"
 
-        if [[ "$last_line" == "Run: cd "* ]]; then
-            cd_path="${last_line#Run: cd }"
+        if [[ -n "$cd_line" ]]; then
+            cd_path="${cd_line#Run: cd }"
             cd "$cd_path" && echo "→ Changed to $(pwd)"
         fi
     }

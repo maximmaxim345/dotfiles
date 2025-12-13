@@ -28,6 +28,14 @@ print_info() {
     echo -e "${BLUE}$1${NC}"
 }
 
+# Get relative path from current dir to target (portable)
+get_relative_path() {
+    local target="$1"
+    local from="${2:-$(pwd)}"
+    # Use python for portability (available on both Linux and macOS)
+    python3 -c "import os.path; print(os.path.relpath('$target', '$from'))"
+}
+
 show_help() {
     cat << 'EOF'
 gw - Git Worktree Management Tool
@@ -257,7 +265,7 @@ cmd_new() {
 
     # Calculate relative path for cd command
     local rel_path
-    rel_path=$(realpath --relative-to="$(pwd)" "$wt_path")
+    rel_path=$(get_relative_path "$wt_path")
     echo "Run: cd $rel_path"
 }
 
@@ -389,7 +397,7 @@ cmd_remove() {
 
             # Calculate relative path
             local rel_path
-            rel_path=$(realpath --relative-to="$main_repo" "$wt_path")
+            rel_path=$(get_relative_path "$wt_path" "$main_repo")
             wt_info+=("$rel_path ($wt_branch) $status_str")
 
         done < <(git -C "$main_repo" worktree list --porcelain | grep '^worktree ' | sed 's/worktree //')

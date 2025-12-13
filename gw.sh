@@ -215,6 +215,7 @@ TEMPLATE
     fi
 
     # Ensure it's in .git/info/exclude
+    mkdir -p "$(dirname "$git_exclude")"
     if ! grep -qF '.worktree-setup.sh' "$git_exclude" 2>/dev/null; then
         echo '.worktree-setup.sh' >> "$git_exclude"
         print_info "Added .worktree-setup.sh to .git/info/exclude"
@@ -230,6 +231,10 @@ TEMPLATE
     fi
     if ! command -v "$editor" &>/dev/null; then
         editor="vi"
+    fi
+    if ! command -v "$editor" &>/dev/null; then
+        print_error "No suitable editor found. Please set \$EDITOR environment variable."
+        exit 1
     fi
 
     print_info "Opening $setup_script in $editor..."

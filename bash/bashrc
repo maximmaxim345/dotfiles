@@ -59,5 +59,7 @@ HISTFILESIZE=10000
 HISTCONTROL=ignoreboth:erasedups
 
 # Configure key bindings
-bind 'TAB:menu-complete'
-bind '"\e[Z":menu-complete-backward'
+if [[ $- = *i* ]]; then
+    bind 'TAB:menu-complete'
+    bind '"\e[Z":menu-complete-backward'
+fi

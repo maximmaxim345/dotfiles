@@ -342,7 +342,7 @@ cmd_remove() {
                 echo "Usage: gw rm [-f|--force]"
                 echo ""
                 echo "Options:"
-                echo "  -f, --force  Skip clean check (still requires confirmation for dirty)"
+                echo "  -f, --force  Skip clean check and confirmation for dirty worktrees"
                 exit 0
                 ;;
             *)
@@ -355,9 +355,11 @@ cmd_remove() {
     local wt_to_remove=""
 
     # Check if we're in a worktree (not main repo)
-    if [[ "$current_dir" != "$main_repo" ]]; then
+    local git_dir
+    git_dir=$(git rev-parse --git-dir)
+    if [[ "$git_dir" == *"/.git/worktrees/"* ]]; then
         # We're in a worktree - remove current
-        wt_to_remove="$current_dir"
+        wt_to_remove=$(git rev-parse --show-toplevel)
     else
         # We're in main repo - show picker
         local worktrees=()
@@ -444,7 +446,11 @@ cmd_remove() {
         print_info "Changed to main repo: $main_repo"
     fi
 
-    git -C "$main_repo" worktree remove --force "$wt_to_remove"
+    local git_rm_args=""
+    if [[ "$force" == true ]] || [[ "$uncommitted" -gt 0 ]]; then
+        git_rm_args="--force"
+    fi
+    git -C "$main_repo" worktree remove $git_rm_args "$wt_to_remove"
 
     print_success "Removed worktree at $wt_to_remove"
 

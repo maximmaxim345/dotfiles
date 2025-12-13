@@ -108,6 +108,10 @@ main() {
             shift
             cmd_setup "$@"
             ;;
+        cd)
+            shift
+            cmd_cd "$@"
+            ;;
         -h|--help)
             show_help
             exit 0
@@ -537,6 +541,11 @@ TEMPLATE
     # Ensure it's still executable after editing
     chmod +x "$setup_script"
     print_success "Setup script saved"
+}
+
+cmd_cd() {
+    print_error "Not implemented yet"
+    exit 1
 }
 
 main "$@"

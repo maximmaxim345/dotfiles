@@ -115,10 +115,150 @@ main() {
     esac
 }
 
-# Placeholder commands - will be implemented in subsequent tasks
 cmd_new() {
-    print_error "Not implemented yet"
-    exit 1
+    require_git_repo
+
+    local branch=""
+    local subfolder=""
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -b|--branch)
+                branch="$2"
+                shift 2
+                ;;
+            -s|--subfolder)
+                subfolder="$2"
+                shift 2
+                ;;
+            -h|--help)
+                echo "Usage: gw new [-b <branch>] [-s <subfolder>]"
+                echo ""
+                echo "Options:"
+                echo "  -b, --branch    Branch name to create (based on current branch)"
+                echo "  -s, --subfolder Subfolder to place worktree in"
+                exit 0
+                ;;
+            *)
+                print_error "Unknown option: $1"
+                exit 1
+                ;;
+        esac
+    done
+
+    local main_repo current_branch upstream_branch repo_name
+    main_repo=$(get_main_repo)
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
+    repo_name=$(basename "$main_repo")
+
+    # Get upstream tracking branch
+    upstream_branch=$(git rev-parse --abbrev-ref '@{upstream}' 2>/dev/null | sed 's|.*/||' || true)
+    if [[ -z "$upstream_branch" ]]; then
+        # Fallback: try to detect default branch
+        upstream_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|.*/||' || true)
+        if [[ -z "$upstream_branch" ]]; then
+            # Last resort: common defaults
+            for default in main master develop; do
+                if git show-ref --verify --quiet "refs/heads/$default"; then
+                    upstream_branch="$default"
+                    break
+                fi
+            done
+        fi
+    fi
+
+    # Interactive prompts if not provided via flags
+    if [[ -z "$branch" ]]; then
+        echo -n "Branch name (empty to move '$current_branch' to worktree): "
+        read -r branch
+    fi
+
+    if [[ -z "$subfolder" ]]; then
+        echo -n "Subfolder (empty for sibling directory): "
+        read -r subfolder
+    fi
+
+    # Determine the worktree branch and path
+    local wt_branch wt_path
+
+    if [[ -z "$branch" ]]; then
+        # Move current branch to worktree
+        wt_branch="$current_branch"
+
+        # Check if we're on the upstream branch
+        if [[ "$current_branch" == "$upstream_branch" ]]; then
+            print_error "Cannot move '$current_branch' to worktree - it's the upstream tracking branch"
+            print_info "Specify a branch name with -b to create a new branch"
+            exit 1
+        fi
+
+        # Check if upstream branch exists
+        if [[ -z "$upstream_branch" ]]; then
+            print_error "Cannot determine upstream branch to switch to"
+            print_info "Specify a branch name with -b to create a new branch instead"
+            exit 1
+        fi
+    else
+        # Create new branch based on current
+        wt_branch="$branch"
+    fi
+
+    # Determine worktree path
+    local parent_dir
+    parent_dir=$(dirname "$main_repo")
+
+    if [[ -n "$subfolder" ]]; then
+        # Put in subfolder: parent/subfolder/reponame
+        wt_path="$parent_dir/$subfolder/$repo_name"
+    else
+        # Sibling: parent/reponame.branchname
+        # Sanitize branch name for path (replace / with -)
+        local safe_branch
+        safe_branch=$(echo "$wt_branch" | tr '/' '-')
+        wt_path="$parent_dir/$repo_name.$safe_branch"
+    fi
+
+    # Check if path already exists
+    if [[ -e "$wt_path" ]]; then
+        print_error "Path already exists: $wt_path"
+        exit 1
+    fi
+
+    # Create parent directory if needed
+    mkdir -p "$(dirname "$wt_path")"
+
+    # Create the worktree
+    if [[ -z "$branch" ]]; then
+        # Moving current branch - need to switch main repo first
+        print_info "Switching main repo to '$upstream_branch'..."
+        git -C "$main_repo" checkout "$upstream_branch"
+
+        print_info "Creating worktree with branch '$wt_branch'..."
+        git -C "$main_repo" worktree add "$wt_path" "$wt_branch"
+    else
+        # Creating new branch
+        print_info "Creating worktree with new branch '$wt_branch' (based on '$current_branch')..."
+        git -C "$main_repo" worktree add -b "$wt_branch" "$wt_path" HEAD
+    fi
+
+    # Run setup script if exists
+    local setup_script="$main_repo/.worktree-setup.sh"
+    if [[ -x "$setup_script" ]]; then
+        print_info "Running setup script..."
+        if ! (cd "$wt_path" && "$setup_script"); then
+            print_warning "Setup script failed (exit code $?), but worktree was created"
+        fi
+    fi
+
+    # Print success message
+    echo ""
+    print_success "Created worktree at $wt_path"
+
+    # Calculate relative path for cd command
+    local rel_path
+    rel_path=$(realpath --relative-to="$(pwd)" "$wt_path")
+    echo "Run: cd $rel_path"
 }
 
 cmd_list() {

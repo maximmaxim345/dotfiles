@@ -167,7 +167,7 @@ cmd_new() {
         upstream_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|.*/||' || true)
         if [[ -z "$upstream_branch" ]]; then
             # Last resort: common defaults
-            for default in main master develop; do
+            for default in main master develop dev trunk; do
                 if git show-ref --verify --quiet "refs/heads/$default"; then
                     upstream_branch="$default"
                     break

@@ -57,12 +57,11 @@ if command -v gw &>/dev/null; then
         command gw "$@" 2>&1 | tee "$tmpfile"
 
         # Check for "Run: cd ..." in output
-        local cd_line cd_path
-        cd_line=$(grep "^Run: cd " "$tmpfile" | tail -1)
+        local cd_path
+        cd_path=$(grep -o "Run: cd .*" "$tmpfile" | tail -1 | sed 's/^Run: cd //')
         rm -f "$tmpfile"
 
-        if [[ -n "$cd_line" ]]; then
-            cd_path="${cd_line#Run: cd }"
+        if [[ -n "$cd_path" ]]; then
             cd "$cd_path" && echo "→ Changed to $(pwd)"
         fi
     }

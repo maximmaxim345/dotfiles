@@ -46,6 +46,7 @@ Commands:
   new       Create a new worktree
   ls, list  List all worktrees with status
   rm, remove Remove a worktree
+  cd        Switch to another worktree
   setup     Edit the worktree setup script for this repo
 
 Options:

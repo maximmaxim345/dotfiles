@@ -25,7 +25,6 @@ fi
 
 # Kitty specific tweaks/aliases
 if [[ $TERM == "xterm-kitty" ]]; then
-    alias ssh="kitten ssh"
     alias klight="kitten themes --cache-age=-1 --reload-in=all 'Atom One Light'"
     alias kdark="kitten themes --cache-age=-1 --reload-in=all 'Base2Tone Drawbridge Dark'"
 fi

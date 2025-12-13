@@ -50,7 +50,6 @@ alias ll='ls --color=auto -alh'
 # gw wrapper - auto-cd after new/rm/cd
 if command -v gw &>/dev/null; then
     gw() {
-        local pwd_before="$PWD"
         local tmpfile
         tmpfile=$(mktemp)
 
@@ -60,21 +59,11 @@ if command -v gw &>/dev/null; then
         # Check last line for "Run: cd ..."
         local last_line cd_path
         last_line=$(tail -1 "$tmpfile")
+        rm -f "$tmpfile"
 
         if [[ "$last_line" == "Run: cd "* ]]; then
             cd_path="${last_line#Run: cd }"
-            rm -f "$tmpfile"
             cd "$cd_path" && echo "→ Changed to $(pwd)"
-        # For gw rm: if current directory no longer exists, go to main repo
-        elif [[ ! -d "$pwd_before" ]]; then
-            local main_repo
-            main_repo=$(grep "Changed to main repo:" "$tmpfile" | sed 's/.*Changed to main repo: //')
-            rm -f "$tmpfile"
-            if [[ -n "$main_repo" && -d "$main_repo" ]]; then
-                cd "$main_repo" && echo "→ Changed to $(pwd)"
-            fi
-        else
-            rm -f "$tmpfile"
         fi
     }
 fi

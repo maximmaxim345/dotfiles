@@ -453,8 +453,10 @@ cmd_remove() {
     # Remove the worktree
     print_info "Removing worktree at $wt_to_remove..."
 
-    # If we're inside the worktree, we need to cd out first
+    # Track if we're inside the worktree being removed
+    local was_in_worktree=false
     if [[ "$current_dir" == "$wt_to_remove"* ]]; then
+        was_in_worktree=true
         cd "$main_repo"
         print_info "Changed to main repo: $main_repo"
     fi
@@ -484,6 +486,13 @@ cmd_remove() {
                 fi
             fi
         fi
+    fi
+
+    # Output cd command for shell wrapper (if we were in the removed worktree)
+    if [[ "$was_in_worktree" == true ]]; then
+        local rel_path
+        rel_path=$(get_relative_path "$main_repo" "$current_dir")
+        echo "Run: cd $rel_path"
     fi
 }
 

@@ -47,6 +47,17 @@ alias lg="lazygit"
 alias ls='ls --color=auto'
 alias ll='ls --color=auto -alh'
 alias ze="zellij -l welcome"
+
+# VSCode alias
+if command -v code &>/dev/null; then
+    c() {
+        if [[ "$(uname)" == "Linux" ]]; then
+            code --ozone-platform=wayland "${@:-.}"
+        else
+            code "${@:-.}"
+        fi
+    }
+fi
 dz() {
     box="$1"
     if [[ -z "$box" ]]; then

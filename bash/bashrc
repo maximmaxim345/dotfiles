@@ -61,6 +61,12 @@ fi
 # gw wrapper - auto-cd after new/rm/cd
 if command -v gw &>/dev/null; then
     gw() {
+        # Commands that need direct TTY access (interactive editors)
+        if [[ "$1" == "setup" ]]; then
+            command gw "$@"
+            return
+        fi
+
         local tmpfile
         tmpfile=$(mktemp)
 

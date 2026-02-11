@@ -225,6 +225,8 @@ pick_worktree() {
     local no_prompt="$3"
     local main_repo="$4"
 
+    PICKED_WORKTREE=""
+
     local worktrees=()
     local labels=()
 
@@ -279,7 +281,7 @@ pick_worktree() {
         local idx
         for idx in "${!labels[@]}"; do
             if [[ "${labels[$idx]}" == "$selected" ]]; then
-                echo "${worktrees[$idx]}"
+                PICKED_WORKTREE="${worktrees[$idx]}"
                 return 0
             fi
         done
@@ -309,7 +311,7 @@ pick_worktree() {
         return 1
     fi
 
-    echo "${worktrees[$((choice-1))]}"
+    PICKED_WORKTREE="${worktrees[$((choice-1))]}"
     return 0
 }
 
@@ -731,7 +733,8 @@ cmd_remove() {
         if [[ "$git_dir" == *"/.git/worktrees/"* ]]; then
             wt_to_remove=$(git rev-parse --show-toplevel)
         else
-            wt_to_remove=$(pick_worktree "false" "Remove which worktree?" "$no_prompt" "$main_repo") || exit 1
+            pick_worktree "false" "Remove which worktree?" "$no_prompt" "$main_repo" || exit 1
+            wt_to_remove="$PICKED_WORKTREE"
         fi
     fi
 
@@ -933,8 +936,9 @@ cmd_cd() {
         return 0
     fi
 
+    pick_worktree "true" "Switch to which worktree?" "$no_prompt" "$main_repo" || exit 1
     local selected_path
-    selected_path=$(pick_worktree "true" "Switch to which worktree?" "$no_prompt" "$main_repo") || exit 1
+    selected_path="$PICKED_WORKTREE"
 
     local rel_path
     rel_path=$(get_relative_path "$selected_path" "$(pwd)")

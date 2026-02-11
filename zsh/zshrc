@@ -71,32 +71,6 @@ dz() {
     fi
 }
 
-# gw wrapper - auto-cd after gw emits GW_CD_TARGET=...
-if command -v gw &>/dev/null; then
-    gw() {
-        # Commands that need direct TTY access (interactive editors)
-        if [[ "$1" == "setup" ]]; then
-            command gw "$@"
-            return
-        fi
-
-        local tmpfile
-        tmpfile=$(mktemp)
-
-        # Run command with output to both terminal and file
-        command gw "$@" 2>&1 | tee "$tmpfile"
-
-        # Check for machine-readable cd target output
-        local cd_path
-        cd_path=$(grep '^GW_CD_TARGET=' "$tmpfile" | tail -1 | sed 's/^GW_CD_TARGET=//')
-        rm -f "$tmpfile"
-
-        if [[ -n "$cd_path" ]]; then
-            cd "$cd_path" && echo "-> Changed to $(pwd)"
-        fi
-    }
-fi
-
 # Install and setup Zinit, a flexible ZSH plugin manager
 if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
     print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
@@ -185,3 +159,28 @@ zstyle ':completion:*' special-dirs true
 zstyle ':completion:*' accept-exact-dirs true
 zstyle ':completion:*' path-completion true
 zstyle ':completion:*' squeeze-slashes true
+
+# gw wrapper - keep this at end so it wins over plugin aliases/functions
+unalias gw 2>/dev/null || true
+gw() {
+    # Commands that need direct TTY access (interactive editors)
+    if [[ "$1" == "setup" ]]; then
+        command gw "$@"
+        return
+    fi
+
+    local tmpfile
+    tmpfile=$(mktemp)
+
+    # Run command with output to both terminal and file
+    command gw "$@" 2>&1 | tee "$tmpfile"
+
+    # Check for machine-readable cd target output
+    local cd_path
+    cd_path=$(grep '^GW_CD_TARGET=' "$tmpfile" | tail -1 | sed 's/^GW_CD_TARGET=//' || true)
+    rm -f "$tmpfile"
+
+    if [[ -n "$cd_path" ]]; then
+        cd "$cd_path" && echo "-> Changed to $(pwd)"
+    fi
+}

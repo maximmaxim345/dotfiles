@@ -71,7 +71,7 @@ dz() {
     fi
 }
 
-# gw wrapper - auto-cd after new/rm/cd
+# gw wrapper - auto-cd after gw emits GW_CD_TARGET=...
 if command -v gw &>/dev/null; then
     gw() {
         # Commands that need direct TTY access (interactive editors)
@@ -86,13 +86,13 @@ if command -v gw &>/dev/null; then
         # Run command with output to both terminal and file
         command gw "$@" 2>&1 | tee "$tmpfile"
 
-        # Check for "Run: cd ..." in output
+        # Check for machine-readable cd target output
         local cd_path
-        cd_path=$(grep -o "Run: cd .*" "$tmpfile" | tail -1 | sed 's/^Run: cd //')
+        cd_path=$(grep '^GW_CD_TARGET=' "$tmpfile" | tail -1 | sed 's/^GW_CD_TARGET=//')
         rm -f "$tmpfile"
 
         if [[ -n "$cd_path" ]]; then
-            cd "$cd_path" && echo "→ Changed to $(pwd)"
+            cd "$cd_path" && echo "-> Changed to $(pwd)"
         fi
     }
 fi

@@ -30,6 +30,47 @@ in the same state as before the installation. Since it does not install software
 any software as well. ./config.json contains the configuration of theses dotfiles, it is required to
 correctly uninstall the dotfiles.
 
+## gw (Git Worktree Tool)
+
+`gw` is a local helper script in this repo for git worktree workflows.
+
+### Main commands
+
+- `gw new -b <branch>`: create a new worktree and new branch (from `HEAD` by default)
+- `gw new -b <branch> --from <ref>`: create from another base ref
+- `gw move`: move the currently checked out branch into a new worktree
+- `gw ls` / `gw ls --json`: list worktrees
+- `gw cd`: pick and switch to a worktree
+- `gw rm`: remove a worktree
+- `gw prune`: prune stale worktree metadata
+- `gw doctor`: validate worktree setup and health
+
+### Automation flags
+
+Common non-interactive flags:
+
+- `--yes`: auto-confirm destructive/interactive actions
+- `--no-prompt`: fail instead of prompting
+- `--path` / `--index`: explicit target selection for `gw rm` / `gw cd`
+
+### Shell integration contract
+
+For shell wrappers, `gw` emits:
+
+```shell
+GW_CD_TARGET=<path>
+```
+
+Wrappers should only parse this machine-readable line for auto-`cd`.
+
+### gw tests
+
+Run:
+
+```shell
+./scripts/test-gw.sh
+```
+
 ## Software
 
 Software I use regularly. The software on this list is available on linux, but some is also compatible with windows.

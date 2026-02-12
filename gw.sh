@@ -30,7 +30,8 @@ print_info() {
 
 emit_cd_target() {
     local target="$1"
-    echo "GW_CD_TARGET=${target}"
+    # Ensure this marker starts on its own line even after prompts printed with echo -n.
+    printf '\nGW_CD_TARGET=%s\n' "$target"
 }
 
 # Get relative path from current dir to target (portable)

@@ -172,15 +172,19 @@ gw() {
     local tmpfile
     tmpfile=$(mktemp)
 
-    # Run command with output to both terminal and file
+    # Run command with output to both terminal and file.
     command gw "$@" 2>&1 | tee "$tmpfile"
 
-    # Check for machine-readable cd target output
+    # Extract marker even if it appears mid-line.
     local cd_path
-    cd_path=$(grep '^GW_CD_TARGET=' "$tmpfile" | tail -1 | sed 's/^GW_CD_TARGET=//' || true)
+    cd_path=$(grep -o 'GW_CD_TARGET=[^[:space:]]*' "$tmpfile" | tail -1 | sed 's/^GW_CD_TARGET=//' || true)
     rm -f "$tmpfile"
 
     if [[ -n "$cd_path" ]]; then
-        cd "$cd_path" && echo "-> Changed to $(pwd)"
+        if cd "$cd_path"; then
+            echo "-> Changed to $(pwd)"
+        else
+            echo "gw wrapper: failed to cd to '$cd_path'" >&2
+        fi
     fi
 }

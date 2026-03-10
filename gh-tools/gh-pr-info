@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Print PR description, diff command, and comments for the current branch's PR.
+set -euo pipefail
+
+if ! command -v gh &>/dev/null; then
+    echo "error: gh CLI is not installed" >&2
+    exit 1
+fi
+
+pr_number=$(gh pr view --json number --jq '.number' 2>/dev/null) || true
+if [[ -z "$pr_number" ]]; then
+    echo "No PR found for the current branch." >&2
+    exit 1
+fi
+
+title=$(gh pr view --json title --jq '.title' 2>/dev/null)
+body=$(gh pr view --json body --jq '.body' 2>/dev/null)
+base_branch=$(gh pr view --json baseRefName --jq '.baseRefName' 2>/dev/null)
+head_branch=$(gh pr view --json headRefName --jq '.headRefName' 2>/dev/null)
+
+echo "PR #${pr_number}: ${title}"
+echo
+
+if [[ -n "$body" ]]; then
+    echo "── Description ──"
+    echo "$body"
+    echo
+fi
+
+echo "── Diff ──"
+echo "git diff ${base_branch}...${head_branch}"
+echo
+
+# Reuse gh-pr-comments for the rest, but skip the header (first 2 lines)
+script_dir=$(dirname "$(realpath "$0")")
+"${script_dir}/gh-pr-comments" | tail -n +3

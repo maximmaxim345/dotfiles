@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Print GitHub PR comments and review comments for the current branch's PR.
+set -euo pipefail
+
+if ! command -v gh &>/dev/null; then
+    echo "error: gh CLI is not installed" >&2
+    exit 1
+fi
+
+pr_number=$(gh pr view --json number --jq '.number' 2>/dev/null) || true
+if [[ -z "$pr_number" ]]; then
+    echo "No PR found for the current branch." >&2
+    exit 1
+fi
+
+title=$(gh pr view --json title --jq '.title' 2>/dev/null)
+echo "PR #${pr_number}: ${title}"
+echo
+
+# Conversation comments
+comments=$(gh pr view "$pr_number" --json comments --jq '
+    .comments[]
+    | select(.author.login != "copilot-pull-request-reviewer")
+    | "[\(.createdAt[:10])] \(.author.login):\n\(.body)\n"
+' 2>/dev/null)
+
+if [[ -n "$comments" ]]; then
+    echo "── Comments ──"
+    echo "$comments"
+fi
+
+# Review summaries (approvals, changes requested, etc.)
+reviews=$(gh pr view "$pr_number" --json reviews --jq '
+    .reviews[]
+    | select(.author.login != "copilot-pull-request-reviewer")
+    | select(.body != "" or .state != "COMMENTED")
+    | "[\(.submittedAt[:10])] \(.author.login) (\(.state))\(if .body != "" then ":\n\(.body)" else "" end)\n"
+' 2>/dev/null)
+
+if [[ -n "$reviews" ]]; then
+    echo "── Reviews ──"
+    echo "$reviews"
+fi
+
+# Inline review comments (code-level)
+inline=$(gh api "repos/{owner}/{repo}/pulls/${pr_number}/comments" --jq '
+    .[]
+    | "[\(.created_at[:10])] \(.user.login) on \(.path)\(if .start_line then ":\(.start_line)-\(.line)" elif .line then ":\(.line)" else "" end):\n\(.body)\n"
+' 2>/dev/null)
+
+if [[ -n "$inline" ]]; then
+    echo "── Inline Review Comments ──"
+    echo "$inline"
+fi
+
+if [[ -z "$comments" && -z "$reviews" && -z "$inline" ]]; then
+    echo "No comments or reviews found."
+fi

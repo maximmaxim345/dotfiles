@@ -29,7 +29,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         target = install_dir / script
         df.create_backup(target, config, f"old_{script}")
         df.symlink_path(source, target)
-        print(f"Installed {script}", file=stdout)
+        print(f"Installed {script}")
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -37,4 +37,4 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         target = install_dir / script
         df.restore_backup(target, config, f"old_{script}")
         if df.delete_or_unlink(target):
-            print(f"Removed {script}", file=stdout)
+            print(f"Removed {script}")

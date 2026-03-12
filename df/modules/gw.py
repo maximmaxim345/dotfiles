@@ -31,13 +31,13 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
     # Create symlink
     df.symlink_path(script_path, bin_path)
-    print(f"Symlinked {script_path} -> {bin_path}", file=stdout)
+    print(f"Symlinked {script_path} -> {bin_path}")
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     if bin_path.exists() or bin_path.is_symlink():
         bin_path.unlink()
-        print(f"Removed {bin_path}", file=stdout)
+        print(f"Removed {bin_path}")
 
 
 def has_update(config: ModuleConfig) -> Union[bool, str]:

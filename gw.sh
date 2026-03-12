@@ -520,8 +520,8 @@ cmd_move() {
         fi
     done < <(iter_worktrees "$main_repo")
 
-    upstream_branch=$(git rev-parse --abbrev-ref '@{upstream}' 2>/dev/null | sed 's|.*/||' || true)
-    if [[ -z "$upstream_branch" ]]; then
+    upstream_branch=$(git rev-parse --abbrev-ref '@{upstream}' 2>/dev/null | sed 's|^[^/]*/||' || true)
+    if [[ -z "$upstream_branch" || "$upstream_branch" == "$current_branch" ]]; then
         upstream_branch=$(resolve_default_branch "$main_repo" || true)
     fi
 

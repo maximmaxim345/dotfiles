@@ -42,7 +42,7 @@ def dl_link(pltform: str, arch: str) -> str:
 def is_compatible() -> Union[bool, str]:
     return (
         (platform.system() == "Linux" and platform.machine() in ["x86_64", "aarch64"])
-        or (platform.system() == "Darwin" and platform.machine() in ["x86_64", "aarch64"])
+        or (platform.system() == "Darwin" and platform.machine() in ["x86_64", "aarch64", "arm64"])
         or (platform.system() == "Windows" and platform.machine() == "AMD64")
     )
 
@@ -55,6 +55,8 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         arch = platform.machine().lower()
         if arch in ["amd64", "AMD64"]:
             arch = "x86_64"
+        elif arch == "arm64":
+            arch = "aarch64"
         link = dl_link(pf, arch)
         if pf == "windows":
             download_path = temp_dir / "topgrade.zip"

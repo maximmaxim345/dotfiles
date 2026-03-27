@@ -28,7 +28,7 @@ def dl_link(platform: str, arch: str) -> str:
     """
     if arch in ["amd64", "AMD64"]:
         arch = "x86_64"
-    elif arch == "aarch64":
+    elif arch in ["aarch64", "arm64"]:
         arch = "arm"
     if platform.lower() == "darwin":
         platform = "macos"
@@ -43,7 +43,7 @@ def subfolder_name(platform: str, arch: str) -> str:
     """
     if arch == "amd64":
         arch = "x86_64"
-    elif arch == "aarch64":
+    elif arch in ["aarch64", "arm64"]:
         arch = "arm"
     if platform == "darwin":
         platform = "macos"
@@ -53,7 +53,7 @@ def subfolder_name(platform: str, arch: str) -> str:
 def is_compatible() -> Union[bool, str]:
     return (
         (platform.system() == "Linux" and platform.machine() in ["x86_64", "aarch64"])
-        or (platform.system() == "Darwin" and platform.machine() in ["x86_64", "aarch64"])
+        or (platform.system() == "Darwin" and platform.machine() in ["x86_64", "aarch64", "arm64"])
         or (platform.system() == "Windows" and platform.machine() == "AMD64")
     )
 

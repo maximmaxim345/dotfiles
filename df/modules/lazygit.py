@@ -44,7 +44,7 @@ def dl_link(version: str, os: str, arch: str) -> str:
 def is_compatible() -> Union[bool, str]:
     return (
         (platform.system() == "Linux" and platform.machine() in ["x86_64", "aarch64"])
-        or (platform.system() == "Darwin" and platform.machine() in ["x86_64", "aarch64"])
+        or (platform.system() == "Darwin" and platform.machine() in ["x86_64", "aarch64", "arm64"])
         or (platform.system() == "Windows" and platform.machine() in ["AMD64", "x86_64"])
     )
 

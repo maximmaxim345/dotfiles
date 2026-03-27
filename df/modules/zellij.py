@@ -43,6 +43,7 @@ def is_compatible() -> Union[bool, str]:
     return platform.system() in ["Linux", "Darwin"] and platform.machine() in [
         "x86_64",
         "aarch64",
+        "arm64",
     ]
 
 
@@ -53,6 +54,8 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         download_path = temp_dir / "zellij.tar.gz"
         pf = platform.system().lower()
         arch = platform.machine().lower()
+        if arch == "arm64":
+            arch = "aarch64"
         link = dl_link(pf, arch)
         df.download_file(link, download_path)
         print("Unpacking zellij...")

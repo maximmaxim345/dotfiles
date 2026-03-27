@@ -37,7 +37,7 @@ def dl_link(version: str, platform: str, arch: str) -> str:
 
 
 def is_compatible() -> Union[bool, str]:
-    return (platform.system() in ["Linux", "Darwin"] and platform.machine() in ["x86_64", "aarch64"]) or (
+    return (platform.system() in ["Linux", "Darwin"] and platform.machine() in ["x86_64", "aarch64", "arm64"]) or (
         platform.system() == "Windows" and platform.machine() == "AMD64"
     )
 
@@ -51,6 +51,8 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         arch = platform.machine().lower()
         if arch == "amd64":
             arch = "x86_64"
+        elif arch == "arm64":
+            arch = "aarch64"
         link = dl_link(latest_version, pf, arch)
         if pf == "windows":
             download_path = temp_dir / "zoxide.zip"

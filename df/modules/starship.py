@@ -25,7 +25,7 @@ bin_dir = Path.home() / ".local" / "bin"
 
 
 def is_compatible() -> Union[bool, str]:
-    return (platform.system() in ["Linux", "Darwin"] and platform.machine() in ["x86_64", "aarch64"]) or (
+    return (platform.system() in ["Linux", "Darwin"] and platform.machine() in ["x86_64", "aarch64", "arm64"]) or (
         platform.system() == "Windows" and platform.machine() in ["AMD64", "x86_64"]
     )
 

@@ -97,7 +97,6 @@ zinit light-mode for \
     zsh-users/zsh-completions \
     zsh-users/zsh-history-substring-search
 
-zinit ice ver"adfade3"
 zinit light marlonrichert/zsh-autocomplete
 
 # Use zoxide if possible

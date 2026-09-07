@@ -55,11 +55,14 @@ def delete_or_unlink(path: Path, delete_recursively: bool = False) -> bool:
     If delete_recursively is true, will delete the path recursively
     Returns true if the path was deleted, false if it did not exist
     """
-    if not path.exists():
-        return False
+    # Check for a symlink first, exists() resolves the link and so reports a
+    # broken one as missing
     if path.is_symlink():
         path.unlink()
-    elif path.is_dir():
+        return True
+    if not path.exists():
+        return False
+    if path.is_dir():
         if delete_recursively:
             shutil.rmtree(path)
         else:

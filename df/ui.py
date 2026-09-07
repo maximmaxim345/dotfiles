@@ -515,7 +515,7 @@ class DotfilesApp(App):
             # be installed
             compatible = self.modules_is_compatible[module_id]
             reason = None
-            if compatible:
+            if compatible is True:
                 # The module says it is compatible, check if there are any
                 # conflicting modules
                 conflicting = []
@@ -531,10 +531,8 @@ class DotfilesApp(App):
                     conflicting_as_text = ", ".join([MODULES[id].NAME for id in conflicting])
                     reason = f"Conflicts with {conflicting_as_text}"
             else:
-                if not compatible:
-                    reason = "Not compatible with this system"
-                else:
-                    reason = compatible
+                # is_compatible returns a string with the reason when incompatible
+                reason = compatible if isinstance(compatible, str) else "Not compatible with this system"
             # Add to Incompatible
             widget = self.add_module_to_category(module_id, "incompatible")
             widget.style = "incompatible"
@@ -652,7 +650,7 @@ class DotfilesApp(App):
                         self.queue_action(dependency_id, "install", state=state)
             # Queue the module itself
             if not state.modules_installed[module_id]:
-                if not self.modules_is_compatible[module_id]:
+                if self.modules_is_compatible[module_id] is not True:
                     state.conflicts.append(self.ImpossibleActionError.Conflict(action, module_id, "incompatible"))
 
                 state.modules_installed[module_id] = True
@@ -713,7 +711,7 @@ class DotfilesApp(App):
         for module_id, module in MODULES.items():
             if not state.modules_installed[module_id]:
                 continue
-            if not self.modules_is_compatible[module_id]:
+            if self.modules_is_compatible[module_id] is not True:
                 # A module is incompatible, we cannot apply the action
                 # But we make an exception if we only uninstall things
                 if not all_uninstall:

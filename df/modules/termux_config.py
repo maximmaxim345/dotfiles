@@ -1,5 +1,4 @@
 import io
-import os
 import subprocess
 from pathlib import Path
 from typing import List, Union
@@ -17,17 +16,8 @@ target_path = Path.home() / ".termux/termux.properties"
 target_path_font = Path.home() / ".termux/font.ttf"
 
 
-def running_in_termux() -> bool:
-    prefix = os.environ.get("PREFIX")
-    version = os.environ.get("TERMUX_VERSION")
-    if prefix and version:
-        return True
-    else:
-        return False
-
-
 def is_compatible() -> Union[bool, str]:
-    return running_in_termux()
+    return df.running_in_termux()
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

@@ -16,6 +16,17 @@ DOTFILES_PATH: Path  # The path to the dotfiles directory
 # Helper function usefull for installing and uninstalling modules
 
 
+def running_in_termux() -> bool:
+    """Check if we are running inside Termux on Android"""
+    # TERMUX_VERSION is only exported by the login shell, so fall back to the
+    # prefix and the installation directory for other ways of starting a shell
+    if os.environ.get("TERMUX_VERSION"):
+        return True
+    if "com.termux" in os.environ.get("PREFIX", ""):
+        return True
+    return Path("/data/data/com.termux/files/usr").is_dir()
+
+
 def find_backup_path(original: Path) -> Path:
     """Find a non existing path for backuping a old
     configuration file/folder

@@ -9,7 +9,7 @@ import io
 import sys
 import traceback
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 import df
 import df.config
@@ -275,14 +275,33 @@ def update_module(module_id: str, config: df.config.Config, output: CLIOutput) -
         return False
 
 
-def list_modules(config: df.config.Config, output: CLIOutput, show_all: bool = True) -> None:
+def has_module_update(module: Any, module_config: df.config.ModuleConfig) -> bool:
+    """Check whether an installed module reports an available update"""
+    if not hasattr(module, "has_update"):
+        return False
+    try:
+        return bool(module.has_update(module_config))
+    except Exception:
+        return False
+
+
+def list_modules(
+    config: df.config.Config,
+    output: CLIOutput,
+    show_all: bool = True,
+    only_updatable: bool = False,
+) -> None:
     """List all available modules with their status"""
 
     if output.quiet:
         # In quiet mode, just print module IDs
         for module_id in sorted(MODULES.keys()):
             module_config = config.get_module(module_id)
-            if show_all or module_config.get_installed():
+            installed = module_config.get_installed()
+            if only_updatable:
+                if installed and has_module_update(MODULES[module_id], module_config):
+                    print(module_id)
+            elif show_all or installed:
                 print(module_id)
         return
 
@@ -297,15 +316,11 @@ def list_modules(config: df.config.Config, output: CLIOutput, show_all: bool = T
         if not show_all and not installed:
             continue
 
-        status = "✓ Installed" if installed else "  Available"
+        update_available = installed and has_module_update(module, module_config)
+        if only_updatable and not update_available:
+            continue
 
-        # Check for updates if installed
-        update_available = False
-        if installed and hasattr(module, "has_update"):
-            try:
-                update_available = bool(module.has_update(module_config))
-            except Exception:
-                pass
+        status = "✓ Installed" if installed else "  Available"
 
         if update_available:
             status += " (update available)"
@@ -439,7 +454,7 @@ def cmd_update(args: argparse.Namespace, config: df.config.Config, output: CLIOu
 
 def cmd_list(args: argparse.Namespace, config: df.config.Config, output: CLIOutput) -> int:
     """Handle the list command"""
-    list_modules(config, output, show_all=not args.installed)
+    list_modules(config, output, show_all=not args.installed, only_updatable=args.updatable)
     return 0
 
 
@@ -474,6 +489,7 @@ Examples:
   dotfiles update                           # Update all installed modules
   dotfiles list                             # List all modules
   dotfiles list --installed                # List only installed modules
+  dotfiles list --updatable                # List modules with an available update
 
 For devcontainers, use:
   dotfiles install --quiet --force git_config nvim_config_lazyvim
@@ -518,6 +534,7 @@ For devcontainers, use:
     # List command
     list_parser = subparsers.add_parser("list", help="List modules")
     list_parser.add_argument("--installed", action="store_true", help="Show only installed modules")
+    list_parser.add_argument("--updatable", action="store_true", help="Show only installed modules with an available update")
 
     # GUI command (for backwards compatibility)
     subparsers.add_parser("gui", help="Launch graphical interface")

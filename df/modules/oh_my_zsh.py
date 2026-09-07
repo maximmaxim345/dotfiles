@@ -6,7 +6,7 @@ from typing import List, Union
 
 import df
 from df.config import ModuleConfig
-from df.osinfo import system
+from df.osinfo import running_in_termux, system
 
 ID: str = "oh_my_zsh"
 NAME: str = "Oh My Zsh"
@@ -19,6 +19,10 @@ oh_my_zsh_path = Path.home() / ".oh-my-zsh"
 
 
 def is_compatible() -> Union[bool, str]:
+    if running_in_termux():
+        # Android has no passwd entry for app users, so the installer cannot
+        # resolve HOME and refuses to run
+        return "The Oh My Zsh installer cannot determine HOME on Android"
     return system() in ["Linux", "Darwin"]
 
 

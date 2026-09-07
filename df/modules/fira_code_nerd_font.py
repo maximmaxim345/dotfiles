@@ -15,9 +15,7 @@ DESCRIPTION: str = "Fira Code: free monospaced font with programming ligatures"
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 
-dl_link = (
-    "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/FiraCode/Medium/FiraCodeNerdFont-Medium.ttf"
-)
+dl_link = "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/FiraCode/FiraCodeNerdFont-Medium.ttf"
 font_name = "Fira Code Medium Nerd Font Complete.ttf"
 if platform.system() == "Windows":
     fonts_folder = Path.home() / "AppData/Local/Microsoft/Windows/Fonts"

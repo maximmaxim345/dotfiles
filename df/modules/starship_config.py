@@ -1,16 +1,16 @@
 import io
-import platform
 from pathlib import Path
 from typing import List, Union
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import system
 
 ID: str = "starship_config"
 NAME: str = "Starship Config"
 DESCRIPTION: str = "A rounded prompt for starship"
 DEPENDENCIES: List[str] = ["starship"]
-if platform.system() == "Windows":
+if system() == "Windows":
     DEPENDENCIES = []  # The user has to manually install starship on Windows
 CONFLICTING: List[str] = []
 
@@ -18,12 +18,12 @@ config_path = Path.home() / ".config" / "starship.toml"
 
 
 def is_compatible() -> Union[bool, str]:
-    return platform.system() in ["Linux", "Darwin", "Windows"]
+    return system() in ["Linux", "Darwin", "Windows"]
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     source_path = df.DOTFILES_PATH / "starship.toml"
-    if platform.system() == "Windows":
+    if system() == "Windows":
         # Windows requires higher permissions to symlink files, so we'll set a system environment variable instead
         import winreg
 
@@ -42,7 +42,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
-    if platform.system() == "Windows":
+    if system() == "Windows":
         import winreg
 
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_ALL_ACCESS)

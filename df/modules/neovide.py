@@ -10,6 +10,7 @@ import requests
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import running_in_termux, system
 
 ID: str = "neovide"
 NAME: str = "Neovide"
@@ -27,9 +28,9 @@ release_url = "https://github.com/neovide/neovide/releases/latest"
 
 
 def is_compatible() -> Union[bool, str]:
-    if df.running_in_termux():
+    if running_in_termux():
         return "Neovide needs a graphical session, which Termux does not provide"
-    return platform.system() == "Linux" and platform.machine() in ["x86_64"]
+    return system() == "Linux" and platform.machine() in ["x86_64"]
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

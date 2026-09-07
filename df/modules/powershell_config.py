@@ -1,10 +1,10 @@
 import io
-import platform
 from pathlib import Path
 from typing import List, Union
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import system
 
 ID: str = "sowershell_config"
 NAME: str = "PowerShell Config"
@@ -14,12 +14,12 @@ CONFLICTING: List[str] = []
 
 
 def is_compatible() -> Union[bool, str]:
-    return platform.system() in ["Windows", "Linux", "Darwin"]
+    return system() in ["Windows", "Linux", "Darwin"]
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     source_path = df.DOTFILES_PATH / "PowerShell" / "Microsoft.PowerShell_profile.ps1"
-    if platform.system() == "Windows":
+    if system() == "Windows":
         target_path = Path.home() / "Documents" / "PowerShell" / "Microsoft.PowerShell_profile.ps1"
     else:
         target_path = Path.home() / ".config" / "powershell" / "Microsoft.PowerShell_profile.ps1"
@@ -29,7 +29,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
-    if platform.system() == "Windows":
+    if system() == "Windows":
         target_path = Path.home() / "Documents" / "PowerShell" / "Microsoft.PowerShell_profile.ps1"
     else:
         target_path = Path.home() / ".config" / "powershell" / "Microsoft.PowerShell_profile.ps1"

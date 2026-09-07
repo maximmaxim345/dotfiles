@@ -1,5 +1,4 @@
 import io
-import platform
 import shutil
 import subprocess
 import tempfile
@@ -8,6 +7,7 @@ from typing import List, Union
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import system
 
 ID: str = "monaspace_argon_font"
 NAME: str = "Monaspace Argon Font"
@@ -29,16 +29,16 @@ fonts = [
     ),
 ]
 
-if platform.system() == "Windows":
+if system() == "Windows":
     fonts_folder = Path.home() / "AppData/Local/Microsoft/Windows/Fonts"
-elif platform.system() == "Darwin":
+elif system() == "Darwin":
     fonts_folder = Path.home() / "Library/Fonts"
 else:
     fonts_folder = Path.home() / ".local/share/fonts/"
 
 
 def is_compatible() -> Union[bool, str]:
-    return platform.system() in ["Linux", "Windows", "Darwin"]
+    return system() in ["Linux", "Windows", "Darwin"]
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -58,7 +58,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
             font_path.unlink(missing_ok=True)
             shutil.copy(download_path, font_path)
 
-            if platform.system() == "Windows":
+            if system() == "Windows":
                 import winreg
 
                 # Register the font with Windows
@@ -75,7 +75,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
                 except OSError as e:
                     print(f"Error registering font {font_name}: {e}")
 
-        if platform.system() == "Windows":
+        if system() == "Windows":
             print("It is recommended to restart your computer to apply the font changes.")
         else:
             # Update the font cache if fc-cache is installed
@@ -92,7 +92,7 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     for _, font_name, registry_name in fonts:
         font_path = fonts_folder / font_name
 
-        if platform.system() == "Windows":
+        if system() == "Windows":
             import winreg
 
             # Unregister the font with Windows

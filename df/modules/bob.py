@@ -10,12 +10,13 @@ import requests
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import running_in_termux, system
 
 ID: str = "bob"
 NAME: str = "Bob"
 DESCRIPTION: str = "Version Manager for NeoVim"
 DEPENDENCIES: List[str] = []
-if platform.system() == "Windows":
+if system() == "Windows":
     DEPENDENCIES = ["windows_local_bin"]
 CONFLICTING: List[str] = []
 
@@ -51,12 +52,12 @@ def subfolder_name(platform: str, arch: str) -> str:
 
 
 def is_compatible() -> Union[bool, str]:
-    if df.running_in_termux():
+    if running_in_termux():
         return "Bob and the Neovim builds it downloads are linked against glibc, use pkg install neovim"
     return (
-        (platform.system() == "Linux" and platform.machine() in ["x86_64", "aarch64"])
-        or (platform.system() == "Darwin" and platform.machine() in ["x86_64", "aarch64", "arm64"])
-        or (platform.system() == "Windows" and platform.machine() == "AMD64")
+        (system() == "Linux" and platform.machine() in ["x86_64", "aarch64"])
+        or (system() == "Darwin" and platform.machine() in ["x86_64", "aarch64", "arm64"])
+        or (system() == "Windows" and platform.machine() == "AMD64")
     )
 
 
@@ -66,7 +67,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         print("Downloading bob...")
         temp_dir = Path(temp_dir_str)
         download_path = temp_dir / "bob.zip"
-        pf = platform.system().lower()
+        pf = system().lower()
         arch = platform.machine().lower()
         link = dl_link(pf, arch)
         df.download_file(link, download_path)
@@ -98,7 +99,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     bin_dir = Path.home() / ".local" / "bin"
-    bob_exec = (bin_dir / "bob.exe") if platform.system() == "Windows" else (bin_dir / "bob")
+    bob_exec = (bin_dir / "bob.exe") if system() == "Windows" else (bin_dir / "bob")
     # Run bob erase
     subprocess.run([bob_exec, "erase"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     # Delete the bob executable

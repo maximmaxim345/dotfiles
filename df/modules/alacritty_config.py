@@ -1,11 +1,11 @@
 import io
 import os
-import platform
 from pathlib import Path
 from typing import List, Union
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import system
 
 ID: str = "alacritty_config"
 NAME: str = "Alacritty Config"
@@ -15,12 +15,12 @@ CONFLICTING: List[str] = []
 
 
 def is_compatible() -> Union[bool, str]:
-    return platform.system() in ["Linux", "Darwin", "Windows"]
+    return system() in ["Linux", "Darwin", "Windows"]
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     source_path = df.DOTFILES_PATH / "alacritty"
-    if platform.system() == "Windows":
+    if system() == "Windows":
         target_path = Path(os.path.expandvars("%APPDATA%")) / "alacritty"
     else:
         target_path = Path.home() / ".config" / "alacritty"
@@ -30,7 +30,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
-    if platform.system() == "Windows":
+    if system() == "Windows":
         target_path = Path(os.path.expandvars("%APPDATA%")) / "alacritty"
     else:
         target_path = Path.home() / ".config" / "alacritty"

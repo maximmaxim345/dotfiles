@@ -5,6 +5,7 @@ from typing import List, Union
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import running_in_termux
 
 ID: str = "termux_config"
 NAME: str = "Termux config"
@@ -17,7 +18,7 @@ target_path_font = Path.home() / ".termux/font.ttf"
 
 
 def is_compatible() -> Union[bool, str]:
-    return df.running_in_termux()
+    return running_in_termux()
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

@@ -1,10 +1,10 @@
 import io
-import platform
 from pathlib import Path
 from typing import List, Union
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import running_in_termux, system
 
 ID: str = "df_shortcut"
 NAME: str = "Dotfiles Manager Shortcut"
@@ -15,9 +15,9 @@ CONFLICTING: List[str] = []
 
 def is_compatible() -> Union[bool, str]:
     # This module is only compatible with Linux desktop environments
-    if df.running_in_termux():
+    if running_in_termux():
         return "Termux has no desktop environment to show a shortcut in"
-    return platform.system() == "Linux"
+    return system() == "Linux"
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

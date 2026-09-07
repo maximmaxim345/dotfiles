@@ -1,9 +1,9 @@
 import io
-import platform
 from pathlib import Path
 from typing import List, Union
 
 from df.config import ModuleConfig
+from df.osinfo import system
 
 ID: str = "windows_local_bin"
 NAME: str = "Windows Local Bin"
@@ -13,7 +13,7 @@ CONFLICTING: List[str] = []
 
 
 def is_compatible() -> Union[bool, str]:
-    return platform.system() == "Windows"
+    return system() == "Windows"
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

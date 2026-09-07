@@ -1,5 +1,4 @@
 import io
-import platform
 import subprocess
 import tempfile
 from pathlib import Path
@@ -7,6 +6,7 @@ from typing import List, Union
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import system
 
 ID: str = "oh_my_zsh"
 NAME: str = "Oh My Zsh"
@@ -19,7 +19,7 @@ oh_my_zsh_path = Path.home() / ".oh-my-zsh"
 
 
 def is_compatible() -> Union[bool, str]:
-    return platform.system() in ["Linux", "Darwin"]
+    return system() in ["Linux", "Darwin"]
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

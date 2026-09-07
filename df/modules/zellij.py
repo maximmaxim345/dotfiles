@@ -9,6 +9,7 @@ import requests
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import system
 
 ID: str = "zellij"
 NAME: str = "Zellij"
@@ -40,7 +41,7 @@ def dl_link(platform: str, arch: str) -> str:
 def is_compatible() -> Union[bool, str]:
     # We only support Linux/Mac with x86_64 and aarch64
     # Zellij does not have official Windows support yet
-    return platform.system() in ["Linux", "Darwin"] and platform.machine() in [
+    return system() in ["Linux", "Darwin"] and platform.machine() in [
         "x86_64",
         "aarch64",
         "arm64",
@@ -52,7 +53,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         print("Downloading zellij...")
         temp_dir = Path(temp_dir_str)
         download_path = temp_dir / "zellij.tar.gz"
-        pf = platform.system().lower()
+        pf = system().lower()
         arch = platform.machine().lower()
         if arch == "arm64":
             arch = "aarch64"

@@ -221,6 +221,17 @@ For good examples of modules, refer to existing modules in the `df/modules/` dir
 
 The `df` package provides several helper functions that can be used in your modules. You can import them from the `df` package (e.g., `from df import download_file`).
 
+#### Platform Detection
+
+These live in `df.osinfo` rather than the `df` package itself, so that they are also usable while a
+module builds `DEPENDENCIES` and other module level values (`from df.osinfo import system`).
+
+- `system() -> str`: The OS name, like `platform.system()`, except that Android is reported as
+  `Linux`. Python 3.13 and newer report Termux as `Android`, so use this instead of
+  `platform.system()` in modules, otherwise every `"Linux"` check fails under Termux.
+- `running_in_termux() -> bool`: Whether we are running inside Termux on Android. Use it to reject
+  modules that need a desktop session or glibc.
+
 #### File Management
 
 - `download_file(url: str, path: Path) -> None`: Downloads a file from a URL to a specified path.

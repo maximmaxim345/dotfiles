@@ -1,10 +1,10 @@
 import io
-import platform
 from pathlib import Path
 from typing import List, Union
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import system
 
 ID: str = "wezter_config"
 NAME: str = "Wezterm Config"
@@ -14,12 +14,12 @@ CONFLICTING: List[str] = []
 
 
 def is_compatible() -> Union[bool, str]:
-    return platform.system() in ["Linux", "Darwin", "Windows"]
+    return system() in ["Linux", "Darwin", "Windows"]
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     source_path = df.DOTFILES_PATH / "wezterm" / "wezterm.lua"
-    if platform.system() == "Windows":
+    if system() == "Windows":
         target_path = Path.home() / ".wezterm.lua"
     else:
         target_path = Path.home() / ".config" / "wezterm" / "wezterm.lua"
@@ -29,7 +29,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
-    if platform.system() == "Windows":
+    if system() == "Windows":
         target_path = Path.home() / ".wezterm.lua"
     else:
         target_path = Path.home() / ".config" / "wezterm" / "wezterm.lua"

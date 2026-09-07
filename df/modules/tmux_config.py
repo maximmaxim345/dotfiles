@@ -1,11 +1,11 @@
 import io
-import platform
 import shutil
 from pathlib import Path
 from typing import List, Union
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import system
 
 ID: str = "tmux_config"
 NAME: str = "Tmux config"
@@ -18,7 +18,7 @@ target_local_path = Path.home() / ".tmux.conf.local"
 
 
 def is_compatible() -> Union[bool, str]:
-    return platform.system() in ("Linux", "Darwin")
+    return system() in ("Linux", "Darwin")
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

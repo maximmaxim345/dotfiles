@@ -1,10 +1,10 @@
 import io
-import platform
 from pathlib import Path
 from typing import List, Union
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import system
 
 ID: str = "nvim_config_lazyvim"
 NAME: str = "Neovim config based on lazyvim"
@@ -14,14 +14,14 @@ CONFLICTING: List[str] = []
 
 
 def is_compatible() -> Union[bool, str]:
-    return platform.system() in ["Windows", "Darwin", "Linux"]
+    return system() in ["Windows", "Darwin", "Linux"]
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     source_path = df.DOTFILES_PATH / "lazyvim"
     target_path = Path.home() / ".config" / "nvim"
 
-    if platform.system() == "Windows":
+    if system() == "Windows":
         # On Windows, use the AppData directory for the config
         target_path = Path.home() / "AppData" / "Local" / "nvim"
 
@@ -32,7 +32,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     target_path = Path.home() / ".config" / "nvim"
 
-    if platform.system() == "Windows":
+    if system() == "Windows":
         target_path = Path.home() / "AppData" / "Local" / "nvim"
 
     df.restore_backup(target_path, config, "old_path")

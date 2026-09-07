@@ -1,10 +1,10 @@
 import io
-import platform
 from pathlib import Path
 from typing import List, Union
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import running_in_termux, system
 
 ID: str = "picom_config"
 NAME: str = "Picom Config"
@@ -16,9 +16,9 @@ config_path = Path.home() / ".config" / "picom.conf"
 
 
 def is_compatible() -> Union[bool, str]:
-    if df.running_in_termux():
+    if running_in_termux():
         return "Termux has no X11 session to run picom in"
-    return platform.system() == "Linux"
+    return system() == "Linux"
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

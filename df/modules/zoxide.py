@@ -9,12 +9,13 @@ import requests
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import system
 
 ID: str = "zoxide"
 NAME: str = "Zoxide"
 DESCRIPTION: str = "A smarter cd command. Supports all major shells."
 DEPENDENCIES: List[str] = []
-if platform.system() == "Windows":
+if system() == "Windows":
     DEPENDENCIES = ["windows_local_bin"]
 CONFLICTING: List[str] = []
 
@@ -37,8 +38,8 @@ def dl_link(version: str, platform: str, arch: str) -> str:
 
 
 def is_compatible() -> Union[bool, str]:
-    return (platform.system() in ["Linux", "Darwin"] and platform.machine() in ["x86_64", "aarch64", "arm64"]) or (
-        platform.system() == "Windows" and platform.machine() == "AMD64"
+    return (system() in ["Linux", "Darwin"] and platform.machine() in ["x86_64", "aarch64", "arm64"]) or (
+        system() == "Windows" and platform.machine() == "AMD64"
     )
 
 
@@ -47,7 +48,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     with tempfile.TemporaryDirectory() as temp_dir_str:
         print("Downloading zoxide...")
         temp_dir = Path(temp_dir_str)
-        pf = platform.system().lower()
+        pf = system().lower()
         arch = platform.machine().lower()
         if arch == "amd64":
             arch = "x86_64"
@@ -83,7 +84,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     # Delete the zoxide executable
     bin_dir = Path.home() / ".local" / "bin"
-    if platform.system() == "Windows":
+    if system() == "Windows":
         (bin_dir / "zoxide.exe").unlink(missing_ok=True)
     else:
         (bin_dir / "zoxide").unlink(missing_ok=True)

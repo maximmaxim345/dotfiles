@@ -9,12 +9,13 @@ import requests
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import system
 
 ID: str = "topgrade"
 NAME: str = "Topgrade"
 DESCRIPTION: str = "Upgrade all the things"
 DEPENDENCIES: List[str] = []
-if platform.system() == "Windows":
+if system() == "Windows":
     DEPENDENCIES = ["windows_local_bin"]
 CONFLICTING: List[str] = []
 
@@ -41,9 +42,9 @@ def dl_link(pltform: str, arch: str) -> str:
 
 def is_compatible() -> Union[bool, str]:
     return (
-        (platform.system() == "Linux" and platform.machine() in ["x86_64", "aarch64"])
-        or (platform.system() == "Darwin" and platform.machine() in ["x86_64", "aarch64", "arm64"])
-        or (platform.system() == "Windows" and platform.machine() == "AMD64")
+        (system() == "Linux" and platform.machine() in ["x86_64", "aarch64"])
+        or (system() == "Darwin" and platform.machine() in ["x86_64", "aarch64", "arm64"])
+        or (system() == "Windows" and platform.machine() == "AMD64")
     )
 
 
@@ -51,7 +52,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     with tempfile.TemporaryDirectory() as temp_dir_str:
         print("Downloading topgrade...")
         temp_dir = Path(temp_dir_str)
-        pf = platform.system().lower()
+        pf = system().lower()
         arch = platform.machine().lower()
         if arch in ["amd64", "AMD64"]:
             arch = "x86_64"
@@ -81,7 +82,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     bin_dir = Path.home() / ".local" / "bin"
-    topgrade_exec = (bin_dir / "topgrade.exe") if platform.system() == "Windows" else (bin_dir / "topgrade")
+    topgrade_exec = (bin_dir / "topgrade.exe") if system() == "Windows" else (bin_dir / "topgrade")
     (bin_dir / topgrade_exec).unlink(missing_ok=True)
 
 

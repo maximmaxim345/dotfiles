@@ -1,10 +1,10 @@
 import io
-import platform
 from pathlib import Path
 from typing import List, Union
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import system
 
 ID: str = "gw"
 NAME: str = "gw (Git Worktree Tool)"
@@ -16,7 +16,7 @@ bin_path = Path.home() / ".local" / "bin" / "gw"
 
 
 def is_compatible() -> Union[bool, str]:
-    return platform.system() in ["Linux", "Darwin"]
+    return system() in ["Linux", "Darwin"]
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

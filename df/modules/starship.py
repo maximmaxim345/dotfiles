@@ -10,12 +10,13 @@ import requests
 
 import df
 from df.config import ModuleConfig
+from df.osinfo import system
 
 ID: str = "starship"
 NAME: str = "Starship"
 DESCRIPTION: str = "The minimal, blazing-fast, and infinitely customizable prompt for any shell!"
 DEPENDENCIES: List[str] = []
-if platform.system() == "Windows":
+if system() == "Windows":
     DEPENDENCIES = ["windows_local_bin"]
 CONFLICTING: List[str] = []
 
@@ -25,13 +26,13 @@ bin_dir = Path.home() / ".local" / "bin"
 
 
 def is_compatible() -> Union[bool, str]:
-    return (platform.system() in ["Linux", "Darwin"] and platform.machine() in ["x86_64", "aarch64", "arm64"]) or (
-        platform.system() == "Windows" and platform.machine() in ["AMD64", "x86_64"]
+    return (system() in ["Linux", "Darwin"] and platform.machine() in ["x86_64", "aarch64", "arm64"]) or (
+        system() == "Windows" and platform.machine() in ["AMD64", "x86_64"]
     )
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
-    if platform.system() == "Windows":
+    if system() == "Windows":
         with tempfile.TemporaryDirectory() as temp_dir_str:
             temp_dir = Path(temp_dir_str)
             print("Downloading Starship...")
@@ -82,7 +83,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     # just remove the binary
     starship_path = bin_dir / "starship"
-    if platform.system() == "Windows":
+    if system() == "Windows":
         starship_path = bin_dir / "starship.exe"
     starship_path.unlink(missing_ok=True)
 

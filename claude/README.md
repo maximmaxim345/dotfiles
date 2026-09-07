@@ -87,9 +87,32 @@ STRIP_FRONTMATTER='NR==1 && /^---$/ {f=1; next} f && /^---$/ {f=0; next} !f'
   curl -fsSL "$RAW/output-styles/plain-english.md" | awk "$STRIP_FRONTMATTER"
 } >"$CLAUDE_DIR/CLAUDE.md"
 
+# The OHF Sage agent, the same release assets the ohf_sage module installs locally.
+SAGE=https://github.com/chrisuthe/ohf-sage/releases/latest/download
+mkdir -p "$CLAUDE_DIR/agents"
+curl -fsSL -o "$CLAUDE_DIR/agents/ohf-sage.md" "$SAGE/ohf-sage.md"
+curl -fsSL -o "$CLAUDE_DIR/agents/ohf-sage-corpus.jsonl" "$SAGE/ohf-sage-corpus.jsonl"
+# The shipped corpus path is project relative and resolves to nothing outside a project root.
+sed -i.bak "s|\.claude/agents/ohf-sage-corpus\.jsonl|$CLAUDE_DIR/agents/ohf-sage-corpus.jsonl|g" \
+  "$CLAUDE_DIR/agents/ohf-sage.md"
+rm -f "$CLAUDE_DIR/agents/ohf-sage.md.bak"
+
 # Install uv through its own installer, which avoids the GitHub API rate limit.
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
+
+The agent and its 8M corpus download in under a second, so they fit the setup
+script's time budget comfortably. The runner needs
+`release-assets.githubusercontent.com` reachable for the release assets, on top
+of `raw.githubusercontent.com` for the instructions, so both belong in the
+environment's allowed domains.
+
+Worth confirming rather than assuming: the docs say user-level agents do not
+*sync* to a cloud session, but they do not say a runner ignores
+`~/.claude/agents/`. Since the setup script runs before Claude Code launches,
+the agent should be discovered the same way the fetched `CLAUDE.md` is. Check it
+by asking a web session to consult the ohf-sage agent and seeing whether it
+cites specific PRs.
 
 Two things worth knowing about that script. The `awk` drops the style's YAML
 frontmatter, which would otherwise land mid-file as stray `---` lines. And the

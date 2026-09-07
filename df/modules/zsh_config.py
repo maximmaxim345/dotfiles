@@ -18,7 +18,11 @@ target_local_path = Path.home() / ".zshrc.local"
 
 
 def is_compatible() -> Union[bool, str]:
-    return system() in ["Linux", "Darwin"]
+    if system() not in ["Linux", "Darwin"]:
+        return False
+    if shutil.which("zsh") is None:
+        return "zsh is not installed"
+    return True
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

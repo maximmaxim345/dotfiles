@@ -107,12 +107,11 @@ script's time budget comfortably. The runner needs
 of `raw.githubusercontent.com` for the instructions, so both belong in the
 environment's allowed domains.
 
-Worth confirming rather than assuming: the docs say user-level agents do not
-*sync* to a cloud session, but they do not say a runner ignores
-`~/.claude/agents/`. Since the setup script runs before Claude Code launches,
-the agent should be discovered the same way the fetched `CLAUDE.md` is. Check it
-by asking a web session to consult the ohf-sage agent and seeing whether it
-cites specific PRs.
+This is confirmed working on a cloud runner. User-level agents do not sync to a
+web session on their own, but a runner does discover them from
+`~/.claude/agents/`, because the setup script writes them there before Claude
+Code launches. A test session with `HOME=/root` listed `ohf-sage`, resolved the
+rewritten corpus path, and answered with citations from the corpus.
 
 Two things worth knowing about that script. The `awk` drops the style's YAML
 frontmatter, which would otherwise land mid-file as stray `---` lines. And the

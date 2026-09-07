@@ -16,7 +16,7 @@ fi
 
 echo "Upgrading pip and installing tools into .venv..."
 "$VENV_PY" -m pip install --upgrade pip setuptools wheel
-"$VENV_PY" -m pip install pre-commit black isort ruff
+"$VENV_PY" -m pip install -r "$REPO_ROOT/requirements-dev.txt"
 
 echo "Installing pre-commit git hook..."
 "$VENV_BIN/pre-commit" install

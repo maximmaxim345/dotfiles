@@ -161,6 +161,11 @@ python ./dotfiles.py --help
 
 The `run-in-env.sh` script is useful for running **other tools** that need access to the dotfiles virtual environment. **Do not use it for dotfiles.py itself** as that script already handles environment management automatically.
 
+The hooks run black, isort, ruff and mypy from `.venv`. Those tools are listed in
+`requirements-dev.txt` rather than `requirements.txt`, so they are absent from a venv created by
+`dotfiles.py` alone. Install them once with `./scripts/setup-pre-commit.sh`, otherwise every hook
+except mypy fails with "Executable `./.venv/bin/<tool>` not found".
+
 Common use cases for `run-in-env.sh`:
 
 ```bash

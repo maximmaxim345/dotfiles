@@ -3,3 +3,4 @@ __pycache__/*
 *.py[cod]
 config.json
 kitty/kitty.conf.bak
+.DS_Store

@@ -27,6 +27,8 @@ release_url = "https://github.com/neovide/neovide/releases/latest"
 
 
 def is_compatible() -> Union[bool, str]:
+    if df.running_in_termux():
+        return "Neovide needs a graphical session, which Termux does not provide"
     return platform.system() == "Linux" and platform.machine() in ["x86_64"]
 
 

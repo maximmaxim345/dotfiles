@@ -51,6 +51,8 @@ def subfolder_name(platform: str, arch: str) -> str:
 
 
 def is_compatible() -> Union[bool, str]:
+    if df.running_in_termux():
+        return "Bob and the Neovim builds it downloads are linked against glibc, use pkg install neovim"
     return (
         (platform.system() == "Linux" and platform.machine() in ["x86_64", "aarch64"])
         or (platform.system() == "Darwin" and platform.machine() in ["x86_64", "aarch64", "arm64"])

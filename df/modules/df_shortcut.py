@@ -15,6 +15,8 @@ CONFLICTING: List[str] = []
 
 def is_compatible() -> Union[bool, str]:
     # This module is only compatible with Linux desktop environments
+    if df.running_in_termux():
+        return "Termux has no desktop environment to show a shortcut in"
     return platform.system() == "Linux"
 
 

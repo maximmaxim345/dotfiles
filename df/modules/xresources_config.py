@@ -14,6 +14,8 @@ CONFLICTING: List[str] = []
 
 
 def is_compatible() -> Union[bool, str]:
+    if df.running_in_termux():
+        return "Termux has no X11 server that reads Xresources"
     return platform.system() == "Linux"
 
 

@@ -1,11 +1,19 @@
 # ZSH Configuration
 
+# pnpm keeps its executables in a bin subdirectory of a platform specific home
+if [[ "$(uname)" == "Darwin" ]]; then
+    export PNPM_HOME="$HOME/Library/pnpm"
+else
+    export PNPM_HOME="$HOME/.local/share/pnpm"
+fi
+
 # Define directories to add to PATH
 directories=(
     "/usr/local/bin"
     "$HOME/.local/bin"
     "$HOME/.cargo/bin"
     "$HOME/.opencode/bin"
+    "$PNPM_HOME/bin"
     "$HOME/.local/share/bob/nvim-bin" # Add nvim to path (with highest priority)
 )
 

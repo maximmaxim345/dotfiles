@@ -31,13 +31,23 @@ def is_compatible() -> Union[bool, str]:
     return system() in ["Linux", "Darwin", "Windows"]
 
 
+def is_linked(source_name: str, target_name: str) -> bool:
+    source_path = df.DOTFILES_PATH / "claude" / source_name
+    target_path = claude_path / target_name
+    return target_path.exists() and target_path.resolve() == source_path.resolve()
+
+
+def link(source_name: str, target_name: str, key: str, config: ModuleConfig) -> None:
+    source_path = df.DOTFILES_PATH / "claude" / source_name
+    target_path = claude_path / target_name
+    df.create_backup(target_path, config, key)
+    df.symlink_path(source_path, target_path)
+    print(f"Linked {target_path}")
+
+
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     for source_name, target_name, key in ENTRIES:
-        source_path = df.DOTFILES_PATH / "claude" / source_name
-        target_path = claude_path / target_name
-        df.create_backup(target_path, config, key)
-        df.symlink_path(source_path, target_path)
-        print(f"Linked {target_path}")
+        link(source_name, target_name, key, config)
     print("Claude Code config installed, run /output-style Plain English once to select the output style")
 
 
@@ -48,8 +58,10 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 
 def has_update(config: ModuleConfig) -> Union[bool, str]:
-    return False
+    return not all(is_linked(source_name, target_name) for source_name, target_name, _ in ENTRIES)
 
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
-    pass
+    for source_name, target_name, key in ENTRIES:
+        if not is_linked(source_name, target_name):
+            link(source_name, target_name, key, config)

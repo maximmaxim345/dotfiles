@@ -255,6 +255,7 @@ When creating modules, please follow these best practices:
 - **Error Handling**: The module should handle errors gracefully. If an error occurs, it should be caught and a descriptive message should be printed to `stdout`.
 - **Cleanliness**: The `uninstall()` function should clean up all the files and directories created by the `install()` function. Use the `create_backup` and `restore_backup` helpers to handle existing user configurations.
 - **Clarity**: Provide clear and concise output to the user by printing to the `stdout` stream passed to the `install`, `uninstall`, and `update` functions. This output will be displayed in the TUI's log panel.
+- **New Files in Link Modules**: When a configuration module gains a new file to link, existing installs must pick it up on update. The CLI's `update` only calls `has_update()` (the TUI also compares `VERSION`), so have `has_update()` report missing links and `update()` create just those, like `claude_config` does.
 
 #### Download Modules Best Practices
 

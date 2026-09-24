@@ -37,10 +37,11 @@ uses `yarn`, run `yarn`, not npm.
 
 ## Delegating to subagents
 
-Delegate self-contained work to subagents and pick the model to fit the work.
-Run them in the background unless the task is trivial. Report the conclusion,
-not the raw file dumps. For a follow-up on work a subagent already did, resume
-that subagent by name instead of spawning a new one, so it keeps what it
+Delegate only large, self-contained work (a wide multi-file investigation, an
+independent parallel track), since each subagent re-reads context and reports
+back. Pick the model to fit the work and run it in the background. Report the
+conclusion, not the raw file dumps. For a follow-up on work a subagent already
+did, resume that subagent by name instead of spawning a new one, so it keeps what it
 found. Start a fresh one only when the task is genuinely different.
 
 Subagents don't inherit anything pasted into the session, so copy the rules
@@ -74,9 +75,6 @@ a first read. When a comment is warranted:
 - Don't delete an existing comment from another author unless the code it
   describes is gone.
 
-Expect the user to push back on comments that are too long, too narrative, or
-use semicolons. Trim proactively before they ask.
-
 ## Docstrings
 
 Same treatment as comments. If the helper name + signature already says it,
@@ -96,6 +94,8 @@ colon, no trailing period, backticks for code. Add a body only when the SYMPTOM
 isn't visible from the diff, never to explain the fix. Base the message on
 `git diff --staged`, not the conversation, and stage with `git add -A` only if
 nothing is staged. Don't reference PRs, issues, or tickets in a commit message.
+
+No Claude attribution or session links in commits or PR descriptions.
 
 ## Verifying behavior claims
 
@@ -153,8 +153,8 @@ X" (just "Add X").
 
 Body: 2-4 sentences for small PRs (problem and fix). Larger PRs open with a
 summary sentence, with `#` sections only for genuinely distinct areas. No bold,
-no test-plan section unless asked. If the repo has a PR template, you MUST use
-it. Use `Closes #N` / `Requires #PR` for links.
+no test-plan section unless asked. If the repo has a PR template, use it.
+Use `Closes #N` / `Requires #PR` for links.
 
 Always create with `gh pr create -w` (opens the prefilled browser form, no
 exceptions, even for drafts: tell the user to pick draft in the form). `-w` does
@@ -164,7 +164,7 @@ NOT create the PR, so a missing PR afterward is expected: don't retry without
 ## PR review workflow
 
 Before drafting review comments, fetch existing reviews and inline comments
-on the PR (Copilot, other reviewers, your own drafts). Do NOT create a new
+on the PR (Copilot, other reviewers, your own drafts). Don't create a new
 comment that duplicates or partially overlaps an existing one, even your
 own drafts from a prior PR version. Map proposed feedback against what's
 already there, drop duplicates, only add genuinely uncovered points. State

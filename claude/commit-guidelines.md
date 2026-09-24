@@ -35,7 +35,7 @@ git log $(git merge-base HEAD origin/HEAD)..HEAD --oneline
 - If the branch has prior commits and they consistently use a different style
   (sentence-case, no prefix, etc.), match that style.
 - If the branch has no prior commits, default to Conventional Commits.
-- Do NOT use `git log -10` on the default branch to detect style. In
+- Don't use `git log -10` on the default branch to detect style. In
   squash-merge repos, those entries are PR titles, not commit-style examples.
 
 ## Subject Line
@@ -78,8 +78,8 @@ fix: handle empty input in `parse_config`
 ```
 feat: add dark mode toggle
 
-Users requested this in #234. Defaulting to system preference
-since that matches platform conventions.
+Defaulting to system preference since that matches platform
+conventions.
 ```
 
 ```

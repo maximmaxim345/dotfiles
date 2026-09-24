@@ -36,20 +36,20 @@ Example:
 > Closes #234
 
 ### Medium/Large PRs
-Start with a summary sentence. Only add `#` sections if there are truly distinct areas of change worth separating - don't create a section for every sentence.
+Start with a summary sentence. Only add `#` sections if there are truly distinct areas of change worth separating. Don't create a section for every sentence.
 
 ### Repo templates
-If the repo has a PR template, you MUST use it. Fill in its sections rather than replacing it with free-form body.
+If the repo has a PR template, use it. Fill in its sections rather than replacing it with free-form body.
 
 ## Links
 
-- `Closes #123` - when fixing an issue
-- `Requires #PR` - when blocked on another PR
+- `Closes #123` when fixing an issue
+- `Requires #PR` when blocked on another PR
 
 ## Don't
 
 - Use bold text
-- Use dashes (-, em dash, en dash) in prose
+- Use dashes as punctuation in prose (em dash, en dash, or a spaced hyphen)
 - Over-explain what's obvious from the diff
 - Pad with unnecessary words
 - Add test plan sections unless explicitly requested
@@ -60,8 +60,7 @@ When asked to create a PR, always use `-w`:
 ```
 gh pr create -w --title "..." --body "..."
 ```
-The `-w` flag opens the PR in the browser for review before publishing. Always
-use it, no exceptions.
+The `-w` flag opens the PR in the browser for review before publishing.
 
 `-w` does not create the PR. It opens the create form prefilled with your title
 and body. The user reviews and publishes from there. So after running it, the

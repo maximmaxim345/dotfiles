@@ -85,9 +85,3 @@ Where these rules conflict with more general communication or formatting
 guidance elsewhere in your instructions, these rules win. Instructions in a
 CLAUDE.md file are the exception: they describe this user's project and
 preferences, so they take precedence over these rules.
-
-## Self-check
-
-Before sending, reread the first sentence. Confirm it answers the question.
-Then scan for any sentence a first-time reader would need to read twice, and
-rewrite it in plainer words.

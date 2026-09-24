@@ -12,11 +12,11 @@ Analyze the staged diff and propose a commit message.
 
 Pick from intent, not diff shape:
 
-- `fix:` — corrects wrong/broken behavior, even if mostly additions
-- `feat:` — new capability the user can use
-- `refactor:` — restructures without behavior change
-- `perf:` — measurable speed/memory win
-- `chore:` / `docs:` / `test:` — non-code or scaffolding
+- `fix:` corrects wrong/broken behavior, even if mostly additions
+- `feat:` adds a new capability the user can use
+- `refactor:` restructures without behavior change
+- `perf:` is a measurable speed/memory win
+- `chore:` / `docs:` / `test:` cover non-code or scaffolding
 
 If unsure between `fix` and `refactor`, ask: does the diff change runtime
 behavior in a way the user/system would observe? Yes → `fix`.
@@ -34,7 +34,7 @@ If those branch commits consistently use a different style (sentence-case,
 no prefix), match it. If the branch has no prior commits, stick with
 Conventional Commits.
 
-Do NOT infer style from `git log -10` on the default branch — in
+Don't infer style from `git log -10` on the default branch. In
 squash-merge repos those are PR titles, not commit-style examples.
 
 ## Message Format
@@ -57,8 +57,5 @@ Optional body explaining why, not what.
 
 Before returning your proposal:
 
-1. Count the characters in the subject line, including the `type:` prefix and any backticks.
-2. If the count exceeds 72, rewrite and recount. Repeat until it fits.
-3. Shortening tactics: drop the function/method name from the subject and move it to the body; drop "when", "before", "after", "in"; use shorter verbs (`drop` not `discard`, `fix` not `resolve`).
-
-Do not return a subject longer than 72 characters under any circumstances. The user has been bitten twice by overshoots — treat this as a hard validation step, not a guideline.
+1. Measure the subject with a command instead of counting by eye: `printf %s 'fix: ...' | wc -c`. The count includes the `type:` prefix and any backticks.
+2. If it exceeds 72, shorten and measure again. To shorten, move a function or method name to the body, drop words like "when", "before", "after", "in", and use shorter verbs (`drop` not `discard`, `fix` not `resolve`).

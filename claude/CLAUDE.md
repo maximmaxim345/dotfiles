@@ -42,7 +42,7 @@ independent parallel track), since each subagent re-reads context and reports
 back. Pick the model to fit the work and run it in the background. Report the
 conclusion, not the raw file dumps. For a follow-up on work a subagent already
 did, resume that subagent by name instead of spawning a new one, so it keeps what it
-found. Start a fresh one only when the task is genuinely different.
+found. Start a fresh one only when the task is different.
 
 Subagents don't inherit anything pasted into the session, so copy the rules
 that apply to their work into their prompt. No subagent may push, open a PR,
@@ -61,7 +61,7 @@ hyphen (5-10), not an en dash.
 
 Write no comments by default. Only comment code whose behavior isn't clear on
 a first read. When a comment is warranted:
-- Prefer a single line. Multi-line only when the WHY genuinely needs it.
+- Prefer a single line. Multi-line only when the WHY needs it.
 - No semicolons in prose. Use plain conjunctions or split into a separate sentence.
   - Avoid: `# Stale source position; would replay wrong after silence.`
   - Prefer: `# Drop buffered output with stale source positions.`
@@ -142,8 +142,22 @@ read as scope creep and bloat the diff.
 
 ## GitHub markdown
 
-Single newlines render as line breaks. Don't hard-wrap prose in PR
-descriptions, issues, or comments. One paragraph is one line.
+Single newlines render as line breaks. Don't hard-wrap prose mid-sentence in
+PR descriptions, issues, or comments. Breaking the line between sentences is fine.
+
+## Writing style
+
+Use this style for anything written for other people under my name, such as
+PR titles and descriptions, review comments, issue comments, and replies.
+Match the voice in these examples:
+@~/.claude/writing-examples.md
+
+Also:
+- No bold.
+- Links go in a list under a short lead-in ("Superseded by:", "Related:"),
+  one per line.
+- State opinions in first person with the reason ("I think X, since Y").
+- Don't use "genuinely", "notably", or "essentially".
 
 ## PRs
 
@@ -152,7 +166,7 @@ under 10 words, backticks for code. Not Conventional Commits, no "support for
 X" (just "Add X").
 
 Body: 2-4 sentences for small PRs (problem and fix). Larger PRs open with a
-summary sentence, with `#` sections only for genuinely distinct areas. No bold,
+summary sentence, with `#` sections only for distinct areas. No bold,
 no test-plan section unless asked. If the repo has a PR template, use it.
 Use `Closes #N` / `Requires #PR` for links.
 
@@ -167,15 +181,15 @@ Before drafting review comments, fetch existing reviews and inline comments
 on the PR (Copilot, other reviewers, your own drafts). Don't create a new
 comment that duplicates or partially overlaps an existing one, even your
 own drafts from a prior PR version. Map proposed feedback against what's
-already there, drop duplicates, only add genuinely uncovered points. State
+already there, drop duplicates, only add uncovered points. State
 coverage explicitly when reporting back.
 
 ## After a PR is published
 
 Watch CI and the Copilot review. Recheck anything Copilot flags before acting
 on it, it's often wrong or missing context. Fix what needs fixing, reply
-explaining why for what doesn't, and ask when unsure. Reply in the user's
-voice: short, direct, one or two sentences. Resolve threads that are settled
+explaining why for what doesn't, and ask when unsure. Reply in my voice (see
+"Writing style"): short, direct, one or two sentences. Resolve threads that are settled
 or outdated.
 
 ## Review comment style

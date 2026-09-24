@@ -21,6 +21,7 @@ ENTRIES: List[Tuple[str, str, str]] = [
     ("commit-guidelines.md", "commit-guidelines.md", "old_commit_guidelines"),
     ("pr-guidelines.md", "pr-guidelines.md", "old_pr_guidelines"),
     ("commit-subagent-prompt.md", "commit-subagent-prompt.md", "old_commit_subagent_prompt"),
+    ("writing-examples.md", "writing-examples.md", "old_writing_examples"),
     ("commands", "commands", "old_commands"),
     ("output-styles", "output-styles", "old_output_styles"),
 ]

@@ -75,16 +75,26 @@ environment expires after roughly a week.
 set -euo pipefail
 
 CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+DOTFILES="$HOME/.cache/dotfiles"
 mkdir -p "$CLAUDE_DIR"
 
-RAW=https://raw.githubusercontent.com/maximmaxim345/dotfiles/main/claude
+rm -rf "$DOTFILES"
+git clone --depth 1 https://github.com/maximmaxim345/dotfiles.git "$DOTFILES"
+
+# Link the same entries as the claude_config module, so the CLAUDE.md imports and commands resolve.
+for src in "$DOTFILES"/claude/*; do
+  name=$(basename "$src")
+  case "$name" in README.md | CLAUDE.md) continue ;; esac
+  ln -sfn "$src" "$CLAUDE_DIR/$name"
+done
+
 STRIP_FRONTMATTER='NR==1 && /^---$/ {f=1; next} f && /^---$/ {f=0; next} !f'
 
 # Cloud runners ignore output-styles/, so the style is appended to the instructions instead.
 {
-  curl -fsSL "$RAW/CLAUDE.md"
+  cat "$DOTFILES/claude/CLAUDE.md"
   printf '\n\n# Output style\n\n'
-  curl -fsSL "$RAW/output-styles/plain-english.md" | awk "$STRIP_FRONTMATTER"
+  awk "$STRIP_FRONTMATTER" "$DOTFILES/claude/output-styles/plain-english.md"
 } >"$CLAUDE_DIR/CLAUDE.md"
 
 # The OHF Sage agent, the same release assets the ohf_sage module installs locally.
@@ -104,8 +114,8 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 The agent and its 8M corpus download in under a second, so they fit the setup
 script's time budget comfortably. The runner needs
 `release-assets.githubusercontent.com` reachable for the release assets, on top
-of `raw.githubusercontent.com` for the instructions, so both belong in the
-environment's allowed domains.
+of `github.com` for the dotfiles clone, so both belong in the environment's
+allowed domains.
 
 This is confirmed working on a cloud runner. User-level agents do not sync to a
 web session on their own, but a runner does discover them from

@@ -29,4 +29,5 @@ Running this command is not a go-ahead to push. Nothing leaves this machine unti
    - `web`: needs a working `gh` and a local browser, so not when `CLAUDE_CODE_REMOTE` is `true`. Run `gh pr create -w`. The PR not existing afterward is expected, since `-w` only opens the prefilled form. Don't retry without `-w` and don't publish it yourself. Remind me I can pick draft in the form.
    - `draft`: run `gh pr create --draft` and give me the PR URL.
    - `web` with a working `gh` but no browser: push only, say why the web form isn't available, and post the title and description again. Create it with `gh pr create --draft` only after a new go-ahead.
-   - `web` or `draft` without a working `gh`: push only and give me the compare URL: `https://github.com/<target>/compare/<base>...<owner>:<branch>?expand=1`.
+   - `draft` without a working `gh`: create the draft with the GitHub MCP tools when they're available.
+   - `web` without a working `gh`, or `draft` without `gh` or MCP tools: push only and give me the compare URL: `https://github.com/<target>/compare/<base>...<owner>:<branch>?expand=1`.

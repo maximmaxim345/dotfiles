@@ -14,6 +14,9 @@ moving board cards count as posting too. On someone else's PR, push to its head
 branch (`headRepositoryOwner` and `headRefName` from `gh pr view`), never a new
 branch on origin, and show me the exact push command first.
 
+When `gh` isn't installed (as in cloud sessions), use the GitHub MCP tools for
+the same reads and writes, under the same permission rules.
+
 ## Before coding
 
 State assumptions before acting on them. Ask instead of guessing when a
@@ -135,7 +138,8 @@ changed my identity. Only amend unpushed commits you created yourself.
 ## Branches and history
 
 Name branches `<type>/<slug>` with a Conventional Commits type, and rename
-auto-generated worktree branches before the first push.
+auto-generated worktree branches before the first push. In cloud sessions
+(`CLAUDE_CODE_REMOTE` is `true`), keep the branch the session assigns.
 
 A pure refactor goes in its own commit before the behavior change. While I'm
 reviewing, add each fix as its own commit. Before the PR, fold fixups into the

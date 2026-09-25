@@ -15,7 +15,7 @@ Nothing gets pushed during this skill. Shipping happens through `/open-pr` after
 - If the task is an issue URL, read it with `gh issue view`.
 - Fetch the base branch (the repo default unless the project rules say otherwise). If `origin` is my fork, sync it with upstream first.
 - Locally, work in a worktree under `<repo>/.claude/worktrees/<slug>` unless the session already runs in one or I said `./`. In a cloud session (`CLAUDE_CODE_REMOTE` is `true`) the checkout is already isolated, so skip the worktree.
-- Name the branch `<type>/<slug>` right away.
+- Name the branch `<type>/<slug>` right away, except in a cloud session, which keeps its assigned branch.
 
 ## 2. Plan
 

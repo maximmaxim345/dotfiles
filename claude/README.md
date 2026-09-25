@@ -101,6 +101,15 @@ rm -rf "$MATT"
 git clone --depth 1 https://github.com/mattpocock/skills.git "$MATT"
 ln -sfn "$MATT/skills/productivity/grilling" "$CLAUDE_DIR/skills/grilling"
 
+# Cloud runners start with Claude as the git identity and no user settings.
+git config --global user.name "Maxim Raznatovski"
+git config --global user.email "nda.mr43@gmail.com"
+cat >"$CLAUDE_DIR/settings.json" <<'JSON'
+{
+  "attribution": { "commit": "", "pr": "", "sessionUrl": false }
+}
+JSON
+
 STRIP_FRONTMATTER='NR==1 && /^---$/ {f=1; next} f && /^---$/ {f=0; next} !f'
 
 # Cloud runners ignore output-styles/, so the style is appended to the instructions instead.

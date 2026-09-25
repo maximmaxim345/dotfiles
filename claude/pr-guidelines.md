@@ -27,10 +27,13 @@ Keep it short. 2-4 sentences for small PRs. No filler.
 Use backticks for code references (`ClassName`, `method_name`, `--flag`).
 
 ### Small PRs
-2-4 sentences. Problem and fix, nothing more.
+2-4 sentences. Problem and fix, nothing more. Split them into two or three short paragraphs, never one dense block.
+
+For a fix, open with the defect itself in one sentence, including how it happens, then give the scope and impact: who is affected and how badly. Describe the defect, not how it was found, and cut any sentence the reader can already infer from the others.
 
 Example:
 > Probe request handling only worked on Docker installations.
+>
 > Removing the early return fixes playback on Home Assistant OS.
 >
 > Closes #234
@@ -43,8 +46,9 @@ If the repo has a PR template, use it. Fill in its sections rather than replacin
 
 ## Links
 
-- `Closes #123` when fixing an issue
+- When the PR template has a field for related issues, fill it the way the template shows. Otherwise use `Closes #123` when fixing an issue
 - `Requires #PR` when blocked on another PR
+- Leave a link out rather than guessing its number
 
 ## Don't
 
@@ -69,4 +73,5 @@ correct. Do not treat the missing PR as a failure, do not retry without `-w`,
 and do not publish it yourself.
 
 If the user asks for a draft PR, still use `-w` (not `--draft`) and tell them to
-select the draft option in the browser form.
+select the draft option in the browser form. The only exceptions are in `/open-pr` (`draft` mode and its no-browser
+fallback), which run `--draft` after the user approves the title and body.

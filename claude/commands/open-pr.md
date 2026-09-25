@@ -1,16 +1,32 @@
-Follow @~/.claude/pr-guidelines.md to create a pull request.
+---
+description: Commit, push, and open a PR for the current branch, as a prefilled web form (default) or a draft
+argument-hint: "[web|draft]"
+---
 
-1. Run `git diff main...HEAD` (or appropriate base branch) to see all changes
-2. Run `git log main...HEAD --oneline` to see commit history
-3. Look for a PR template in the repo:
+Follow @~/.claude/pr-guidelines.md for the PR and @~/.claude/commit-guidelines.md for any commit. Write the description in the voice of @~/.claude/writing-examples.md.
+
+Mode: `$ARGUMENTS`. Empty means `web`.
+
+Running this command is not a go-ahead to push. Nothing leaves this machine until I approve it in step 6.
+
+1. Find the target repo. Run `gh repo view --json nameWithOwner,parent,defaultBranchRef` and confirm it reports the repo this branch belongs to, since the shell cwd can reset between commands. If it has a `parent`, this is a fork: the PR targets the parent, so pass `--repo <parent> --head <owner>:<branch>` later. If `gh` is missing or `gh auth status` fails, note it and continue, step 7 falls back.
+2. Commit any uncommitted changes following the commit guidelines. Then check every commit in `git log <base>..HEAD` for Claude, Codex, or Copilot attribution (`Co-Authored-By` trailers, "Generated with" lines). If there is any, stop and tell me.
+3. Run `git diff <base>...HEAD` and `git log <base>..HEAD --oneline` to see the whole change.
+4. Look for a PR template in the repo:
    - Check `.github/PULL_REQUEST_TEMPLATE.md` first
    - Then `.github/pull_request_template.md`
    - Then `PULL_REQUEST_TEMPLATE.md` at the repo root
    - Then `.github/PULL_REQUEST_TEMPLATE/` directory (multiple templates)
    If a template exists, use it as the base for the PR body. Fill in the template sections with content from the diff/commits. Leave HTML comments (`<!-- ... -->`) from the template intact in the body.
-4. Draft a PR title and a short description (the meaningful content only: what changed and why). Skip boilerplate sections like checklists, "Types of changes", and template placeholders at this stage.
-5. Show the draft title and description to the user and ask for feedback before proceeding. Wait for approval or edits.
-6. Once approved, build the final body: start from the template (if found), fill in the sections using the approved title/description, leave HTML comments intact, and tick any checklist boxes that apply.
-7. Create the PR with `gh pr create -w --title "..." --body "..."`
-
-The `-w` flag opens the PR in browser for review before publishing.
+5. Draft a PR title and a short description (the meaningful content only: what changed and why). Skip boilerplate sections like checklists, "Types of changes", and template placeholders at this stage.
+6. Post in chat, then stop:
+   - the subject and body of each commit on the branch
+   - the PR title
+   - the PR description in a fenced block
+   - the target repo, base branch, and mode
+   Revise and post again when I ask for changes. Continue only when my latest message is an explicit go-ahead.
+7. Build the final body: start from the template (if found), fill in the sections using the approved title/description, leave HTML comments intact, and tick any checklist boxes that apply. Write it to a temp file and pass it with `--body-file`. Push with `git push -u origin HEAD`, then:
+   - `web`: needs a working `gh` and a local browser, so not when `CLAUDE_CODE_REMOTE` is `true`. Run `gh pr create -w`. The PR not existing afterward is expected, since `-w` only opens the prefilled form. Don't retry without `-w` and don't publish it yourself. Remind me I can pick draft in the form.
+   - `draft`: run `gh pr create --draft` and give me the PR URL.
+   - `web` with a working `gh` but no browser: push only, say why the web form isn't available, and post the title and description again. Create it with `gh pr create --draft` only after a new go-ahead.
+   - `web` or `draft` without a working `gh`: push only and give me the compare URL: `https://github.com/<target>/compare/<base>...<owner>:<branch>?expand=1`.

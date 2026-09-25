@@ -121,7 +121,13 @@ isn't visible from the diff, never to explain the fix. Base the message on
 `git diff --staged`, not the conversation, and stage with `git add -A` only if
 nothing is staged. Don't reference PRs, issues, or tickets in a commit message.
 
-No Claude attribution or session links in commits or PR descriptions.
+No AI attribution in commits or PR descriptions: no co-author trailers,
+"Generated with" lines, or session links from Claude, Copilot, Codex, or any
+other tool. Tools add these on their own, so check every commit you just made
+with `git log -1 --format='%an <%ae>%n%b'`. Amend away any AI trailer. If the
+author isn't my `git config user.name` and `user.email`, fix it with
+`git commit --amend --no-edit --reset-author`. Only amend unpushed commits you
+created yourself.
 
 ## Branches and history
 

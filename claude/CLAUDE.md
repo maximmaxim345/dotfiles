@@ -62,10 +62,11 @@ uses `yarn`, run `yarn`, not npm.
 
 Delegate only large, self-contained work (a wide multi-file investigation, an
 independent parallel track), since each subagent re-reads context and reports
-back. Pick the model to fit the work and run it in the background. Report the
-conclusion, not the raw file dumps. For a follow-up on work a subagent already
-did, resume that subagent by name instead of spawning a new one, so it keeps what it
-found. Start a fresh one only when the task is different.
+back. Leave the subagent model unset so it matches the session model, unless I
+name one. Run subagents in the background. Report the conclusion, not the raw
+file dumps. For a follow-up on work a subagent already did, resume that
+subagent by name instead of spawning a new one, so it keeps what it found.
+Start a fresh one only when the task is different.
 
 Use ohf-sage for Music Assistant, Sendspin, ESPHome, and OHF-Voice
 implementation work, when settling a plan and before handing work over. Do

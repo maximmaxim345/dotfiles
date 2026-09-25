@@ -101,9 +101,7 @@ rm -rf "$MATT"
 git clone --depth 1 https://github.com/mattpocock/skills.git "$MATT"
 ln -sfn "$MATT/skills/productivity/grilling" "$CLAUDE_DIR/skills/grilling"
 
-# Cloud runners start with Claude as the git identity and no user settings.
-git config --global user.name "Maxim Raznatovski"
-git config --global user.email "nda.mr43@gmail.com"
+# Cloud runners start without user settings, so attribution is turned off here.
 cat >"$CLAUDE_DIR/settings.json" <<'JSON'
 {
   "attribution": { "commit": "", "pr": "", "sessionUrl": false }
@@ -131,6 +129,18 @@ rm -f "$CLAUDE_DIR/agents/ohf-sage.md.bak"
 
 # Install uv through its own installer, which avoids the GitHub API rate limit.
 curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+The platform rewrites `~/.gitconfig` with `Claude <noreply@anthropic.com>`
+after the setup script runs, so the git identity can't be set from the script.
+It's set as environment variables of the cloud environment instead, which
+override `.gitconfig` for both author and committer:
+
+```
+GIT_AUTHOR_NAME=Maxim Raznatovski
+GIT_AUTHOR_EMAIL=nda.mr43@gmail.com
+GIT_COMMITTER_NAME=Maxim Raznatovski
+GIT_COMMITTER_EMAIL=nda.mr43@gmail.com
 ```
 
 The agent and its 8M corpus download in under a second, so they fit the setup

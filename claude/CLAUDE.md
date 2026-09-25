@@ -132,8 +132,8 @@ trailer. My git identity is `Maxim Raznatovski <nda.mr43@gmail.com>`. If the
 author differs, fix it with
 `git commit --amend --no-edit --author="Maxim Raznatovski <nda.mr43@gmail.com>"`.
 If the committer differs, the repo has a local `user.name` or `user.email`, or
-`GIT_AUTHOR_*` or `GIT_COMMITTER_*` variables are set, tell me, since a tool
-changed my identity. Only amend unpushed commits you created yourself.
+`GIT_AUTHOR_*` or `GIT_COMMITTER_*` variables hold a different identity, tell
+me, since a tool changed my identity. Only amend unpushed commits you created yourself.
 
 ## Branches and history
 

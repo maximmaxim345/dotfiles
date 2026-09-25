@@ -86,9 +86,20 @@ git clone --depth 1 https://github.com/maximmaxim345/dotfiles.git "$DOTFILES"
 # Link the same entries as the claude_config module, so the CLAUDE.md imports and commands resolve.
 for src in "$DOTFILES"/claude/*; do
   name=$(basename "$src")
-  case "$name" in README.md | CLAUDE.md) continue ;; esac
+  case "$name" in README.md | CLAUDE.md | skills) continue ;; esac
   ln -sfn "$src" "$CLAUDE_DIR/$name"
 done
+
+mkdir -p "$CLAUDE_DIR/skills"
+for src in "$DOTFILES"/claude/skills/*; do
+  ln -sfn "$src" "$CLAUDE_DIR/skills/$(basename "$src")"
+done
+
+# The grilling skill that /implement uses, from the same upstream as the local skill lock.
+MATT="$HOME/.cache/mattpocock-skills"
+rm -rf "$MATT"
+git clone --depth 1 https://github.com/mattpocock/skills.git "$MATT"
+ln -sfn "$MATT/skills/productivity/grilling" "$CLAUDE_DIR/skills/grilling"
 
 STRIP_FRONTMATTER='NR==1 && /^---$/ {f=1; next} f && /^---$/ {f=0; next} !f'
 

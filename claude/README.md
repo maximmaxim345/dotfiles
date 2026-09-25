@@ -17,6 +17,8 @@ live on every device without re-running anything.
 | `writing-examples.md` | Examples of my GitHub writing voice, imported by `CLAUDE.md` |
 | `commands/` | Slash commands, linked as a whole directory so new ones need no module change |
 | `output-styles/` | Output styles, linked as a whole directory |
+| `project-rules/` | Per-repo rules, read on demand as listed in `CLAUDE.md` |
+| `skills/implement/` | My implementation workflow skill, linked into `~/.claude/skills/` |
 
 Not to be confused with the repository root `CLAUDE.md`, which is a symlink to
 `AGENTS.md` and describes this repo as a project. The file here is the global

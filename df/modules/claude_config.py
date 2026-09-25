@@ -23,6 +23,8 @@ ENTRIES: List[Tuple[str, str, str]] = [
     ("writing-examples.md", "writing-examples.md", "old_writing_examples"),
     ("commands", "commands", "old_commands"),
     ("output-styles", "output-styles", "old_output_styles"),
+    ("project-rules", "project-rules", "old_project_rules"),
+    ("skills/implement", "skills/implement", "old_skill_implement"),
 ]
 
 

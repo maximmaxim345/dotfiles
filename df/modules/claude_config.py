@@ -17,7 +17,6 @@ claude_path = Path.home() / ".claude"
 # (source relative to claude/, target relative to ~/.claude, config key for the backup)
 ENTRIES: List[Tuple[str, str, str]] = [
     ("CLAUDE.md", "CLAUDE.md", "old_claude_md"),
-    ("prompts.md", "prompts.md", "old_prompts"),
     ("commit-guidelines.md", "commit-guidelines.md", "old_commit_guidelines"),
     ("pr-guidelines.md", "pr-guidelines.md", "old_pr_guidelines"),
     ("commit-subagent-prompt.md", "commit-subagent-prompt.md", "old_commit_subagent_prompt"),

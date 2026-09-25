@@ -11,7 +11,6 @@ live on every device without re-running anything.
 | File | Purpose |
 | --- | --- |
 | `CLAUDE.md` | Global instructions, applied to every project |
-| `prompts.md` | Standalone prompts to paste into other agents |
 | `commit-guidelines.md` | Referenced by the commit commands |
 | `pr-guidelines.md` | Referenced by `open-pr` |
 | `commit-subagent-prompt.md` | Prompt for the commit subagent |

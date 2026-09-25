@@ -6,7 +6,7 @@ import df
 from df.config import ModuleConfig
 from df.osinfo import system
 
-ID: str = "sowershell_config"
+ID: str = "powershell_config"
 NAME: str = "PowerShell Config"
 DESCRIPTION: str = "A config for the PowerShell terminal emulator"
 DEPENDENCIES: List[str] = ["starship_config"]

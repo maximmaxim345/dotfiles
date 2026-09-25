@@ -2,6 +2,11 @@ import json
 from os import path
 from typing import Any, List, Union
 
+RENAMED_MODULE_IDS = {
+    "sowershell_config": "powershell_config",
+    "wezter_config": "wezterm_config",
+}
+
 
 class ModuleConfig:
     """
@@ -101,6 +106,12 @@ class Config:
                 self.config = json.load(f)
                 self.modified = False  # The config has not been modified yet
         self.config.setdefault("modules", {})
+        modules = self.config["modules"]
+        for old_id, new_id in RENAMED_MODULE_IDS.items():
+            if old_id in modules:
+                old_entry = modules.pop(old_id)
+                modules.setdefault(new_id, old_entry)
+                self.modified = True
 
     def save(self) -> None:
         """

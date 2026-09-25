@@ -6,7 +6,7 @@ import df
 from df.config import ModuleConfig
 from df.osinfo import system
 
-ID: str = "wezter_config"
+ID: str = "wezterm_config"
 NAME: str = "Wezterm Config"
 DESCRIPTION: str = "A config for the wezterm terminal emulator"
 DEPENDENCIES: List[str] = ["fira_code_nerd_font"]

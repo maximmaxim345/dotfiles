@@ -143,6 +143,11 @@ GIT_COMMITTER_NAME=Maxim Raznatovski
 GIT_COMMITTER_EMAIL=nda.mr43@gmail.com
 ```
 
+The platform's stop hook, `~/.claude/stop-hook-git-check.sh`, still flags these
+commits as unverifiable and tells the agent to re-author them as Claude. It is
+provisioned again for every session, so it can't be patched from here.
+`CLAUDE.md` tells agents to ignore it instead.
+
 The agent and its 8M corpus download in under a second, so they fit the setup
 script's time budget comfortably. The runner needs
 `release-assets.githubusercontent.com` reachable for the release assets, on top

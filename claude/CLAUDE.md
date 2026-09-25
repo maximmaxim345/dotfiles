@@ -124,10 +124,13 @@ nothing is staged. Don't reference PRs, issues, or tickets in a commit message.
 No AI attribution in commits or PR descriptions: no co-author trailers,
 "Generated with" lines, or session links from Claude, Copilot, Codex, or any
 other tool. Tools add these on their own, so check every commit you just made
-with `git log -1 --format='%an <%ae>%n%b'`. Amend away any AI trailer. If the
-author isn't my `git config user.name` and `user.email`, fix it with
-`git commit --amend --no-edit --reset-author`. Only amend unpushed commits you
-created yourself.
+with `git log -1 --format='%an <%ae>%n%cn <%ce>%n%b'`. Amend away any AI
+trailer. My git identity is `Maxim Raznatovski <nda.mr43@gmail.com>`. If the
+author differs, fix it with
+`git commit --amend --no-edit --author="Maxim Raznatovski <nda.mr43@gmail.com>"`.
+If the committer differs, the repo has a local `user.name` or `user.email`, or
+`GIT_AUTHOR_*` or `GIT_COMMITTER_*` variables are set, tell me, since a tool
+changed my identity. Only amend unpushed commits you created yourself.
 
 ## Branches and history
 

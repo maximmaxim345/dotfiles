@@ -179,8 +179,7 @@ every skill in `skills/` into `~/.agents/skills/`, where both tools look.
 ```
 
 `codex_config` writes `~/.codex/AGENTS.md`, which is `CLAUDE.md` with the
-writing examples inlined and the output style appended, because Codex reads a
-single instructions file and has no imports. It also turns the OHF Sage agent into
+output style appended, because Codex has no output styles. It also turns the OHF Sage agent into
 `~/.codex/agents/ohf-sage.toml` when `ohf_sage` is installed. The generated
 files are rewritten by `./dotfiles.py update` whenever their sources change.
 `skills/implement/agents/openai.yaml` keeps Codex from starting `implement` on
@@ -188,7 +187,7 @@ its own, since Codex ignores `disable-model-invocation`.
 
 Codex stops reading instruction files once they add up to 32 KiB, counting the
 global file and the repo's own `AGENTS.md` together. The global file alone is
-about 24 KiB, so raise the limit by hand in `~/.codex/config.toml`, which the
+about 19 KiB, so raise the limit by hand in `~/.codex/config.toml`, which the
 module leaves alone:
 
 ```toml

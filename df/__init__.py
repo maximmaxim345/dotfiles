@@ -174,12 +174,10 @@ def read_frontmatter(text: str) -> Tuple[Dict[str, str], str]:
 
 
 def build_agent_instructions() -> str:
-    """Build the global Claude instructions as one file for tools without imports or output styles"""
+    """Build the global Claude instructions as one file for tools without output styles"""
     claude_dir = DOTFILES_PATH / "claude"
     instructions = (claude_dir / "CLAUDE.md").read_text(encoding="utf-8")
-    examples = (claude_dir / "writing-examples.md").read_text(encoding="utf-8")
     _, style = read_frontmatter((claude_dir / "output-styles" / "plain-english.md").read_text(encoding="utf-8"))
-    instructions = instructions.replace("@~/.claude/writing-examples.md", examples.strip())
     return f"{instructions.rstrip()}\n\n# Output style\n\n{style.strip()}\n"
 
 

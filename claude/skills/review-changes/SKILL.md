@@ -1,9 +1,10 @@
 ---
+name: review-changes
 description: Review a PR or the local changes with parallel reviewers, verify every finding, and draft inline comments in my voice
 argument-hint: "[PR number or URL] [sage|nosage]"
 ---
 
-Write every comment in the voice of @~/.claude/writing-examples.md and follow the "Review comment style" and "Writing style" rules in `CLAUDE.md`.
+Read `~/.claude/writing-examples.md` first. Write every comment in that voice and follow the "Review comment style" and "Writing style" rules in `CLAUDE.md`.
 
 Arguments: `$ARGUMENTS`. A PR number or URL reviews that PR. Without one, review `./` in local mode (see the end). `sage` forces ohf-sage on, `nosage` turns it off.
 

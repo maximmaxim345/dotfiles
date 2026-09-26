@@ -1,9 +1,10 @@
 ---
+name: open-pr
 description: Commit, push, and open a PR for the current branch, as a prefilled web form (default) or a draft
 argument-hint: "[web|draft]"
 ---
 
-Follow @~/.claude/pr-guidelines.md for the PR and @~/.claude/commit-guidelines.md for any commit. Write the description in the voice of @~/.claude/writing-examples.md.
+Read `~/.claude/pr-guidelines.md`, `~/.claude/commit-guidelines.md` and `~/.claude/writing-examples.md` first. Follow the PR guidelines for the PR and the commit guidelines for any commit, and write the description in the voice of the writing examples.
 
 Mode: `$ARGUMENTS`. Empty means `web`.
 

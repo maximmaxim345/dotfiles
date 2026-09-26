@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Dict, Tuple
 
 import requests
 
@@ -146,6 +147,40 @@ def restore_backup(path: Path, config: ModuleConfig, key: str) -> None:
             pass
     # Remove the backup path from the config
     config.unset(key)
+
+
+def read_frontmatter(text: str) -> Tuple[Dict[str, str], str]:
+    """Split a Markdown file into its YAML frontmatter fields and its body"""
+    lines = text.split("\n")
+    if not lines or lines[0].strip() != "---" or "---" not in [line.strip() for line in lines[1:]]:
+        return {}, text
+    end = [line.strip() for line in lines].index("---", 1)
+    fields: Dict[str, str] = {}
+    key = ""
+    for line in lines[1:end]:
+        if line.startswith((" ", "\t")) and key:
+            # Continuation of a folded (>-) or plain multi-line value
+            fields[key] = (fields[key] + " " + line.strip()).strip()
+        elif ":" in line:
+            key, value = line.split(":", 1)
+            key = key.strip()
+            value = value.strip()
+            if value in [">", ">-"]:
+                value = ""
+            elif len(value) > 1 and value[0] == value[-1] and value[0] in "\"'":
+                value = value[1:-1]
+            fields[key] = value
+    return fields, "\n".join(lines[end + 1 :]).lstrip("\n")
+
+
+def build_agent_instructions() -> str:
+    """Build the global Claude instructions as one file for tools without imports or output styles"""
+    claude_dir = DOTFILES_PATH / "claude"
+    instructions = (claude_dir / "CLAUDE.md").read_text(encoding="utf-8")
+    examples = (claude_dir / "writing-examples.md").read_text(encoding="utf-8")
+    _, style = read_frontmatter((claude_dir / "output-styles" / "plain-english.md").read_text(encoding="utf-8"))
+    instructions = instructions.replace("@~/.claude/writing-examples.md", examples.strip())
+    return f"{instructions.rstrip()}\n\n# Output style\n\n{style.strip()}\n"
 
 
 def download_file(url: str, path: Path) -> None:

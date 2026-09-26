@@ -7,3 +7,4 @@
 - No tests that depend on the ffmpeg build installed in CI.
 - Before a compliance review, fetch `~/projects/music-assistant/sendspin-spec` and name the spec commit you compared against.
 - Keep the library generic. No features that only Music Assistant needs.
+- In reviews, keep server-side and client library findings apart. Client gaps that are still spec-compliant, like optional fields not used yet, go to a follow-up instead of the review.

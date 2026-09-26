@@ -97,6 +97,27 @@ I think calling it like that will also reduce confusion if we add it by default.
 I think there's a deadlock possible here, with `retry_initial_connection=True` and `retry_indefinitely=False` and if it never connects.
 ```
 
+```
+Nit: Spelling out `digit_audio.formats` and `digit_audio.max_bytes` makes it a bit easier to understand.
+```
+
+```
+Dropping the rotation prose also dropped "MUST NOT rotate it on its own", so nothing now forbids a client rotating this spontaneously. Just double checking, is that intentional to keep it completely up to the manufacturer?
+```
+
+```
+This only covers rejection at the announce, but a transfer can also start while available and then continue after the client goes `available: false`.
+If a client tears the transfer down there, the remaining parts hit the "no transfer in flight" rule and close the connection.
+```
+
+```
+Idea: Does it make sense to check `data.len()` with what is expected by the `VisualizerDataType`? at least in debug builds?
+```
+
+```
+This should belong in a PR description and/or issue instead of the spec IMO.
+```
+
 ## PR descriptions
 
 Title: Use fixed 1.5s scheduling horizon on Cast

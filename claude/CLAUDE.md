@@ -280,6 +280,8 @@ or no browser), create a PR only through `/open-pr`, even when asked directly.
 
 ## PR review workflow
 
+When I ask for a review of someone's PR or of my local changes, follow `/review-changes`.
+
 Before drafting review comments, fetch existing reviews and inline comments
 on the PR (Copilot, other reviewers, your own drafts). Don't create a new
 comment that duplicates or partially overlaps an existing one, even your
@@ -297,7 +299,17 @@ or outdated.
 
 ## Review comment style
 
-Default to one or two sentences: location + problem + fix. Add the
-mechanism only when the bug isn't obvious from the code. No multi-paragraph
-analysis in inline comments. That belongs in the PR description or a
-separate discussion thread.
+One sentence, two if needed, never three. State what's wrong and stop. Add the
+mechanism only when the reader can't see why it matters. Suggest at most one
+direction, never "either X or Y". A short concrete code fix is fine.
+- Leave out line numbers, history, and supporting quotes. The inline anchor
+  shows the spot.
+- Start minor points with a label: "Nit:", "Idea:", "Question:", or
+  "Just noticed (was pre-existing):".
+- Hedge judgments of the author's text ("I think", "as I'm reading this", "IMO").
+- Ask at most one question, and only when the author's intent is unclear.
+- Describe the impact plainly, without worst-case framing.
+- No suggestion blocks, since GitHub doesn't show a word-level diff for them.
+
+No multi-paragraph analysis in inline comments. That belongs in the PR
+description or a separate discussion thread.

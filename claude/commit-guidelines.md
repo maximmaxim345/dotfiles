@@ -19,7 +19,7 @@ commits use a different style.
 ```
 type: subject line (max 72 chars)
 
-Optional body explaining why, not what.
+Optional body describing the symptom, only when the diff doesn't show it.
 ```
 
 Use conventional commits: `fix:`, `feat:`, `refactor:`, `chore:`, `docs:`, `test:`, `perf:`
@@ -56,12 +56,12 @@ Otherwise just use `type:` without scope.
 
 ## Body
 
-Skip unless the diff doesn't explain the "why". The reviewer has both the message and the code.
+Skip unless the symptom isn't visible from the diff. Never use the body to explain the fix.
 
 When needed:
 - One blank line after subject
 - Wrap at 72 characters
-- Explain motivation, not mechanics
+- Describe the symptom, not the fix
 - Don't repeat what code comments already say
 
 ## Examples
@@ -76,10 +76,9 @@ fix: handle empty input in `parse_config`
 ```
 
 ```
-feat: add dark mode toggle
+fix: reconnect after the server restarts
 
-Defaulting to system preference since that matches platform
-conventions.
+Clients stayed disconnected until the app was relaunched.
 ```
 
 ```

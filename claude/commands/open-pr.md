@@ -19,13 +19,18 @@ Running this command is not a go-ahead to push. Nothing leaves this machine unti
    - Then `.github/PULL_REQUEST_TEMPLATE/` directory (multiple templates)
    If a template exists, use it as the base for the PR body. Fill in the template sections with content from the diff/commits. Leave HTML comments (`<!-- ... -->`) from the template intact in the body.
 5. Draft a PR title and a short description (the meaningful content only: what changed and why). Skip boilerplate sections like checklists, "Types of changes", and template placeholders at this stage.
+   Then check the branch name, unless `CLAUDE_CODE_REMOTE` is `true` (keep the branch the session assigned):
+   - On the default branch: propose a new `<type>/<slug>` branch with a Conventional Commits type.
+   - On a branch without an upstream that `git ls-remote --heads origin <branch>` doesn't list, with an auto-generated name or one that no longer matches the change: propose a `<type>/<slug>` name.
+   - Never rename a branch that exists on the remote, since the old one would stay on GitHub.
 6. Post in chat, then stop:
    - the subject and body of each commit on the branch
    - the PR title
    - the PR description in a fenced block
    - the target repo, base branch, and mode
+   - the current branch name, and the proposed one if step 5 proposed one
    Revise and post again when I ask for changes. Continue only when my latest message is an explicit go-ahead.
-7. Build the final body: start from the template (if found), fill in the sections using the approved title/description, leave HTML comments intact, and tick any checklist boxes that apply. Write it to a temp file and pass it with `--body-file`. Push with `git push -u origin HEAD`, then:
+7. Build the final body: start from the template (if found), fill in the sections using the approved title/description, leave HTML comments intact, and tick any checklist boxes that apply. Write it to a temp file and pass it with `--body-file`. If I approved a new branch name, run `git switch -c <name>` on the default branch or `git branch -m <name>` otherwise, and use the new name as `<branch>` from here on. Push with `git push -u origin HEAD`, then:
    - `web`: needs a working `gh` and a local browser, so not when `CLAUDE_CODE_REMOTE` is `true`. Run `gh pr create -w`. The PR not existing afterward is expected, since `-w` only opens the prefilled form. Don't retry without `-w` and don't publish it yourself. Remind me I can pick draft in the form.
    - `draft`: run `gh pr create --draft` and give me the PR URL.
    - `web` with a working `gh` but no browser: push only, say why the web form isn't available, and post the title and description again. Create it with `gh pr create --draft` only after a new go-ahead.

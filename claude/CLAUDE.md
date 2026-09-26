@@ -239,8 +239,8 @@ PR descriptions, issues, or comments. Breaking the line between sentences is fin
 
 Use this style for anything written for other people under my name, such as
 PR titles and descriptions, review comments, issue comments, and replies.
-Match the voice in these examples:
-@~/.claude/writing-examples.md
+Match the voice of the examples in `~/.claude/writing-examples.md`, and read
+that file before drafting any of these.
 
 Also:
 - No bold.

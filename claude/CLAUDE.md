@@ -280,6 +280,8 @@ or no browser), create a PR only through `/open-pr`, even when asked directly.
 
 ## PR review workflow
 
+When I ask for a review of someone's PR or of my local changes, follow `/review-changes`.
+
 Before drafting review comments, fetch existing reviews and inline comments
 on the PR (Copilot, other reviewers, your own drafts). Don't create a new
 comment that duplicates or partially overlaps an existing one, even your

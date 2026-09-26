@@ -11,14 +11,14 @@ live on every device without re-running anything.
 | File | Purpose |
 | --- | --- |
 | `CLAUDE.md` | Global instructions, applied to every project |
-| `commit-guidelines.md` | Referenced by the commit commands |
+| `commit-guidelines.md` | Referenced by the commit skills and commands |
 | `pr-guidelines.md` | Referenced by `open-pr` |
 | `commit-subagent-prompt.md` | Prompt for the commit subagent |
 | `writing-examples.md` | Examples of my GitHub writing voice, imported by `CLAUDE.md` |
-| `commands/` | Slash commands, linked as a whole directory so new ones need no module change |
+| `commands/` | Claude-only slash commands, linked as a whole directory so new ones need no module change |
 | `output-styles/` | Output styles, linked as a whole directory |
 | `project-rules/` | Per-repo rules, read on demand as listed in `CLAUDE.md` |
-| `skills/implement/` | My implementation workflow skill, linked into `~/.claude/skills/` |
+| `skills/` | My workflow skills (`implement`, `commit`, `commit-split`, `open-pr`, `review-changes`), each linked into `~/.claude/skills/` |
 
 Not to be confused with the repository root `CLAUDE.md`, which is a symlink to
 `AGENTS.md` and describes this repo as a project. The file here is the global

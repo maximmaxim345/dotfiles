@@ -14,7 +14,7 @@ live on every device without re-running anything.
 | `commit-guidelines.md` | Referenced by the commit commands |
 | `pr-guidelines.md` | Referenced by `open-pr` |
 | `commit-subagent-prompt.md` | Prompt for the commit subagent |
-| `writing-examples.md` | Examples of my GitHub writing voice, imported by `CLAUDE.md` |
+| `writing-examples.md` | Examples of my GitHub writing voice, read by `CLAUDE.md` |
 | `commands/` | Slash commands, linked as a whole directory so new ones need no module change |
 | `output-styles/` | Output styles, linked as a whole directory |
 | `project-rules/` | Per-repo rules, read on demand as listed in `CLAUDE.md` |

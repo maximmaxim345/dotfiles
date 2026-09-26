@@ -166,3 +166,73 @@ style's own closing "Precedence" section says that `CLAUDE.md` overrides it,
 which reads oddly once the style is part of `CLAUDE.md`, but it changes nothing
 in practice and keeping the concatenation mechanical avoids maintaining a
 second copy of the style.
+
+## Codex and Copilot
+
+Two more modules build the same setup for Codex and GitHub Copilot. Both depend
+on `claude_config`, since the skills read files like
+`~/.claude/commit-guidelines.md` by path, and on `agent_skills`, which links
+every skill in `skills/` into `~/.agents/skills/`, where both tools look.
+
+```bash
+./dotfiles.py install codex_config copilot_config
+```
+
+`codex_config` writes `~/.codex/AGENTS.md`, which is `CLAUDE.md` with the
+writing examples inlined and the output style appended, because Codex reads a
+single instructions file and has no imports. It also turns the OHF Sage agent into
+`~/.codex/agents/ohf-sage.toml` when `ohf_sage` is installed. The generated
+files are rewritten by `./dotfiles.py update` whenever their sources change.
+`skills/implement/agents/openai.yaml` keeps Codex from starting `implement` on
+its own, since Codex ignores `disable-model-invocation`.
+
+Codex stops reading instruction files once they add up to 32 KiB, counting the
+global file and the repo's own `AGENTS.md` together. The global file alone is
+about 24 KiB, so raise the limit by hand in `~/.codex/config.toml`, which the
+module leaves alone:
+
+```toml
+project_doc_max_bytes = 131072
+```
+
+`copilot_config` writes the same combined instructions to
+`~/.copilot/instructions/global.instructions.md`, a folder both Copilot CLI and
+the Copilot app read, with `applyTo: "**"` since files there only apply to the
+paths they match. Two agents go into `~/.copilot/agents/`:
+
+- `implement`, because Copilot CLI can't reach a skill with
+  `disable-model-invocation` at all
+  ([copilot-cli#4438](https://github.com/github/copilot-cli/issues/4438)).
+  Start it with `/agent implement`.
+- `ohf-sage`, a short agent that reads the full `~/.claude/agents/ohf-sage.md`,
+  because Copilot caps an agent's instructions at 30,000 characters.
+
+Neither tool is tested here yet. Things to check on first use: that the Copilot
+app lists the instructions file under "File-backed instructions", that
+`/agent implement` works, and that `codex "Summarize the current instructions."`
+shows these rules.
+
+### Codex cloud (experimental, untested)
+
+Like Claude Code on the web, Codex cloud tasks start without any user-level
+config. The environment's setup script is the only way in, so this installs the
+modules there. Whether the cloud agent reads `~/.codex/AGENTS.md` and
+`~/.agents/skills/` written this way is undocumented.
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+DOTFILES="$HOME/.cache/dotfiles"
+rm -rf "$DOTFILES"
+git clone --depth 1 https://github.com/maximmaxim345/dotfiles.git "$DOTFILES"
+cd "$DOTFILES"
+python3 dotfiles.py install ohf_sage
+python3 dotfiles.py install codex_config
+echo "project_doc_max_bytes = 131072" >>"$HOME/.codex/config.toml"
+```
+
+The container is cached for up to 12 hours, and "Reset cache" on the environment
+page forces a fresh run. The same `GIT_AUTHOR_*` and `GIT_COMMITTER_*` variables
+as above go into the environment's variables, though which identity Codex cloud
+commits with is also undocumented.

@@ -1,6 +1,11 @@
+---
+name: commit-split
+description: Split uncommitted changes into multiple logical commits using `git add -p`.
+---
+
 Split uncommitted changes into multiple logical commits using `git add -p`.
 
-Follow @~/.claude/commit-guidelines.md for commit message format.
+Read `~/.claude/commit-guidelines.md` and follow it for commit message format.
 
 Compose each commit message inline. Do not delegate to a subagent. For the subagent variant use `/commit-split-subagent`.
 

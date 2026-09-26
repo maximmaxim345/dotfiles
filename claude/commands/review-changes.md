@@ -41,7 +41,7 @@ Running this command is not a go-ahead to post. Nothing goes to GitHub until I a
 ## Local mode
 
 Review the changes in `./` against its merge base with the default branch, including uncommitted ones. Nothing goes to GitHub in this mode.
-- Instead of steps 1 to 3, fetch the default branch, find the base with `git merge-base HEAD origin/<default>`, and diff `./` against it. Read the repo's project rules, and for Sendspin, the spec at `origin/main`.
+- Instead of steps 1 to 3, fetch the default branch, find the base with `git merge-base HEAD origin/<default>`, and diff `./` against it. Also review the untracked files that `git ls-files --others --exclude-standard` lists. Read the repo's project rules, and for Sendspin, the spec at `origin/main`.
 - Run steps 4 to 7 as written, with small meaning a small diff. For the linter check in step 7, run the repo's linters on the changed files in check-only mode. Skip a tool that can only fix files in place.
 - The results file is `<repo>/.claude/reviews/local-<branch>.md`, with each `/` in the branch name replaced by `-`. In step 8, describe each finding with a suggested fix instead of a comment for someone else. Don't change any code until I ask.
 - Skip steps 9 and 10.

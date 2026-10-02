@@ -8,7 +8,7 @@ from df.osinfo import system
 
 ID: str = "claude_config"
 NAME: str = "Claude Code Config"
-DESCRIPTION: str = "Global instructions, guidelines, slash commands and output style for Claude Code"
+DESCRIPTION: str = "Global instructions, guidelines, slash commands, output style and mods for Claude Code"
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 
@@ -25,6 +25,7 @@ ENTRIES: List[Tuple[str, str, str]] = [
     ("output-styles", "output-styles", "old_output_styles"),
     ("project-rules", "project-rules", "old_project_rules"),
     ("skills/implement", "skills/implement", "old_skill_implement"),
+    ("mods", "mods", "old_mods"),
 ]
 
 

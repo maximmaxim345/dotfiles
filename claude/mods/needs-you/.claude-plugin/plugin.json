@@ -1,0 +1,6 @@
+{
+  "name": "needs-you",
+  "version": "0.1.0",
+  "description": "Band above the prompt showing what the session needs from you and where the branch stands",
+  "types": "./types/index.d.ts"
+}

@@ -40,6 +40,9 @@ hand:
   here. Their on/off curation is the `skillOverrides` key in `settings.json`.
 - **Plugins and marketplaces**, the `enabledPlugins` and
   `extraKnownMarketplaces` keys in `settings.json`.
+- **Mods**, which load only from the folders listed in `CLAUDE_CODE_PLUGIN_DIRS`
+  in the `env` block of `settings.json`, separated by `:`. The `mods` link alone
+  loads nothing, so each folder under `mods/` is added there by hand.
 
 The `ohf-sage` agent has its own module, `ohf_sage`, because it is third-party
 and publishes weekly releases. It downloads the agent and its corpus from

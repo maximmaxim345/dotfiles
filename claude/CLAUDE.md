@@ -167,6 +167,15 @@ have ohf-sage review the diff. Fix what they find and tell me what you kept on
 purpose. Skip this only when the diff changes no behavior and touches no tests
 or docstrings.
 
+## Setup notes
+
+Until 2026-10-20, log setup problems with `mcp__setup-notes__note`: a rule in
+a CLAUDE.md or AGENTS.md, a project rules file, a skill or an agent that was
+unclear, conflicted with another or was missing for the case at hand, or a tool
+or mod that got in the way. Log only what changed what you did, one sentence
+each, without reading earlier notes. Most sessions log nothing. Copy this rule
+into the audit subagent's prompt. ohf-sage skips it.
+
 ## Verifying behavior claims
 
 Before asserting non-trivial behavior ("X fires only on Y", "Z is called

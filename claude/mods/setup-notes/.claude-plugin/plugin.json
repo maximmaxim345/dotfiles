@@ -1,0 +1,5 @@
+{
+  "name": "setup-notes",
+  "version": "0.1.0",
+  "description": "Tool that lets sessions log problems with the Claude Code setup for a later analysis"
+}

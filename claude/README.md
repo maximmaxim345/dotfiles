@@ -20,6 +20,7 @@ live on every device without re-running anything.
 | `project-rules/` | Per-repo rules, read on demand as listed in `CLAUDE.md` |
 | `skills/implement/` | My implementation workflow skill, linked into `~/.claude/skills/` |
 | `skills/review-brief/` | Briefing before I review a session's changes, linked into `~/.claude/skills/` |
+| `skills/ma-dev/` | Starts a Music Assistant dev server on a copy of my configured data folder |
 | `skills/blast-radius/` | Finds what a change breaks outside its diff, adapted with permission from [MarvinSchenkel/ai-agent-instructions](https://github.com/MarvinSchenkel/ai-agent-instructions) |
 
 Not to be confused with the repository root `CLAUDE.md`, which is a symlink to

@@ -7,4 +7,5 @@
 - Use Music Assistant vocabulary in fields and text ("user", not "operator"), and keep model fields provider-neutral.
 - Code against the released library API (for example `aiosendspin`), not a local checkout or name-matching stopgap.
 - Before debugging frontend behavior, check which frontend version the server pins.
+- When a test or reproduction needs real streaming providers, players, or library data, start the server with the `ma-dev` skill.
 - PRs: fill the template as-is. Keep the "Related issue" header and leave it empty when there's no issue, never the placeholder. Tick exactly one "Types of changes" box (it picks the release-notes section) and the AI policy box. The title becomes the changelog line.

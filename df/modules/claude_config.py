@@ -28,6 +28,7 @@ ENTRIES: List[Tuple[str, str, str]] = [
     ("skills/review-brief", "skills/review-brief", "old_skill_review_brief"),
     ("mods", "mods", "old_mods"),
     ("skills/blast-radius", "skills/blast-radius", "old_skill_blast_radius"),
+    ("skills/ma-dev", "skills/ma-dev", "old_skill_ma_dev"),
 ]
 
 

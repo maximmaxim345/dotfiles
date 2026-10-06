@@ -20,6 +20,7 @@ live on every device without re-running anything.
 | `project-rules/` | Per-repo rules, read on demand as listed in `CLAUDE.md` |
 | `skills/implement/` | My implementation workflow skill, linked into `~/.claude/skills/` |
 | `skills/review-brief/` | Briefing before I review a session's changes, linked into `~/.claude/skills/` |
+| `skills/blast-radius/` | Finds what a change breaks outside its diff, adapted with permission from [MarvinSchenkel/ai-agent-instructions](https://github.com/MarvinSchenkel/ai-agent-instructions) |
 
 Not to be confused with the repository root `CLAUDE.md`, which is a symlink to
 `AGENTS.md` and describes this repo as a project. The file here is the global
@@ -36,7 +37,7 @@ hand:
 - **Everything else in `settings.json`**: model, `effortLevel` and
   `modelSettings`, `tui`, `voice`, `permissions.defaultMode`, the attribution
   blanking, and the skip-prompt flags.
-- **Skills**, which come from `~/.agents/.skill-lock.json`. All of them are
+- **Other skills**, which come from `~/.agents/.skill-lock.json`. All of them are
   third-party, so they are installed from their upstreams rather than tracked
   here. Their on/off curation is the `skillOverrides` key in `settings.json`.
 - **Plugins and marketplaces**, the `enabledPlugins` and

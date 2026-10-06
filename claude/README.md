@@ -19,6 +19,7 @@ live on every device without re-running anything.
 | `output-styles/` | Output styles, linked as a whole directory |
 | `project-rules/` | Per-repo rules, read on demand as listed in `CLAUDE.md` |
 | `skills/implement/` | My implementation workflow skill, linked into `~/.claude/skills/` |
+| `skills/review-brief/` | Briefing before I review a session's changes, linked into `~/.claude/skills/` |
 
 Not to be confused with the repository root `CLAUDE.md`, which is a symlink to
 `AGENTS.md` and describes this repo as a project. The file here is the global

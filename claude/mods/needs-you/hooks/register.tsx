@@ -158,7 +158,8 @@ async function classify(
   const open = current.map(i => `[${i.id}] ${i.kind}: ${i.text}`).join('\n')
   const previous = (await read($, tldr)) ?? '(none yet)'
   const completed = await $.model.complete({
-    model: 'haiku',
+    model: 'sonnet',
+    effort: 'low',
     prompt: `${CLASSIFY}\nOpen items:\n${open || '(none)'}\n\nCandidates:\n${listed}\n\nPrevious TLDR:\n${previous}\n\nLatest prompts:\n${prompt}\n\nReply:\n${answer}`,
   })
   const raw = completed.isAnswered ? parseJson(completed.text) : null

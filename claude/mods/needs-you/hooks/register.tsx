@@ -43,8 +43,9 @@ question: the reply's main question in under 50 characters, shown in front of th
 
 options: buttons that answer the reply's main question, at most 4. label is one to three words. fill is the answer the user would type, under 100 characters, naming what it answers so it reads clearly on its own ("Yes, add setup-notes to the mod list in settings.json").
 - A go-ahead to open a PR: "Web form", "Draft", "Ready" and "No" entries, fill "Yes, open the PR with the web form", "Yes, open the PR as a draft", "Yes, open the PR ready for review" and "No, don't open the PR yet".
+- A go-ahead to ship PR fixes or drafted review replies: "Ship" and "No" entries, fill "Push, post the drafted replies, resolve those threads, and re-request a Copilot review" and "No, hold off".
 - Any other yes/no question: a "Yes" and a "No" entry.
-send: true only for the "Web form", "Draft" and "Ready" entries of a go-ahead to open a PR, false otherwise.
+send: true only for the "Web form", "Draft" and "Ready" entries of a go-ahead to open a PR and the "Ship" entry of a go-ahead to ship, false otherwise.
 - A choice between named alternatives: one entry per alternative, labeled with it ("Fix now", "Measure first").
 - Numbered options to pick from: one entry per number, labeled with the number, even when the options also have names.
 - Several numbered questions: one entry per number, labeled with the number, fill "<number> - " for the user to finish.

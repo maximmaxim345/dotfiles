@@ -1,6 +1,13 @@
 export type ItemKind = 'answer' | 'review' | 'do' | 'later'
 
-export type Item = { id: number; kind: ItemKind; text: string; at: number }
+export type Item = {
+  id: number
+  kind: ItemKind
+  text: string
+  at: number
+  detail?: string
+  expanding?: boolean
+}
 
 export type AskOption = { label: string; fill: string }
 

@@ -167,6 +167,19 @@ async function classify(
   if (isCurrent()) await update($, reply, () => parseReply(raw, candidates))
 }
 
+async function expand($: EngineInterface, item: Item) {
+  const change = (patch: Partial<Item>) =>
+    update($, items, (list: Item[]) => list.map(i => (i.id === item.id ? { ...i, ...patch } : i)))
+  await change({ expanding: true })
+  const forked = await $.model.fork({
+    prompt: `The user's status band shows this open item from this session (${item.kind}): "${item.text}". Expand it in at most three short sentences of plain text, using what you know from this session: what it is about, what the user needs to know to act on it, and your recommendation if you have one. Don't repeat the item, don't use lists or headings, and don't call tools.`,
+  })
+  await change({
+    expanding: false,
+    detail: forked.isAnswered ? forked.text.trim() : `No detail: ${forked.reason}`,
+  })
+}
+
 function minutesSince(at: number, current: number) {
   const minutes = Math.floor((current - at) / 60000)
   if (minutes < 1) return ''
@@ -275,6 +288,26 @@ export const register: Register = on => {
       />
     )
 
+    const more = (item: Item) =>
+      item.detail === undefined && (
+        <Button
+          key={`more-${item.id}`}
+          label={item.expanding ? 'expanding' : 'more'}
+          plain
+          dimColor
+          onPress={() => {
+            if (!item.expanding) void expand($, item)
+          }}
+        />
+      )
+
+    const detail = (item: Item) =>
+      item.detail !== undefined && (
+        <Box paddingLeft={2}>
+          <Text dimColor>{item.detail}</Text>
+        </Box>
+      )
+
     const replyButtons =
       latest === null
         ? []
@@ -316,12 +349,16 @@ export const register: Register = on => {
           </Text>
         )}
         {asks.slice(-SHOWN).map(item => (
-          <Box key={`ask-${item.id}`} flexDirection="row" gap={1}>
-            <Text color="yellow" wrap="truncate-end">
-              ● Needs you: {item.text}
-              {minutesSince(item.at, current)}
-            </Text>
-            {dismiss(item)}
+          <Box key={`ask-${item.id}`} flexDirection="column">
+            <Box flexDirection="row" gap={1}>
+              <Text color="yellow" wrap="truncate-end">
+                ● Needs you: {item.text}
+                {minutesSince(item.at, current)}
+              </Text>
+              {more(item)}
+              {dismiss(item)}
+            </Box>
+            {detail(item)}
           </Box>
         ))}
         {asks.length > SHOWN && <Text dimColor>+{asks.length - SHOWN} older asks</Text>}
@@ -336,11 +373,15 @@ export const register: Register = on => {
           </Box>
         )}
         {later.slice(-SHOWN).map(item => (
-          <Box key={`later-${item.id}`} flexDirection="row" gap={1}>
-            <Text color="magenta" wrap="truncate-end">
-              ◆ Later: {item.text}
-            </Text>
-            {dismiss(item)}
+          <Box key={`later-${item.id}`} flexDirection="column">
+            <Box flexDirection="row" gap={1}>
+              <Text color="magenta" wrap="truncate-end">
+                ◆ Later: {item.text}
+              </Text>
+              {more(item)}
+              {dismiss(item)}
+            </Box>
+            {detail(item)}
           </Box>
         ))}
         {later.length > SHOWN && <Text dimColor>+{later.length - SHOWN} older later</Text>}

@@ -12,22 +12,21 @@ const shown = atom({ plugin: 'needs-you', key: 'shown' } as const, null)
 const laterOpen = atom({ plugin: 'needs-you', key: 'laterOpen' } as const, false)
 
 const KINDS: readonly ItemKind[] = ['answer', 'do', 'later']
-const SHELL_LANGS = /^(bash|sh|zsh|shell|console)$/i
 const USER_ORIGINS = ['composer', 'bridge', 'sdk']
 const SPAWN_TASK = 'mcp__ccd_session__spawn_task'
 const SHOWN = 3
 const COMMANDS = ['/implement', '/review-brief', '/review-changes', '/open-pr']
-const NO_REPLY: Reply = { question: null, done: null, options: [], draft: null }
+const NO_REPLY: Reply = { question: null, done: null, options: [] }
 const MIN_ANSWER = 20
 
 const CLASSIFY = `You keep the list of things the user of an AI coding assistant still has to act on. You get the open list, the user's latest prompts and the assistant's latest reply.
 Answer with JSON only, no prose, in this shape:
-{"resolved": number[], "new": [{"kind": "answer" | "do" | "later", "text": string, "same": number}], "done": string, "question": string, "options": [{"label": string, "fill": string}], "draft": number, "tldr": string}
+{"resolved": number[], "new": [{"kind": "answer" | "do" | "later", "text": string, "same": number}], "done": string, "question": string, "options": [{"label": string, "fill": string}], "tldr": string}
 
-resolved: the ids of open items the latest prompts or the reply dealt with: the user answered or decided it, approved or rejected the draft, did the task, or the assistant fixed it, opened an issue for it or dropped it. Also resolve an answer or do item that a newer item replaced. A later item stays open while the work moves on. Suggesting an item as a background task does not deal with it. Leave an item the reply asks again out of resolved.
+resolved: the ids of open items the latest prompts or the reply dealt with: the user answered or decided it, did the task, or the assistant fixed it, opened an issue for it or dropped it. Also resolve an answer or do item that a newer item replaced. A later item stays open while the work moves on. Suggesting an item as a background task does not deal with it. Leave an item the reply asks again out of resolved.
 
 new: everything the reply asks of the user or sets aside, one entry each, new ones first, at most 5. same: the id of the open item the entry repeats, even when worded differently, or -1 when it is new.
-- "answer": a question or decision for the user. Not a routine approval to commit, push, open a PR or post, and not a request to review a draft or changes: those only get question, options and draft below.
+- "answer": a question or decision for the user. Not a routine approval to commit, push, open a PR or post, and not a request to review a draft or changes: those only get question and options below.
 - "do": something the user must do themselves (test a UI, run a command, restart a device, log in).
 - "later": a problem or follow-up the reply leaves out of the current work ("found a bug, but it does not belong in this PR"). Not the assistant's own next steps in the current work.
 text: under 80 characters and clear without reading the reply, so name what it is about. For "later", a noun phrase naming the problem and where it is ("Race in queue reload in the player provider"). Otherwise start with a verb ("Answer: fix needs-you duplicates now or log first?").
@@ -43,29 +42,8 @@ options: buttons that answer the reply's main question, at most 4. label is one 
 - Several numbered questions: one entry per number, labeled with the number, fill "<number> - " for the user to finish.
 Otherwise [].
 
-draft: the index of the candidate below that is a draft for the user to copy and post, or -1 when none is.
-
 tldr: what the whole session is working on, under 70 characters, as a noun phrase ("Building a band mod that shows what the session needs"). Start from the previous TLDR and change it only when the latest prompts moved the work somewhere new.
 `
-
-function extractCandidates(text: string): string[] {
-  const found: string[] = []
-  const fence = /```(\w*)\n([\s\S]*?)```/g
-  for (const m of text.matchAll(fence)) {
-    if (!SHELL_LANGS.test(m[1] ?? '')) found.push(m[2]!.trimEnd())
-  }
-  let quote: string[] = []
-  for (const line of [...text.split('\n'), '']) {
-    if (line.startsWith('>')) {
-      quote.push(line.replace(/^>\s?/, ''))
-    } else if (quote.length > 0) {
-      found.push(quote.join('\n').trim())
-      quote = []
-    }
-  }
-
-  return found
-}
 
 // Keep more of the tail, where replies put their questions.
 function clip(text: string, max: number) {
@@ -96,7 +74,7 @@ function parseNew(raw: unknown, openIds: number[]): Pick<Item, 'kind' | 'text'>[
     .map(n => ({ kind: n.kind, text: n.text.trim().slice(0, 100) }))
 }
 
-function parseReply(raw: any, candidates: string[]): Reply {
+function parseReply(raw: any): Reply {
   const options: AskOption[] = Array.isArray(raw.options)
     ? raw.options
         .filter((o: unknown): o is AskOption =>
@@ -105,12 +83,11 @@ function parseReply(raw: any, candidates: string[]): Reply {
         )
         .slice(0, 4)
     : []
-  const draft = Number.isInteger(raw.draft) ? (candidates[raw.draft] ?? null) : null
   const done = typeof raw.done === 'string' && raw.done.trim() !== '' ? raw.done.trim().slice(0, 80) : null
   const question =
     typeof raw.question === 'string' && raw.question.trim() !== '' ? raw.question.trim().slice(0, 60) : null
 
-  return { question, done, options, draft }
+  return { question, done, options }
 }
 
 async function changeItems(
@@ -159,8 +136,6 @@ async function classify(
   answer: string,
   isCurrent: () => boolean,
 ) {
-  const candidates = extractCandidates(answer)
-  const listed = candidates.map((c, i) => `[${i}]\n${clip(c, 300)}`).join('\n\n') || '(none)'
   const current = await read($, items)
   const open = current.map(i => `[${i.id}] ${i.kind}: ${i.text}`).join('\n')
   const previous = (await read($, tldr)) ?? '(none yet)'
@@ -169,7 +144,7 @@ async function classify(
     effort: 'low',
     maxTokens: 700,
     timeoutMs: 20000,
-    prompt: `${CLASSIFY}\nOpen items:\n${open || '(none)'}\n\nCandidates:\n${listed}\n\nPrevious TLDR:\n${previous}\n\nLatest prompts:\n${clip(prompt, 2000)}\n\nReply:\n${clip(answer, 4000)}`,
+    prompt: `${CLASSIFY}\nOpen items:\n${open || '(none)'}\n\nPrevious TLDR:\n${previous}\n\nLatest prompts:\n${clip(prompt, 2000)}\n\nReply:\n${clip(answer, 4000)}`,
   })
   const raw = completed.isAnswered ? parseJson(completed.text) : null
   if (raw === null) {
@@ -181,7 +156,7 @@ async function classify(
   if (typeof raw.tldr === 'string' && raw.tldr.trim() !== '') {
     await update($, tldr, () => raw.tldr.trim().slice(0, 90))
   }
-  if (isCurrent()) await update($, reply, () => parseReply(raw, candidates))
+  if (isCurrent()) await update($, reply, () => parseReply(raw))
 }
 
 function keyOf(item: Item) {
@@ -336,29 +311,14 @@ export const register: Register = on => {
         </Box>
       )
 
-    const replyButtons =
-      latest === null
-        ? []
-        : [
-            ...latest.options.map((o, i) => (
-              <Button
-                key={`opt-${i}`}
-                label={o.label}
-                hotkey={/^[1-9]$/.test(o.label) ? o.label : undefined}
-                onPress={() => void fill(o.fill)}
-              />
-            )),
-            ...(latest.draft === null
-              ? []
-              : [
-                  <Button
-                    key="copy"
-                    label="Copy draft"
-                    hotkey="c"
-                    onPress={p => void $.ui.copy({ text: latest.draft!, surface: p.surface })}
-                  />,
-                ]),
-          ]
+    const replyButtons = (latest?.options ?? []).map((o, i) => (
+      <Button
+        key={`opt-${i}`}
+        label={o.label}
+        hotkey={/^[1-9]$/.test(o.label) ? o.label : undefined}
+        onPress={() => void fill(o.fill)}
+      />
+    ))
 
     const gitParts: string[] = []
     if (facts !== null) {

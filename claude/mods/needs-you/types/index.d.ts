@@ -16,7 +16,6 @@ export type Reply = {
   question: string | null
   done: string | null
   options: AskOption[]
-  draft: string | null
 }
 
 export type GitFacts = {

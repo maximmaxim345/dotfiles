@@ -189,6 +189,27 @@ async function expand($: EngineInterface, item: Item) {
   await update($, shown, () => keyOf(item))
 }
 
+let pings = 0
+let pinging = false
+
+// Fork the session shortly before the cache expires, since a cache read restarts its lifetime.
+async function tick($: EngineInterface) {
+  const at = Date.now()
+  await update($, now, () => at)
+  const last = await read($, lastCall)
+  if (pinging || !(await read($, keepWarm)) || last === 0) return
+  if (at - last < CACHE_TTL_MS - WARM_MARGIN_MS) return
+  if (pings >= MAX_PINGS) {
+    await update($, keepWarm, () => false)
+    return
+  }
+  pings += 1
+  pinging = true
+  const forked = await $.model.fork({ prompt: 'Reply with only the word ok.' })
+  pinging = false
+  if (forked.isAnswered) await update($, lastCall, () => at)
+}
+
 function minutesSince(at: number, current: number) {
   const minutes = Math.floor((current - at) / 60000)
   if (minutes < 1) return ''
@@ -201,26 +222,6 @@ export const register: Register = on => {
   let prompts: string[] = []
   let generation = 0
   let queue: Promise<void> = Promise.resolve()
-  let pings = 0
-  let pinging = false
-
-  // Fork the session shortly before the cache expires, since a cache read restarts its lifetime.
-  const tick = async ($: EngineInterface) => {
-    const at = Date.now()
-    await update($, now, () => at)
-    const last = await read($, lastCall)
-    if (pinging || !(await read($, keepWarm)) || last === 0) return
-    if (at - last < CACHE_TTL_MS - WARM_MARGIN_MS) return
-    if (pings >= MAX_PINGS) {
-      await update($, keepWarm, () => false)
-      return
-    }
-    pings += 1
-    pinging = true
-    const forked = await $.model.fork({ prompt: 'Reply with only the word ok.' })
-    pinging = false
-    if (forked.isAnswered) await update($, lastCall, () => at)
-  }
 
   on('session.start', async ($, e, next) => {
     const started = await next(e)
@@ -461,7 +462,7 @@ export const register: Register = on => {
                 label={isKeepingWarm ? 'keep warm: on' : 'keep warm: off'}
                 plain
                 dimColor
-                onPress={() => void update($, keepWarm, (on: boolean) => !on)}
+                onPress={() => void update($, keepWarm, (isOn: boolean) => !isOn)}
               />
             )}
           </Box>

@@ -1,4 +1,4 @@
-export type ItemKind = 'answer' | 'review' | 'do' | 'later'
+export type ItemKind = 'answer' | 'do' | 'later'
 
 export type Item = {
   id: number
@@ -13,6 +13,7 @@ export type Item = {
 export type AskOption = { label: string; fill: string }
 
 export type Reply = {
+  question: string | null
   done: string | null
   options: AskOption[]
   draft: string | null

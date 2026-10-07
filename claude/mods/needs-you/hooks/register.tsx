@@ -11,29 +11,30 @@ const tldr = atom({ plugin: 'needs-you', key: 'tldr' } as const, null)
 const shown = atom({ plugin: 'needs-you', key: 'shown' } as const, null)
 const laterOpen = atom({ plugin: 'needs-you', key: 'laterOpen' } as const, false)
 
-const KINDS: readonly ItemKind[] = ['answer', 'review', 'do', 'later']
+const KINDS: readonly ItemKind[] = ['answer', 'do', 'later']
 const SHELL_LANGS = /^(bash|sh|zsh|shell|console)$/i
 const USER_ORIGINS = ['composer', 'bridge', 'sdk']
 const SPAWN_TASK = 'mcp__ccd_session__spawn_task'
 const SHOWN = 3
 const COMMANDS = ['/implement', '/review-brief', '/review-changes', '/open-pr']
-const NO_REPLY: Reply = { done: null, options: [], draft: null }
+const NO_REPLY: Reply = { question: null, done: null, options: [], draft: null }
 const MIN_ANSWER = 20
 
 const CLASSIFY = `You keep the list of things the user of an AI coding assistant still has to act on. You get the open list, the user's latest prompts and the assistant's latest reply.
 Answer with JSON only, no prose, in this shape:
-{"resolved": number[], "new": [{"kind": "answer" | "review" | "do" | "later", "text": string, "same": number}], "done": string, "options": [{"label": string, "fill": string}], "draft": number, "tldr": string}
+{"resolved": number[], "new": [{"kind": "answer" | "do" | "later", "text": string, "same": number}], "done": string, "question": string, "options": [{"label": string, "fill": string}], "draft": number, "tldr": string}
 
-resolved: the ids of open items the latest prompts or the reply dealt with: the user answered or decided it, approved or rejected the draft, did the task, or the assistant fixed it, opened an issue for it or dropped it. Also resolve an answer, review or do item that a newer item replaced. A later item stays open while the work moves on. Suggesting an item as a background task does not deal with it. Leave an item the reply asks again out of resolved.
+resolved: the ids of open items the latest prompts or the reply dealt with: the user answered or decided it, approved or rejected the draft, did the task, or the assistant fixed it, opened an issue for it or dropped it. Also resolve an answer or do item that a newer item replaced. A later item stays open while the work moves on. Suggesting an item as a background task does not deal with it. Leave an item the reply asks again out of resolved.
 
 new: everything the reply asks of the user or sets aside, one entry each, new ones first, at most 5. same: the id of the open item the entry repeats, even when worded differently, or -1 when it is new.
-- "answer": a question or decision for the user.
-- "review": a draft (comment, PR text, message) or commits for the user to check or approve.
+- "answer": a question or decision for the user. Not a routine approval to commit, push, open a PR or post, and not a request to review a draft or changes: those only get question, options and draft below.
 - "do": something the user must do themselves (test a UI, run a command, restart a device, log in).
 - "later": a problem or follow-up the reply leaves out of the current work ("found a bug, but it does not belong in this PR"). Not the assistant's own next steps in the current work.
 text: under 80 characters and clear without reading the reply, so name what it is about. For "later", a noun phrase naming the problem and where it is ("Race in queue reload in the player provider"). Otherwise start with a verb ("Answer: fix needs-you duplicates now or log first?").
 
 done: when the reply asks nothing, what was done, under 60 characters. Otherwise "".
+
+question: the reply's main question in under 50 characters, shown in front of the option buttons ("Push and open the PR form?"), or "" when options is empty.
 
 options: buttons that answer the reply's main question, at most 4. label is one to three words. fill is the answer the user would type, under 100 characters, naming what it answers so it reads clearly on its own ("Yes, add setup-notes to the mod list in settings.json").
 - A yes/no question: a "Yes" and a "No" entry.
@@ -106,8 +107,10 @@ function parseReply(raw: any, candidates: string[]): Reply {
     : []
   const draft = Number.isInteger(raw.draft) ? (candidates[raw.draft] ?? null) : null
   const done = typeof raw.done === 'string' && raw.done.trim() !== '' ? raw.done.trim().slice(0, 80) : null
+  const question =
+    typeof raw.question === 'string' && raw.question.trim() !== '' ? raw.question.trim().slice(0, 60) : null
 
-  return { done, options, draft }
+  return { question, done, options, draft }
 }
 
 async function changeItems(
@@ -274,7 +277,7 @@ export const register: Register = on => {
 
     const open = await read($, items)
     const latest = e.props.isWorking ? null : await read($, reply)
-    const asks = latest === null ? [] : open.filter(i => i.kind !== 'later')
+    const asks = latest === null ? [] : open.filter(i => i.kind === 'answer' || i.kind === 'do')
     const later = open.filter(i => i.kind === 'later')
     const facts = await read($, git)
     const current = await read($, now)
@@ -398,6 +401,7 @@ export const register: Register = on => {
         )}
         {replyButtons.length > 0 && (
           <Box flexDirection="row" gap={1}>
+            {latest?.question != null && <Text color="yellow">{latest.question}</Text>}
             {replyButtons}
           </Box>
         )}

@@ -8,6 +8,7 @@ export type Item = {
   detail?: string
   expanding?: boolean
   failed?: boolean
+  fromTask?: boolean
 }
 
 export type AskOption = { label: string; fill: string }

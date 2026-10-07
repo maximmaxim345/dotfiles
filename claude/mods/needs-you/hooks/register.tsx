@@ -93,7 +93,7 @@ function parseReply(raw: any): Reply {
 async function changeItems(
   $: EngineInterface,
   resolved: number[],
-  added: Pick<Item, 'kind' | 'text'>[],
+  added: Pick<Item, 'kind' | 'text' | 'fromTask'>[],
 ) {
   const at = await $.clock.now()
   await update($, items, (list: Item[]) => {
@@ -220,7 +220,7 @@ export const register: Register = on => {
   on('tool.call', { tool: SPAWN_TASK }, async ($, e, next) => {
     const ran = await next(e)
     if (typeof e.title === 'string' && ran.deny === undefined && ran.isError !== true) {
-      await changeItems($, [], [{ kind: 'later', text: e.title.slice(0, 80) }])
+      await changeItems($, [], [{ kind: 'later', text: e.title.slice(0, 80), fromTask: true }])
     }
 
     return ran
@@ -288,6 +288,10 @@ export const register: Register = on => {
       />
     )
 
+    const action = (item: Item, label: string, text: string) => (
+      <Button key={`${label}-${item.id}`} label={label} plain dimColor onPress={() => void fill(text)} />
+    )
+
     const more = (item: Item) => (
       <Button
         key={`more-${item.id}`}
@@ -347,6 +351,7 @@ export const register: Register = on => {
                 ● Needs you: {item.text}
                 {minutesSince(item.at, current)}
               </Text>
+              {item.kind === 'do' && action(item, 'done', `Done: ${item.text}`)}
               {more(item)}
               {dismiss(item)}
             </Box>
@@ -383,6 +388,8 @@ export const register: Register = on => {
               <Text color="magenta" wrap="truncate-end">
                 ◆ Later: {item.text}
               </Text>
+              {action(item, 'now', `Work on this now: ${item.text}`)}
+              {!item.fromTask && action(item, 'task', `Suggest a background task for: ${item.text}`)}
               {more(item)}
               {dismiss(item)}
             </Box>

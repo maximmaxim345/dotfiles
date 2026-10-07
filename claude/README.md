@@ -56,16 +56,6 @@ rather than freezing a copy in this repo.
 ./dotfiles.py install ohf_sage
 ```
 
-The third-party `cache-clock` mod works the same way, through the `cache_clock`
-module. It downloads the mod from `github.com/hamzafer/claude-code-mods` into
-`~/.claude/third-party-mods/cache-clock`, which then goes into
-`CLAUDE_CODE_PLUGIN_DIRS` by hand. Run `/cache-clock setup` once afterwards to
-add its line under the status line.
-
-```bash
-./dotfiles.py install cache_clock
-```
-
 ## Claude Code Web
 
 Cloud sessions do not see any of the above. Per the

@@ -16,12 +16,13 @@ const USER_ORIGINS = ['composer', 'bridge', 'sdk']
 const SPAWN_TASK = 'mcp__ccd_session__spawn_task'
 const SHOWN = 3
 const COMMANDS = ['/implement', '/review-brief', '/review-changes', '/open-pr']
+const SENT_COMMANDS = ['/review-brief', '/review-changes']
 const NO_REPLY: Reply = { question: null, done: null, options: [] }
 const MIN_ANSWER = 20
 
 const CLASSIFY = `You keep the list of things the user of an AI coding assistant still has to act on. You get the open list, the user's latest prompts and the assistant's latest reply.
 Answer with JSON only, no prose, in this shape:
-{"resolved": number[], "new": [{"kind": "answer" | "do" | "later", "text": string, "same": number}], "done": string, "question": string, "options": [{"label": string, "fill": string}], "tldr": string}
+{"resolved": number[], "new": [{"kind": "answer" | "do" | "later", "text": string, "same": number}], "done": string, "question": string, "options": [{"label": string, "fill": string, "send": boolean}], "tldr": string}
 
 resolved: the ids of open items the latest prompts or the reply dealt with: the user answered or decided it, did the task, or the assistant fixed it, opened an issue for it or dropped it. Also resolve an answer or do item that a newer item replaced. A later item stays open while the work moves on. Suggesting an item as a background task does not deal with it. Leave an item the reply asks again out of resolved.
 
@@ -38,6 +39,7 @@ question: the reply's main question in under 50 characters, shown in front of th
 options: buttons that answer the reply's main question, at most 4. label is one to three words. fill is the answer the user would type, under 100 characters, naming what it answers so it reads clearly on its own ("Yes, add setup-notes to the mod list in settings.json").
 - A go-ahead to open a PR: "Web form", "Draft", "Ready" and "No" entries, fill "Yes, open the PR with the web form", "Yes, open the PR as a draft", "Yes, open the PR ready for review" and "No, don't open the PR yet".
 - Any other yes/no question: a "Yes" and a "No" entry.
+send: true only for the "Web form", "Draft" and "Ready" entries of a go-ahead to open a PR, false otherwise.
 - A choice between named alternatives: one entry per alternative, labeled with it ("Fix now", "Measure first").
 - Numbered options to pick from: one entry per number, labeled with the number, even when the options also have names.
 - Several numbered questions: one entry per number, labeled with the number, fill "<number> - " for the user to finish.
@@ -83,6 +85,7 @@ function parseReply(raw: any): Reply {
           typeof (o as AskOption)?.fill === 'string',
         )
         .slice(0, 4)
+        .map((o: AskOption) => ({ label: o.label, fill: o.fill, send: o.send === true }))
     : []
   const done = typeof raw.done === 'string' && raw.done.trim() !== '' ? raw.done.trim().slice(0, 80) : null
   const question =
@@ -202,7 +205,7 @@ export const register: Register = on => {
   })
 
   on('prompt.submit', async ($, e, next) => {
-    if (USER_ORIGINS.includes(e.origin.kind)) {
+    if (USER_ORIGINS.includes(e.origin.kind) || (e.origin.kind === 'plugin' && e.origin.name === 'needs-you')) {
       generation += 1
       prompts.push(e.text)
       await update($, reply, () => null)
@@ -272,11 +275,18 @@ export const register: Register = on => {
       )
     }
 
+    const send = (text: string) => $.prompt.submit({ text, asUser: true })
+
     const start = async (command: string) => {
       const typed = (await $.prompt.read()).text.trim()
       const previous = COMMANDS.find(c => typed === c || typed.startsWith(`${c} `))
       const args = previous === undefined ? typed : typed.slice(previous.length).trim()
-      await $.prompt.fill({ text: `${command} ${args}`, mode: 'replace' })
+      if (!SENT_COMMANDS.includes(command)) {
+        await $.prompt.fill({ text: `${command} ${args}`, mode: 'replace' })
+        return
+      }
+      await $.prompt.fill({ text: '', mode: 'replace' })
+      await send(`${command} ${args}`.trim())
     }
 
     const dismiss = (item: Item) => (
@@ -289,8 +299,8 @@ export const register: Register = on => {
       />
     )
 
-    const action = (item: Item, label: string, text: string) => (
-      <Button key={`${label}-${item.id}`} label={label} plain dimColor onPress={() => void fill(text)} />
+    const action = (item: Item, label: string, press: () => Promise<unknown>) => (
+      <Button key={`${label}-${item.id}`} label={label} plain dimColor onPress={() => void press()} />
     )
 
     const more = (item: Item) => (
@@ -321,7 +331,7 @@ export const register: Register = on => {
         key={`opt-${i}`}
         label={o.label}
         hotkey={/^[1-9]$/.test(o.label) ? o.label : undefined}
-        onPress={() => void fill(o.fill)}
+        onPress={() => void (o.send ? send(o.fill) : fill(o.fill))}
       />
     ))
 
@@ -352,7 +362,7 @@ export const register: Register = on => {
                 ● Needs you: {item.text}
                 {minutesSince(item.at, current)}
               </Text>
-              {item.kind === 'do' && action(item, 'done', `Done: ${item.text}`)}
+              {item.kind === 'do' && action(item, 'done', () => fill(`Done: ${item.text}`))}
               {more(item)}
               {dismiss(item)}
             </Box>
@@ -389,8 +399,8 @@ export const register: Register = on => {
               <Text color="magenta" wrap="truncate-end">
                 ◆ Later: {item.text}
               </Text>
-              {action(item, 'now', `Work on this now: ${item.text}`)}
-              {!item.fromTask && action(item, 'task', `Suggest a background task for: ${item.text}`)}
+              {action(item, 'now', () => fill(`Work on this now: ${item.text}`))}
+              {!item.fromTask && action(item, 'task', () => send(`Suggest a background task for: ${item.text}`))}
               {more(item)}
               {dismiss(item)}
             </Box>

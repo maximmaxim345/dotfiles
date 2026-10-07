@@ -11,7 +11,7 @@ export type Item = {
   fromTask?: boolean
 }
 
-export type AskOption = { label: string; fill: string }
+export type AskOption = { label: string; fill: string; send?: boolean }
 
 export type Reply = {
   question: string | null

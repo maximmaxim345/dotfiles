@@ -160,9 +160,12 @@ top of the branch.
 ## Worktrees and handoff
 
 Create worktrees under `<repo>/.claude/worktrees/<name>`, never in `/tmp` or a
-scratchpad. When I say `./`, work in the current checkout. When handing work
-over for review, end with the absolute folder path, the branch, and the commit
-range.
+scratchpad. If the session already runs in a worktree, work there and don't
+create another, and branch from a freshly fetched `origin` base instead of
+checking out main. Prompts for spawned tasks must not tell the new session to
+create a worktree, since each task session starts in its own. When I say `./`,
+work in the current checkout. When handing work over for review, end with the
+absolute folder path, the branch, and the commit range.
 
 ## Before handing over
 

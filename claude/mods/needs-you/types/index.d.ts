@@ -7,6 +7,7 @@ export type Item = {
   at: number
   detail?: string
   expanding?: boolean
+  failed?: boolean
 }
 
 export type AskOption = { label: string; fill: string }
@@ -20,6 +21,7 @@ export type Reply = {
 export type GitFacts = {
   branch: string
   unpushed: number
+  ahead: number | null
   hasUpstream: boolean
   uncommitted: number
 }
@@ -32,6 +34,8 @@ declare module 'claude-code' {
       git: GitFacts | null
       now: number
       tldr: string | null
+      shown: string | null
+      laterOpen: boolean
     }
   }
 }

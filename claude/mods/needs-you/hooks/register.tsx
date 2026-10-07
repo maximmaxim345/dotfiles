@@ -8,6 +8,8 @@ const reply = atom({ plugin: 'needs-you', key: 'reply' } as const, null)
 const git = atom({ plugin: 'needs-you', key: 'git' } as const, null)
 const now = atom({ plugin: 'needs-you', key: 'now' } as const, 0)
 const tldr = atom({ plugin: 'needs-you', key: 'tldr' } as const, null)
+const shown = atom({ plugin: 'needs-you', key: 'shown' } as const, null)
+const laterOpen = atom({ plugin: 'needs-you', key: 'laterOpen' } as const, false)
 
 const KINDS: readonly ItemKind[] = ['answer', 'review', 'do', 'later']
 const SHELL_LANGS = /^(bash|sh|zsh|shell|console)$/i
@@ -127,11 +129,12 @@ async function refreshGit($: EngineInterface) {
     return
   }
   const upstream = await runGit($, cwd, ['rev-list', '--count', '@{u}..HEAD'])
-  const base = upstream ?? (await runGit($, cwd, ['rev-list', '--count', 'origin/HEAD..HEAD']))
+  const ahead = await runGit($, cwd, ['rev-list', '--count', 'origin/HEAD..HEAD'])
   const status = (await runGit($, cwd, ['status', '--porcelain'])) ?? ''
   const facts: GitFacts = {
     branch,
-    unpushed: Number(base ?? 0),
+    unpushed: Number(upstream ?? ahead ?? 0),
+    ahead: ahead === null ? null : Number(ahead),
     hasUpstream: upstream !== null,
     uncommitted: status === '' ? 0 : status.split('\n').length,
   }
@@ -167,17 +170,23 @@ async function classify(
   if (isCurrent()) await update($, reply, () => parseReply(raw, candidates))
 }
 
+function keyOf(item: Item) {
+  return `${item.id}:${item.at}`
+}
+
 async function expand($: EngineInterface, item: Item) {
   const change = (patch: Partial<Item>) =>
-    update($, items, (list: Item[]) => list.map(i => (i.id === item.id ? { ...i, ...patch } : i)))
+    update($, items, (list: Item[]) => list.map(i => (keyOf(i) === keyOf(item) ? { ...i, ...patch } : i)))
   await change({ expanding: true })
   const forked = await $.model.fork({
-    prompt: `The user's status band shows this open item from this session (${item.kind}): "${item.text}". Expand it in at most three short sentences of plain text, using what you know from this session: what it is about, what the user needs to know to act on it, and your recommendation if you have one. Don't repeat the item, don't use lists or headings, and don't call tools.`,
+    prompt: `The user's status band shows this open item from this session (${item.kind}): "${item.text}". Expand it in at most three short sentences of plain text, using what you know from this session: what it is about, what the user needs to know to act on it, and your recommendation if you have one. Don't repeat the item, and don't use lists or headings.`,
   })
   await change({
     expanding: false,
     detail: forked.isAnswered ? forked.text.trim() : `No detail: ${forked.reason}`,
+    failed: !forked.isAnswered,
   })
+  await update($, shown, () => keyOf(item))
 }
 
 function minutesSince(at: number, current: number) {
@@ -259,6 +268,8 @@ export const register: Register = on => {
     const facts = await read($, git)
     const current = await read($, now)
     const topic = await read($, tldr)
+    const shownId = await read($, shown)
+    const isLaterOpen = await read($, laterOpen)
     if (open.length === 0 && latest === null && facts === null && topic === null) return next(e)
 
     const { Box, Button, Text } = $.ui.resolve(e)
@@ -288,20 +299,23 @@ export const register: Register = on => {
       />
     )
 
-    const more = (item: Item) =>
-      item.detail === undefined && (
-        <Button
-          key={`more-${item.id}`}
-          label={item.expanding ? 'expanding' : 'more'}
-          plain
-          dimColor
-          onPress={() => {
-            if (!item.expanding) void expand($, item)
-          }}
-        />
-      )
+    const more = (item: Item) => (
+      <Button
+        key={`more-${item.id}`}
+        label={item.expanding ? 'expanding' : shownId === keyOf(item) ? 'less' : 'more'}
+        plain
+        dimColor
+        onPress={() => {
+          if (item.expanding) return
+          if (shownId === keyOf(item)) void update($, shown, () => null)
+          else if (item.detail !== undefined && !item.failed) void update($, shown, () => keyOf(item))
+          else void expand($, item)
+        }}
+      />
+    )
 
     const detail = (item: Item) =>
+      shownId === keyOf(item) &&
       item.detail !== undefined && (
         <Box paddingLeft={2}>
           <Text dimColor>{item.detail}</Text>
@@ -341,6 +355,10 @@ export const register: Register = on => {
       if (facts.uncommitted > 0) gitParts.push(`${facts.uncommitted} uncommitted`)
     }
 
+    const hasChanges = facts !== null && (facts.ahead !== 0 || facts.uncommitted > 0)
+    const commands = COMMANDS.filter(c => hasChanges || !['/review-brief', '/open-pr'].includes(c))
+    const showLater = later.length === 1 || isLaterOpen
+
     return (
       <Box flexDirection="column">
         {topic !== null && (
@@ -372,7 +390,19 @@ export const register: Register = on => {
             {replyButtons}
           </Box>
         )}
-        {later.slice(-SHOWN).map(item => (
+        {later.length > 1 && (
+          <Box flexDirection="row" gap={1}>
+            <Text color="magenta">◆ {later.length} later</Text>
+            <Button
+              key="later-toggle"
+              label={isLaterOpen ? 'hide' : 'show'}
+              plain
+              dimColor
+              onPress={() => void update($, laterOpen, (o: boolean) => !o)}
+            />
+          </Box>
+        )}
+        {showLater && later.slice(-SHOWN).map(item => (
           <Box key={`later-${item.id}`} flexDirection="column">
             <Box flexDirection="row" gap={1}>
               <Text color="magenta" wrap="truncate-end">
@@ -384,7 +414,7 @@ export const register: Register = on => {
             {detail(item)}
           </Box>
         ))}
-        {later.length > SHOWN && <Text dimColor>+{later.length - SHOWN} older later</Text>}
+        {showLater && later.length > SHOWN && <Text dimColor>+{later.length - SHOWN} older later</Text>}
         {gitParts.length > 0 && (
           <Text dimColor wrap="truncate-end">
             {gitParts.join(' · ')}
@@ -392,7 +422,7 @@ export const register: Register = on => {
         )}
         {!e.props.isWorking && (
           <Box flexDirection="row" gap={1}>
-            {COMMANDS.map(command => (
+            {commands.map(command => (
               <Button
                 key={`cmd-${command}`}
                 label={command}

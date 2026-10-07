@@ -325,7 +325,7 @@ export const register: Register = on => {
         return
       }
       await $.prompt.fill({ text: '', mode: 'replace' })
-      await send(`${command} ${args}`.trim())
+      await $.command.run({ command: command.slice(1), args })
     }
 
     const dismiss = (item: Item) => (

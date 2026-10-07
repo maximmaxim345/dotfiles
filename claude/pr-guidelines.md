@@ -73,5 +73,5 @@ correct. Do not treat the missing PR as a failure, do not retry without `-w`,
 and do not publish it yourself.
 
 If the user asks for a draft PR, still use `-w` (not `--draft`) and tell them to
-select the draft option in the browser form. The only exceptions are in `/open-pr` (`draft` mode and its no-browser
-fallback), which run `--draft` after the user approves the title and body.
+select the draft option in the browser form. The only exceptions are in `/open-pr` (`draft` and `ready` modes and the
+no-browser fallback), which run without `-w` after the user approves the title and body.

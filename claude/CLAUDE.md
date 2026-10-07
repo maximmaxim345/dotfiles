@@ -303,7 +303,7 @@ related-issues field: then fill that the way the template shows.
 
 Always create with `gh pr create -w` (opens the prefilled browser form, even
 for drafts: tell the user to pick draft in the form). The only exceptions are in
-`/open-pr`: `draft` mode, and its fallback when no browser is available. `-w` does
+`/open-pr`: `draft` and `ready` modes, and its fallback when no browser is available. `-w` does
 NOT create the PR, so a missing PR afterward is expected: don't retry without
 `-w`, don't publish it yourself. When `-w` can't open the form (no working `gh`
 or no browser), create a PR only through `/open-pr`, even when asked directly.

@@ -36,7 +36,8 @@ done: when the reply asks nothing, what was done, under 60 characters. Otherwise
 question: the reply's main question in under 50 characters, shown in front of the option buttons ("Push and open the PR form?"), or "" when options is empty.
 
 options: buttons that answer the reply's main question, at most 4. label is one to three words. fill is the answer the user would type, under 100 characters, naming what it answers so it reads clearly on its own ("Yes, add setup-notes to the mod list in settings.json").
-- A yes/no question: a "Yes" and a "No" entry.
+- A go-ahead to open a PR: "Web form", "Draft", "Ready" and "No" entries, fill "Yes, open the PR with the web form", "Yes, open the PR as a draft", "Yes, open the PR ready for review" and "No, don't open the PR yet".
+- Any other yes/no question: a "Yes" and a "No" entry.
 - A choice between named alternatives: one entry per alternative, labeled with it ("Fix now", "Measure first").
 - Numbered options to pick from: one entry per number, labeled with the number, even when the options also have names.
 - Several numbered questions: one entry per number, labeled with the number, fill "<number> - " for the user to finish.

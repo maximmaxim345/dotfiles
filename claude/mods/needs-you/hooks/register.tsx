@@ -18,6 +18,7 @@ const SPAWN_TASK = 'mcp__ccd_session__spawn_task'
 const SHOWN = 3
 const COMMANDS = ['/implement', '/review-brief', '/review-changes', '/open-pr']
 const NO_REPLY: Reply = { done: null, options: [], draft: null }
+const MIN_ANSWER = 20
 
 const CLASSIFY = `You keep the list of things the user of an AI coding assistant still has to act on. You get the open list, the user's latest prompts and the assistant's latest reply.
 Answer with JSON only, no prose, in this shape:
@@ -63,6 +64,14 @@ function extractCandidates(text: string): string[] {
   }
 
   return found
+}
+
+// Keep more of the tail, where replies put their questions.
+function clip(text: string, max: number) {
+  if (text.length <= max) return text
+  const head = Math.floor(max / 4)
+
+  return `${text.slice(0, head)}\n[...]\n${text.slice(text.length - (max - head))}`
 }
 
 function parseJson(text: string) {
@@ -148,14 +157,16 @@ async function classify(
   isCurrent: () => boolean,
 ) {
   const candidates = extractCandidates(answer)
-  const listed = candidates.map((c, i) => `[${i}]\n${c}`).join('\n\n') || '(none)'
+  const listed = candidates.map((c, i) => `[${i}]\n${clip(c, 300)}`).join('\n\n') || '(none)'
   const current = await read($, items)
   const open = current.map(i => `[${i.id}] ${i.kind}: ${i.text}`).join('\n')
   const previous = (await read($, tldr)) ?? '(none yet)'
   const completed = await $.model.complete({
     model: 'sonnet',
     effort: 'low',
-    prompt: `${CLASSIFY}\nOpen items:\n${open || '(none)'}\n\nCandidates:\n${listed}\n\nPrevious TLDR:\n${previous}\n\nLatest prompts:\n${prompt}\n\nReply:\n${answer}`,
+    maxTokens: 700,
+    timeoutMs: 20000,
+    prompt: `${CLASSIFY}\nOpen items:\n${open || '(none)'}\n\nCandidates:\n${listed}\n\nPrevious TLDR:\n${previous}\n\nLatest prompts:\n${clip(prompt, 2000)}\n\nReply:\n${clip(answer, 4000)}`,
   })
   const raw = completed.isAnswered ? parseJson(completed.text) : null
   if (raw === null) {
@@ -239,7 +250,7 @@ export const register: Register = on => {
 
   on('turn.complete', async ($, e, next) => {
     const done = await next(e)
-    if (e.agentId === undefined && !e.isAborted && e.answer.trim() !== '') {
+    if (e.agentId === undefined && !e.isAborted && e.answer.trim().length >= MIN_ANSWER) {
       generation += 1
       const mine = generation
       const answer = e.answer

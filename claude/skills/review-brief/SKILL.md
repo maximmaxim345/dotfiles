@@ -5,7 +5,7 @@ argument-hint: "[base ref or PR URL]"
 disable-model-invocation: true
 ---
 
-I'm about to review this session's changes myself, and I may not remember what we did. Brief me in chat, in the four parts below.
+I'm about to review this session's changes myself, and I may not remember what we did. Brief me in chat, in the four parts below. Start with a one or two sentence TLDR of what the change does.
 
 Arguments: `$ARGUMENTS`. Compare against that base ref or PR, otherwise against the merge base with the repo's default branch, taken from upstream when `origin` is my fork. Fetch the base first and name the commit you compare against. Include uncommitted and untracked files. Cover only what this session changed: when the branch also has commits from other work, list them in one line and leave them out of the parts below.
 
@@ -40,4 +40,4 @@ Read the diff again as a skeptical reviewer, not its author. List only real, spe
 - tests that only retest existing behavior or would pass without the change
 - changes that break callers in this repo or in others
 
-Don't fix anything. End by asking which findings I want fixed.
+Don't fix anything. End with a one or two sentence TLDR of why the change is needed. Then ask which findings I want fixed.

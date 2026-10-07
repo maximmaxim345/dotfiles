@@ -65,6 +65,9 @@ Use the project's package manager, don't reach for a default. When a project
 uses `uv`, set up its environment with `uv`, not pip or a manual venv. When it
 uses `yarn`, run `yarn`, not npm.
 
+macOS has no `timeout` or `gtimeout`. Use `perl -e 'alarm N; exec @ARGV' cmd`
+or a Python subprocess timeout.
+
 ## Delegating to subagents
 
 Delegate only large, self-contained work (a wide multi-file investigation, an
@@ -215,6 +218,11 @@ Same goes for scope. Make targeted changes that solve the stated problem.
 Don't refactor, reformat, or "improve" code outside the change's footprint.
 Preserve the surrounding style even where it differs from your own.
 
+When you find an extra issue while working on a PR, say in one line whether it
+belongs in this PR (same code path and needed for the stated fix) or in a
+separate task. For the separate case, offer a task chip without being asked and
+keep it out of this PR unless I say to include it.
+
 ## Tests
 
 Each new test asserts a distinct invariant. If two tests would pass for
@@ -318,6 +326,10 @@ on it, it's often wrong or missing context. Fix what needs fixing, reply
 explaining why for what doesn't, and ask when unsure. Reply in my voice (see
 "Writing style"): short, direct, one or two sentences. Ask before resolving threads that are settled
 or outdated.
+
+To request another Copilot review, run
+`gh pr edit <n> --repo <owner/repo> --add-reviewer @copilot`. This counts as
+posting, so ask first like a push.
 
 ## Review comment style
 

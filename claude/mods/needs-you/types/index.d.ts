@@ -15,10 +15,7 @@ export type GitFacts = {
   unpushed: number
   hasUpstream: boolean
   uncommitted: number
-  needsSage: boolean
 }
-
-export type Checks = { audit: boolean; sage: boolean }
 
 declare module 'claude-code' {
   interface PluginState {
@@ -26,7 +23,6 @@ declare module 'claude-code' {
       items: Item[]
       reply: Reply | null
       git: GitFacts | null
-      checks: Checks
       now: number
       tldr: string | null
     }

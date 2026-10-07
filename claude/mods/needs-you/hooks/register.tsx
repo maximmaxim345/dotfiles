@@ -1,20 +1,15 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { AskOption, Checks, GitFacts, Item, ItemKind, Reply } from '../types'
+import type { AskOption, GitFacts, Item, ItemKind, Reply } from '../types'
 
 const items = atom({ plugin: 'needs-you', key: 'items' } as const, [])
 const reply = atom({ plugin: 'needs-you', key: 'reply' } as const, null)
 const git = atom({ plugin: 'needs-you', key: 'git' } as const, null)
-const checks = atom({ plugin: 'needs-you', key: 'checks' } as const, {
-  audit: false,
-  sage: false,
-})
 const now = atom({ plugin: 'needs-you', key: 'now' } as const, 0)
 const tldr = atom({ plugin: 'needs-you', key: 'tldr' } as const, null)
 
 const KINDS: readonly ItemKind[] = ['answer', 'review', 'do', 'later']
-const SAGE_REPOS = /music-assistant|sendspin|esphome|ohf-voice/i
 const SHELL_LANGS = /^(bash|sh|zsh|shell|console)$/i
 const USER_ORIGINS = ['composer', 'bridge', 'sdk']
 const SPAWN_TASK = 'mcp__ccd_session__spawn_task'
@@ -134,16 +129,13 @@ async function refreshGit($: EngineInterface) {
   const upstream = await runGit($, cwd, ['rev-list', '--count', '@{u}..HEAD'])
   const base = upstream ?? (await runGit($, cwd, ['rev-list', '--count', 'origin/HEAD..HEAD']))
   const status = (await runGit($, cwd, ['status', '--porcelain'])) ?? ''
-  const remote = (await runGit($, cwd, ['remote', 'get-url', 'origin'])) ?? ''
   const facts: GitFacts = {
     branch,
     unpushed: Number(base ?? 0),
     hasUpstream: upstream !== null,
     uncommitted: status === '' ? 0 : status.split('\n').length,
-    needsSage: SAGE_REPOS.test(remote) && !/sendspin\/spec/i.test(remote),
   }
   await update($, git, () => facts)
-  if (facts.unpushed === 0 && facts.uncommitted === 0) await update($, checks, () => ({ audit: false, sage: false }))
 }
 
 async function classify(
@@ -214,20 +206,6 @@ export const register: Register = on => {
     return ran
   })
 
-  on('tool.call', { tool: 'Agent' }, async ($, e, next) => {
-    const isSage = e.subagent_type === 'ohf-sage'
-    const isAudit = !isSage && /\baudit/i.test(`${e.description}\n${e.prompt}`)
-    const ran = await next(e)
-    if ((isSage || isAudit) && ran.deny === undefined && ran.isError !== true) {
-      await update($, checks, (c: Checks) => ({
-        audit: c.audit || isAudit,
-        sage: c.sage || isSage,
-      }))
-    }
-
-    return ran
-  })
-
   on('tool.call', { tool: SPAWN_TASK }, async ($, e, next) => {
     const ran = await next(e)
     if (typeof e.title === 'string' && ran.deny === undefined && ran.isError !== true) {
@@ -266,7 +244,6 @@ export const register: Register = on => {
     const asks = latest === null ? [] : open.filter(i => i.kind !== 'later')
     const later = open.filter(i => i.kind === 'later')
     const facts = await read($, git)
-    const ran = await read($, checks)
     const current = await read($, now)
     const topic = await read($, tldr)
     if (open.length === 0 && latest === null && facts === null && topic === null) return next(e)
@@ -329,10 +306,6 @@ export const register: Register = on => {
         gitParts.push(`${facts.unpushed} unpushed${facts.hasUpstream ? '' : ' (no upstream)'}`)
       }
       if (facts.uncommitted > 0) gitParts.push(`${facts.uncommitted} uncommitted`)
-      if (facts.unpushed > 0) {
-        gitParts.push(ran.audit ? 'audit ran' : 'audit not run')
-        if (facts.needsSage) gitParts.push(ran.sage ? 'ohf-sage ran' : 'ohf-sage not run')
-      }
     }
 
     return (

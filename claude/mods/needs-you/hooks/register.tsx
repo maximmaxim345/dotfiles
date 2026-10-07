@@ -10,6 +10,8 @@ const now = atom({ plugin: 'needs-you', key: 'now' } as const, 0)
 const tldr = atom({ plugin: 'needs-you', key: 'tldr' } as const, null)
 const shown = atom({ plugin: 'needs-you', key: 'shown' } as const, null)
 const laterOpen = atom({ plugin: 'needs-you', key: 'laterOpen' } as const, false)
+const lastCall = atom({ plugin: 'needs-you', key: 'lastCall' } as const, 0)
+const keepWarm = atom({ plugin: 'needs-you', key: 'keepWarm' } as const, false)
 
 const KINDS: readonly ItemKind[] = ['answer', 'do', 'later']
 const USER_ORIGINS = ['composer', 'bridge', 'sdk']
@@ -19,6 +21,9 @@ const COMMANDS = ['/implement', '/review-brief', '/review-changes', '/open-pr']
 const SENT_COMMANDS = ['/review-brief', '/review-changes']
 const NO_REPLY: Reply = { question: null, done: null, options: [] }
 const MIN_ANSWER = 20
+const CACHE_TTL_MS = 60 * 60000
+const WARM_MARGIN_MS = 5 * 60000
+const MAX_PINGS = 4
 
 const CLASSIFY = `You keep the list of things the user of an AI coding assistant still has to act on. You get the open list, the user's latest prompts and the assistant's latest reply.
 Answer with JSON only, no prose, in this shape:
@@ -179,6 +184,7 @@ async function expand($: EngineInterface, item: Item) {
     detail: forked.isAnswered ? forked.text.trim() : `No detail: ${forked.reason}`,
     failed: !forked.isAnswered,
   })
+  if (forked.isAnswered) await update($, lastCall, () => Date.now())
   await update($, shown, () => keyOf(item))
 }
 
@@ -194,14 +200,43 @@ export const register: Register = on => {
   let prompts: string[] = []
   let generation = 0
   let queue: Promise<void> = Promise.resolve()
+  let pings = 0
+  let pinging = false
+
+  // Fork the session shortly before the cache expires, since a cache read restarts its lifetime.
+  const tick = async ($: EngineInterface) => {
+    const at = Date.now()
+    await update($, now, () => at)
+    const last = await read($, lastCall)
+    if (pinging || !(await read($, keepWarm)) || last === 0) return
+    if (at - last < CACHE_TTL_MS - WARM_MARGIN_MS) return
+    if (pings >= MAX_PINGS) {
+      await update($, keepWarm, () => false)
+      return
+    }
+    pings += 1
+    pinging = true
+    const forked = await $.model.fork({ prompt: 'Reply with only the word ok.' })
+    pinging = false
+    if (forked.isAnswered) await update($, lastCall, () => at)
+  }
 
   on('session.start', async ($, e, next) => {
     const started = await next(e)
     await update($, now, () => Date.now())
-    $.clock.every(60000, () => void update($, now, () => Date.now()))
+    $.clock.every(60000, () => void tick($))
     await refreshGit($)
 
     return started
+  })
+
+  on('turn.step', async function* ($, e, next) {
+    if (e.agentId === undefined && !pinging) {
+      pings = 0
+      await update($, lastCall, () => Date.now())
+    }
+
+    return yield* next(e)
   })
 
   on('prompt.submit', async ($, e, next) => {
@@ -263,6 +298,8 @@ export const register: Register = on => {
     const topic = await read($, tldr)
     const shownId = await read($, shown)
     const isLaterOpen = await read($, laterOpen)
+    const last = await read($, lastCall)
+    const isKeepingWarm = await read($, keepWarm)
     if (open.length === 0 && latest === null && facts === null && topic === null) return next(e)
 
     const { Box, Button, Text } = $.ui.resolve(e)
@@ -335,13 +372,17 @@ export const register: Register = on => {
       />
     ))
 
-    const gitParts: string[] = []
+    const statusParts: string[] = []
     if (facts !== null) {
-      gitParts.push(facts.branch)
+      statusParts.push(facts.branch)
       if (facts.unpushed > 0) {
-        gitParts.push(`${facts.unpushed} unpushed${facts.hasUpstream ? '' : ' (no upstream)'}`)
+        statusParts.push(`${facts.unpushed} unpushed${facts.hasUpstream ? '' : ' (no upstream)'}`)
       }
-      if (facts.uncommitted > 0) gitParts.push(`${facts.uncommitted} uncommitted`)
+      if (facts.uncommitted > 0) statusParts.push(`${facts.uncommitted} uncommitted`)
+    }
+    if (last > 0) {
+      const left = CACHE_TTL_MS - (Math.max(current, last) - last)
+      statusParts.push(left > 0 ? `cache ~${Math.ceil(left / 60000)} min` : 'cache cold')
     }
 
     const hasChanges = facts !== null && (facts.ahead !== 0 || facts.uncommitted > 0)
@@ -408,10 +449,21 @@ export const register: Register = on => {
           </Box>
         ))}
         {showLater && later.length > SHOWN && <Text dimColor>+{later.length - SHOWN} older later</Text>}
-        {gitParts.length > 0 && (
-          <Text dimColor wrap="truncate-end">
-            {gitParts.join(' · ')}
-          </Text>
+        {statusParts.length > 0 && (
+          <Box flexDirection="row" gap={1}>
+            <Text dimColor wrap="truncate-end">
+              {statusParts.join(' · ')}
+            </Text>
+            {last > 0 && (
+              <Button
+                key="keep-warm"
+                label={isKeepingWarm ? 'keep warm: on' : 'keep warm: off'}
+                plain
+                dimColor
+                onPress={() => void update($, keepWarm, (on: boolean) => !on)}
+              />
+            )}
+          </Box>
         )}
         {!e.props.isWorking && (
           <Box flexDirection="row" gap={1}>

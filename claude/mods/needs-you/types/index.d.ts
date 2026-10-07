@@ -37,6 +37,8 @@ declare module 'claude-code' {
       tldr: string | null
       shown: string | null
       laterOpen: boolean
+      lastCall: number
+      keepWarm: boolean
     }
   }
 }

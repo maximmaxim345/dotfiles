@@ -18,7 +18,6 @@ const USER_ORIGINS = ['composer', 'bridge', 'sdk']
 const SPAWN_TASK = 'mcp__ccd_session__spawn_task'
 const SHOWN = 3
 const COMMANDS = ['/implement', '/review-brief', '/review-changes', '/open-pr']
-const SENT_COMMANDS = ['/review-brief', '/review-changes']
 const NO_REPLY: Reply = { question: null, done: null, options: [] }
 const MIN_ANSWER = 20
 const CACHE_TTL_MS = 60 * 60000
@@ -320,10 +319,6 @@ export const register: Register = on => {
       const typed = (await $.prompt.read()).text.trim()
       const previous = COMMANDS.find(c => typed === c || typed.startsWith(`${c} `))
       const args = previous === undefined ? typed : typed.slice(previous.length).trim()
-      if (!SENT_COMMANDS.includes(command)) {
-        await $.prompt.fill({ text: `${command} ${args}`, mode: 'replace' })
-        return
-      }
       await $.prompt.fill({ text: '', mode: 'replace' })
       await $.command.run({ command: command.slice(1), args })
     }

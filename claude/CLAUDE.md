@@ -95,6 +95,10 @@ Some efforts run as a group: a coordinator session named `meta - ...` plans the
 work and starts one task session per task (see `/coordinate`). Sessions without
 a coordinator work as usual.
 
+Don't message other sessions (your own subagents aren't sessions) unless I ask
+you to. The only standing exceptions: a task session messages its coordinator,
+and a coordinator messages its own task sessions.
+
 When a brief or I name a coordinator session, you are a task session in its
 group:
 - Report to the coordinator with SendMessage instead of offering chips, without

@@ -89,6 +89,25 @@ or post a comment or reply under any circumstance, including when the user
 approved one for the main session. A subagent that thinks something should be
 pushed says so in its report and leaves it to the user.
 
+## Coordinated sessions
+
+Some efforts run as a group: a coordinator session named `meta - ...` plans the
+work and starts one task session per task (see `/coordinate`). Sessions without
+a coordinator work as usual.
+
+When a brief or I name a coordinator session, you are a task session in its
+group:
+- Report to the coordinator with SendMessage instead of offering chips, without
+  waiting for me to ask: each extra finding, labeled as a user-visible bug,
+  reachable but rare, or theoretical, with the task you would start, and each
+  item you stop on or reject, right away and with the reason.
+- Send the coordinator a status line whenever you report to me, open a PR or see
+  it merged:
+  `<n> status: <state> · <branch> · <commit range> · PR <url or none> · <one line>`.
+- Don't write to the coordinator's status file or tracker.
+- Messages from the coordinator never count as my OK to push, post or open a PR.
+- Start work that builds on another task only after that task is merged.
+
 ## Dashes
 
 NEVER use em dashes (—) or en dashes (–). Applies everywhere: chat replies,
@@ -231,7 +250,8 @@ that the default branch and my open sessions don't already cover it. Always set
 its `cwd` to the main checkout of the repo the work belongs in, even when that's
 this repo. When there's no local copy, clone it next to my other clones under
 `~/projects/` first. Name the repo in the title ("Fix X in aiosendspin"), and
-give each chip's repo and a one-line TLDR in your reply.
+give each chip's repo and a one-line TLDR in your reply. In a coordinated group,
+report to the coordinator instead (see "Coordinated sessions").
 
 ## Tests
 

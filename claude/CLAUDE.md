@@ -108,6 +108,16 @@ group:
 - Messages from the coordinator never count as my OK to push, post or open a PR.
 - Start work that builds on another task only after that task is merged.
 
+## Long-running work
+
+My voice input often writes "come back" for "compact", so read it as "compact"
+when it makes no sense otherwise. When I ask whether I can compact, update the
+handoff file the work already uses, or write `.claude/handoff.md` in the repo
+root and add it to `.git/info/exclude` when git doesn't ignore it. Then tell me I
+can compact and what to send afterwards. Before a step that runs longer than
+about ten minutes, say roughly how long it takes and whether you need me before
+it ends.
+
 ## Dashes
 
 NEVER use em dashes (—) or en dashes (–). Applies everywhere: chat replies,

@@ -1,13 +1,18 @@
 ---
 name: review-brief
 description: Brief me before I review this session's changes (recap, what's left, file-by-file walkthrough, critical pass).
-argument-hint: "[base ref or PR URL]"
+argument-hint: "[base ref, commit range or PR URL]"
 disable-model-invocation: true
 ---
 
-I'm about to review this session's changes myself, and I may not remember what we did. Brief me in chat, in the four parts below. Start with a one or two sentence TLDR of what the change does.
+I'm about to review this session's changes myself, and I may not remember what we did. Brief me in chat, in the four parts below. Start with these lines, about the non-test changes:
 
-Arguments: `$ARGUMENTS`. Compare against that base ref or PR, otherwise against the merge base with the repo's default branch, taken from upstream when `origin` is my fork. Fetch the base first and name the commit you compare against. Include uncommitted and untracked files. Cover only what this session changed: when the branch also has commits from other work, list them in one line and leave them out of the parts below.
+- TLDR: what behaves differently before and after this change, in one or two plain sentences.
+- TLDR why: why the change is needed. For a bug fix, the symptom it solves as a user sees it.
+- Kind: a pure bug fix, a behavior change, or breaking. When the change behaves differently per mode or setting (such as strict and lenient), say what changes in each.
+- Worst case: the worst thing this could regress, and in what scenario.
+
+Arguments: `$ARGUMENTS`. Compare against that base ref or PR, or cover only that commit range (`A..B`), otherwise against the merge base with the repo's default branch, taken from upstream when `origin` is my fork. Fetch the base first and name the commit you compare against. Include uncommitted and untracked files. Cover only what this session changed: when the branch also has commits from other work, list them in one line and leave them out of the parts below.
 
 ## 1. Recap
 
@@ -26,9 +31,9 @@ Say "none" for a part with nothing in it.
 
 ## 3. File by file
 
-Cover every changed file in one answer, in reading order: entry points and data shapes first, then the code that uses them, tests last. Read the current code rather than relying on what you remember from the session. For each file:
+Cover every changed file in one answer, in reading order: entry points and data shapes first, then the code that uses them, tests last. Within a file, go through the changes from top to bottom, in the order they appear in the code, so I can read along. Read the current code rather than relying on what you remember from the session. For each file:
 
-- `path`, then what changed and why, in a short paragraph.
+- `path`, then a one-line TLDR, then what changed and why, in a short paragraph.
 - Each new name, field, event or case in plain words: what it is, when it happens and what triggers it.
 - For tests, which behavior each new test checks.
 
@@ -40,4 +45,9 @@ Read the diff again as a skeptical reviewer, not its author. List only real, spe
 - tests that only retest existing behavior or would pass without the change
 - changes that break callers in this repo or in others
 
-Don't fix anything. End with a one or two sentence TLDR of why the change is needed. Then ask which findings I want fixed.
+Sort the findings into two lists, each finding with the reason in a few words:
+
+- Worth fixing: what to change and why it matters.
+- Not worth fixing: why it can stay as it is.
+
+Don't fix anything. Say whether the branch should ship as one PR or be split, and which commits go where. Close with your recommendation, like "I'd fix 1 and 3. Say go, or tell me what to change.", or "Nothing is worth fixing." when that's the case.

@@ -45,10 +45,6 @@ Label each finding as a user-visible bug, reachable but rare, or theoretical. Fi
 
 ## 5. Hand over
 
-End with:
-- the absolute worktree path, the branch, and the commit range
-- what you verified and how
-- what I should test by hand
-- findings you skipped or kept on purpose, one line each
+Run the `review-brief` skill. In its "Before I read" part, also say what you verified and how, and what I should test by hand.
 
 Then stop and wait for my review. When I say to ship it, run `/open-pr`.

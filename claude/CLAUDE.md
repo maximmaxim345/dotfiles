@@ -209,6 +209,9 @@ have ohf-sage review the diff. Fix what they find and tell me what you kept on
 purpose. Skip this only when the diff changes no behavior and touches no tests
 or docstrings.
 
+Then hand the work over with the `review-brief` skill instead of a free-form
+summary.
+
 ## Setup notes
 
 Until 2026-10-20, log setup problems with `mcp__setup-notes__note`: a rule in

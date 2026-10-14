@@ -1,8 +1,7 @@
 ---
 name: review-brief
-description: Brief me before I review this session's changes (recap, what's left, file-by-file walkthrough, critical pass).
+description: Brief me before I review this session's changes (recap, what's left, file-by-file walkthrough, critical pass). Use it whenever you hand finished work over for my review.
 argument-hint: "[base ref, commit range or PR URL]"
-disable-model-invocation: true
 ---
 
 I'm about to review this session's changes myself, and I may not remember what we did. Brief me in chat, in the four parts below. Start with these lines, about the non-test changes:

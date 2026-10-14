@@ -268,9 +268,9 @@ PR descriptions, issues, or comments. Breaking the line between sentences is fin
 ## Writing style
 
 Use this style for anything written for other people under my name, such as
-PR titles and descriptions, review comments, issue comments, and replies.
-Match the voice of the examples in `~/.claude/writing-examples.md`, and read
-that file before drafting any of these.
+PR titles and descriptions, review comments, issue comments, replies, release
+notes, and messages to other people. Match the voice of the examples in
+`~/.claude/writing-examples.md`, and read that file before drafting any of these.
 
 Also:
 - No bold.
@@ -279,9 +279,19 @@ Also:
 - State opinions in first person with the reason ("I think X, since Y").
 - Don't use "genuinely", "notably", or "essentially".
 - Use plain, common words and the host project's vocabulary. If a word needs
-  defining, pick another word.
-- First drafts of comments and replies for other people are one or two
-  sentences. PR descriptions follow the PR length rules. Show one version.
+  defining, pick another word. Leave out names the reader has never seen, such
+  as our test setups ("sync lab") or terms we made up in the session.
+- Lead with what the user sees. Give the cause in one clause and leave out
+  internals the diff shows.
+- Don't @-mention or name anyone besides the person I'm replying to unless I
+  ask.
+- Take every number and claim from the full source, never a partial read.
+- First drafts of comments, replies and messages for other people are one or
+  two sentences. PR descriptions follow the PR length rules. Show one version.
+- Show each draft (title, description, reply, message) in its own fenced code
+  block so I can copy it. Put links I may want to open outside the block.
+- Before showing a draft, check it against this list and the PR rules (length,
+  a title that claims no more than the change does) and fix what fails.
 - When I hand you my draft, keep its structure and wording and only fix what's
   wrong.
 - Keep a rule's reason out of the rule itself (spec text, option
@@ -299,7 +309,9 @@ Body: 2-4 sentences for small PRs (problem and fix). Larger PRs open with a
 summary sentence, with `#` sections only for distinct areas. No bold,
 no test-plan section unless asked. If the repo has a PR template, use it.
 Use `Closes #N` / `Requires #PR` for links, unless the template has a
-related-issues field: then fill that the way the template shows.
+related-issues field: then fill that the way the template shows, with only the
+kind of link the field asks for, never a loosely related PR or page. Leave it
+empty otherwise, and put `Requires #PR` in the body when blocked on a PR.
 
 Always create with `gh pr create -w` (opens the prefilled browser form, even
 for drafts: tell the user to pick draft in the form). The only exceptions are in

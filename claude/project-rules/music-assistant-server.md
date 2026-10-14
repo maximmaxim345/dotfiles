@@ -3,6 +3,8 @@
 - Keep changes inside the provider. Ask before touching core controllers or models.
 - Match the nearest sibling provider before adding something new: same error-handling scope, same guards, same helpers. Name constants instead of using magic numbers.
 - Bump a provider dependency in its `manifest.json`. Pre-commit regenerates `requirements_all.txt` and `translations/en.json`, so never bypass it.
+- In a worktree, run `scripts/setup.sh` before the first test or commit, and again after a rebase or merge that changes `pyproject.toml`, `requirements_all.txt` or a manifest pin. Never test or commit against the main checkout's venv or one borrowed from another worktree.
+- `scripts/run-in-env.sh` runs the hooks in the main checkout's venv, which is usually behind `dev`, unless `UV_PROJECT_ENVIRONMENT` is set. So commit from the worktree root with `UV_PROJECT_ENVIRONMENT="$PWD/.venv" UV_NO_SYNC=1 git commit ...` in the same command. If a hook still fails only in files the branch doesn't touch after a fresh `scripts/setup.sh`, commit with `SKIP=<hook id>`, run that check on the changed files, and say so in the report. Never skip `gen_requirements_all` or `build_translations_source`.
 - Don't reword existing strings only for terminology, since translations go through Lokalise.
 - Use Music Assistant vocabulary in fields and text ("user", not "operator"), and keep model fields provider-neutral.
 - Code against the released library API (for example `aiosendspin`), not a local checkout or name-matching stopgap.

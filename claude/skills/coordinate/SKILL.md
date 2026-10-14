@@ -1,11 +1,13 @@
 ---
 name: coordinate
 description: Run this session as the coordinator of a group of task sessions (names, sidebar group, status file, briefs, relays).
-argument-hint: "<effort to start, or the name of one to resume>"
+argument-hint: "[effort to start, or the name of one to resume]"
 disable-model-invocation: true
 ---
 
 Effort: $ARGUMENTS
+
+The effort is the overall piece of work the group handles. When none is given, name it from what this session has been working on and confirm the name with me.
 
 This session coordinates. It plans, starts and tracks task sessions and checks their claims, and does little coding itself. Task sessions follow "Coordinated sessions" in my CLAUDE.md.
 
@@ -15,10 +17,11 @@ This session coordinates. It plans, starts and tracks task sessions and checks t
 - Rename this session to `meta - <repos> - <effort>` with `set_session_title`. Use short repo names: aio (aiosendspin), ma (music-assistant server), fe (music-assistant frontend), cpp (sendspin-cpp), cliairplay (airplay-cli), spec (Sendspin spec), js (sendspin-js), cli (sendspin-cli).
 - Put this session in one sidebar group for the effort. Offer an existing group that fits or a new one named after the effort, and create or move after my OK.
 - Create `~/.claude/handoffs/<effort-slug>/` with `status.md` and a `briefs/` folder, and add a project memory note that points at the folder.
+- When this session already worked on the effort, record its branch, commits, findings and open questions in `status.md`.
 
 ## 2. Plan
 
-Propose the task list before starting anything: number, type, repo, title, what it depends on, and its done criteria. Order it the way I should review it, library fixes before the code that uses them. Wait for my OK.
+Propose the task list before starting anything: number, type, repo, title, what it depends on, and its done criteria. Build it on what this session already found. When this session has work in progress, propose either keeping it here as task 1 or handing it to a new task session with a brief, so this session stops coding. Order it the way I should review it, library fixes before the code that uses them. Wait for my OK.
 
 ## 3. Start tasks
 

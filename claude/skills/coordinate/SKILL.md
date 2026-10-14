@@ -37,7 +37,14 @@ Propose the task list before starting anything: number, type, repo, title, what 
   - Recorded decisions, related sessions, expected conflicts and dependencies.
 - Leave out rules every session already loads from my CLAUDE.md, and never tell a session to create a worktree.
 
-## 4. Run the group
+## 4. Adopt existing sessions
+
+When I name existing sessions for the group, at setup or later, or ask you to pick them from `list_sessions`:
+- Check each one's branch, commits and PR with `list_sessions`, git and gh, and propose its number, name and place in the plan.
+- After my OK, rename it with `set_session_title`, move it into the group, and add it to `status.md`.
+- Message it once: `You are now task <n> of a coordinated group. Coordinator: <this session's exact name>. Follow 'Coordinated sessions' in your CLAUDE.md, and reply with a status line.`
+
+## 5. Run the group
 
 - Check what task sessions report in the code, git or gh before relaying it. Answer their questions directly when you can, but never answer a go-ahead to push, post or open a PR.
 - Relay to me in one line per status change. Give detail only where I must decide, numbered, with your recommendation.
@@ -49,10 +56,10 @@ Propose the task list before starting anything: number, type, repo, title, what 
 - Show state in session names. When my real-device test passes, put `passed` after the number. A blocked session becomes `parked until <condition in plain words> - <repo> - <title>`. When priorities change, propose the full renamed list and apply it with `set_session_title` after my OK.
 - Archive sessions only with my OK. Keep this session unarchived while task sessions use files in its folder.
 
-## 5. Move a session to another repo
+## 6. Move a session to another repo
 
 When a task session runs in the wrong repo, ask it for a handoff, including the full prompts of any chips it suggested. Have it commit unfinished work as `wip:` and remove its worktree so the branch is free. Then start a new session with the right `cwd` and the handoff as its brief, which says the `wip:` commit is real work to finish, and archive the old one after my OK.
 
-## 6. Before compacting
+## 7. Before compacting
 
 Update `status.md` and the memory note. Then tell me I can compact, with a `/compact Keep: ...` line and the message to send afterwards (`/coordinate <effort-slug>`).

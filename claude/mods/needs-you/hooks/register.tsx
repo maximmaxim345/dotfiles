@@ -31,7 +31,7 @@ Answer with JSON only, no prose, in this shape:
 resolved: the ids of open items the latest prompts or the reply dealt with: the user answered or decided it, did the task, or the assistant fixed it, opened an issue for it or dropped it. Also resolve an answer or do item that a newer item replaced. A later item stays open while the work moves on. Suggesting an item as a background task does not deal with it. Leave an item the reply asks again out of resolved.
 
 new: everything the reply asks of the user or sets aside, one entry each, new ones first, at most 5. same: the id of the open item the entry repeats, even when worded differently, or -1 when it is new.
-- "answer": a question or decision for the user. Not a routine approval to commit, push, open a PR or post, and not a request to review a draft or changes: those only get question and options below.
+- "answer": a question or decision for the user. Not a request for permission to go ahead (make or apply changes, commit, push, open a PR, post), and not a request to review a draft or changes: those only get question and options below.
 - "do": something the user must do themselves (test a UI, run a command, restart a device, log in).
 - "later": a problem or follow-up the reply leaves out of the current work ("found a bug, but it does not belong in this PR"). Not the assistant's own next steps in the current work.
 text: under 80 characters and clear without reading the reply, so name what it is about. For "later", a noun phrase naming the problem and where it is ("Race in queue reload in the player provider"). Otherwise start with a verb ("Answer: fix needs-you duplicates now or log first?").

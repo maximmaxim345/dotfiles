@@ -14,7 +14,6 @@ This session coordinates. It plans, starts and tracks task sessions and checks t
 ## 1. Set up
 
 - If `~/.claude/handoffs/` has a folder for this effort, resume it: read its `status.md`, check it against `list_sessions` (archived ones too), git and gh, and tell me where things stand. Skip the rest of this section.
-- Rename this session to `meta - <repos> - <effort>` with `set_session_title`. Use short repo names: aio (aiosendspin), ma (music-assistant server), fe (music-assistant frontend), cpp (sendspin-cpp), cliairplay (airplay-cli), spec (Sendspin spec), js (sendspin-js), cli (sendspin-cli).
 - Put this session in one sidebar group for the effort. Offer an existing group that fits or a new one named after the effort, and create or move after my OK.
 - Create `~/.claude/handoffs/<effort-slug>/` with `status.md` and a `briefs/` folder, and add a project memory note that points at the folder.
 - When this session already worked on the effort, record its branch, commits, findings and open questions in `status.md`.
@@ -25,7 +24,7 @@ Propose the task list before starting anything: number, type, repo, title, what 
 
 ## 3. Start tasks
 
-- Name task sessions `<n> - <type> - <repo> - <title>`, with a short imperative title, under 60 characters in all. Type is one of bugfix, feature, review, design, test or docs, or a type I name. Work outside the plan gets `side - <repo> - <title>`.
+- Name task sessions `<n> - <type> - <repo> - <title>`, with a short imperative title, under 60 characters in all. Type is one of bugfix, feature, review, design, test or docs, or a type I name. Work outside the plan gets `side - <repo> - <title>`. Use short repo names: aio (aiosendspin), ma (music-assistant server), fe (music-assistant frontend), cpp (sendspin-cpp), cliairplay (airplay-cli), spec (Sendspin spec), js (sendspin-js), cli (sendspin-cli).
 - Start at most four task sessions at a time, and split a bigger batch into parts.
 - Write each brief to `briefs/<n>.md`, then start the session with `spawn_task` and the brief as its prompt. Set `cwd` to the main checkout of the task's repo. When there's no local copy, clone it next to my other clones under `~/projects/` first. Once I start the session, check its title and group and fix them.
 - Each brief has:
@@ -54,7 +53,7 @@ When I name existing sessions for the group, at setup or later, or ask you to pi
 - After a merge, tell the sessions whose branches depend on it to rebase.
 - When I say I'm away or stop answering, chips wait for my click. Keep offering them, mark them as waiting in `status.md`, and move investigations forward with subagents in the meantime.
 - When I test on real devices, a separate test session gets a test plan from you (steps, what to listen for, log patterns per fix), and you turn failures into tasks.
-- Show state in session names. When my real-device test passes, put `passed` after the number. A blocked session becomes `parked until <condition in plain words> - <repo> - <title>`. When priorities change, propose the full renamed list and apply it with `set_session_title` after my OK. Messages reach a session by its current name, so use the new name afterwards, and tell your task sessions your new name when you rename this session.
+- Show state in session names. When my real-device test passes, put `passed` after the number. A blocked session becomes `parked until <condition in plain words> - <repo> - <title>`. When priorities change, propose the full renamed list and apply it with `set_session_title` after my OK. Messages reach a session by its current name, so use the new name afterwards.
 - A task session I detached to top level (`get_session` shows `detached: true`) has left the group. Stop renaming, messaging and relaying it, mark it as detached in `status.md`, and tell me once.
 - Archive sessions only with my OK. Archiving this session also archives every task session started from its chips that I haven't detached, so keep it unarchived while the group is active.
 

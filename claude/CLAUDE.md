@@ -91,9 +91,9 @@ pushed says so in its report and leaves it to the user.
 
 ## Coordinated sessions
 
-Some efforts run as a group: a coordinator session named `meta - ...` plans the
-work and starts one task session per task (see `/coordinate`). Sessions without
-a coordinator work as usual.
+Some efforts run as a group: a coordinator session plans the work and starts
+one task session per task (see `/coordinate`). Sessions without a coordinator
+work as usual.
 
 Don't message other sessions (your own subagents aren't sessions) unless I ask
 you to. The standing exceptions: a task session messages its coordinator, a
@@ -111,8 +111,7 @@ group:
   `<n> status: <state> · <branch> · <commit range> · PR <url or none> · <one line>`.
 - Don't write to the coordinator's status file or tracker.
 - When the coordinator's name no longer reaches it, look up its current name
-  with `get_session` on your `parentSessionId`, or find the `meta -` session for
-  the effort.
+  with `get_session` on your `parentSessionId`.
 - Once I detach you to top level (`get_session` on `self` shows
   `detached: true`), you're a standalone session and stop reporting to the
   coordinator.

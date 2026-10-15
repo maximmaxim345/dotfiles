@@ -206,6 +206,9 @@ commits they fix, but only my unpushed ones. Never rewrite published commits or
 commits by someone else. Debug or local-only code goes in `wip:` commits at the
 top of the branch.
 
+Commit changed files before ending a turn. Commit unfinished work as `wip:` and
+turn it into proper commits once the work is done.
+
 ## Worktrees and handoff
 
 Create worktrees under `<repo>/.claude/worktrees/<name>`, never in `/tmp` or a

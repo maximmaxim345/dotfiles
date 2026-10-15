@@ -96,8 +96,9 @@ work and starts one task session per task (see `/coordinate`). Sessions without
 a coordinator work as usual.
 
 Don't message other sessions (your own subagents aren't sessions) unless I ask
-you to. The only standing exceptions: a task session messages its coordinator,
-and a coordinator messages its own task sessions.
+you to. The standing exceptions: a task session messages its coordinator, a
+coordinator messages its own task sessions, and any session may reply to a
+session that messaged it, within that exchange.
 
 When a brief or I name a coordinator session, you are a task session in its
 group:

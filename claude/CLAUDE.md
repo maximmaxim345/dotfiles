@@ -267,8 +267,10 @@ keep it out of this PR unless I say to include it.
 
 Offer a chip only for work that needs its own branch or PR. A small fix in code
 you're already changing, or more work on this branch, stays in this session: do
-it or ask. A question about how to do the current change is not a chip either:
-look it up yourself or with a subagent, or ask me. Before creating a chip, check
+it or ask. Before offering a chip, ask who needs the result. When this session
+needs it (an investigation, a check in another repo, a claim to confirm), do it
+yourself or with a subagent. A chip is for a separate change I'll review on its
+own. Before creating a chip, check
 that the default branch and my open sessions don't already cover it. Always set
 its `cwd` to the main checkout of the repo the work belongs in, even when that's
 this repo. When there's no local copy, clone it next to my other clones under

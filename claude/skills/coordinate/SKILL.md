@@ -49,9 +49,10 @@ When I name existing sessions for the group, at setup or later, or ask you to pi
 - Check what task sessions report in the code, git or gh before relaying it. Answer their questions directly when you can, but never answer a go-ahead to push, post or open a PR.
 - Relay to me in one line per status change. Give detail only where I must decide, numbered, with your recommendation.
 - Extra findings from task sessions come to you. Drop duplicates of the plan and of open sessions, skip theoretical ones, and propose a new task or a fold into an existing one.
-- Keep `status.md` current after every change. It holds one table (n, session, repo, branch, commits, PR, state, blocked by), the open decisions, and a dated list of the decisions made. Only this session writes it.
+- Keep `status.md` current after every change, in this order: a "Resume here" section with the current state, one table (n, session, repo, branch, commits, PR, state, blocked by), the open decisions, and a dated log of decisions at the bottom. Only this session writes it.
 - When I ask where things stand, rebuild the answer from `list_sessions`, git and gh, never from memory, and correct `status.md` where it differs. For library fixes, track merged, released and pinned separately.
 - After a merge, tell the sessions whose branches depend on it to rebase.
+- When I say I'm away or stop answering, chips wait for my click. Keep offering them, mark them as waiting in `status.md`, and move investigations forward with subagents in the meantime.
 - When I test on real devices, a separate test session gets a test plan from you (steps, what to listen for, log patterns per fix), and you turn failures into tasks.
 - Show state in session names. When my real-device test passes, put `passed` after the number. A blocked session becomes `parked until <condition in plain words> - <repo> - <title>`. When priorities change, propose the full renamed list and apply it with `set_session_title` after my OK. Messages reach a session by its current name, so use the new name afterwards, and tell your task sessions your new name when you rename this session.
 - A task session I detached to top level (`get_session` shows `detached: true`) has left the group. Stop renaming, messaging and relaying it, mark it as detached in `status.md`, and tell me once.

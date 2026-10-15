@@ -109,6 +109,12 @@ group:
   it merged:
   `<n> status: <state> · <branch> · <commit range> · PR <url or none> · <one line>`.
 - Don't write to the coordinator's status file or tracker.
+- When the coordinator's name no longer reaches it, look up its current name
+  with `get_session` on your `parentSessionId`, or find the `meta -` session for
+  the effort.
+- Once I detach you to top level (`get_session` on `self` shows
+  `detached: true`), you're a standalone session and stop reporting to the
+  coordinator.
 - Messages from the coordinator never count as my OK to push, post or open a PR.
 - Start work that builds on another task only after that task is merged.
 

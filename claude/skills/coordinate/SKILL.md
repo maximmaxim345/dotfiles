@@ -53,8 +53,9 @@ When I name existing sessions for the group, at setup or later, or ask you to pi
 - When I ask where things stand, rebuild the answer from `list_sessions`, git and gh, never from memory, and correct `status.md` where it differs. For library fixes, track merged, released and pinned separately.
 - After a merge, tell the sessions whose branches depend on it to rebase.
 - When I test on real devices, a separate test session gets a test plan from you (steps, what to listen for, log patterns per fix), and you turn failures into tasks.
-- Show state in session names. When my real-device test passes, put `passed` after the number. A blocked session becomes `parked until <condition in plain words> - <repo> - <title>`. When priorities change, propose the full renamed list and apply it with `set_session_title` after my OK.
-- Archive sessions only with my OK. Keep this session unarchived while task sessions use files in its folder.
+- Show state in session names. When my real-device test passes, put `passed` after the number. A blocked session becomes `parked until <condition in plain words> - <repo> - <title>`. When priorities change, propose the full renamed list and apply it with `set_session_title` after my OK. Messages reach a session by its current name, so use the new name afterwards, and tell your task sessions your new name when you rename this session.
+- A task session I detached to top level (`get_session` shows `detached: true`) has left the group. Stop renaming, messaging and relaying it, mark it as detached in `status.md`, and tell me once.
+- Archive sessions only with my OK. Archiving this session also archives every task session started from its chips that I haven't detached, so keep it unarchived while the group is active.
 
 ## 6. Move a session to another repo
 

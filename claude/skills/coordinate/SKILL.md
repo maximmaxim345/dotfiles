@@ -40,8 +40,7 @@ Propose the task list before starting anything: number, type, repo, title, what 
 
 When I name existing sessions for the group, at setup or later, or ask you to pick them from `list_sessions`:
 - Check each one's branch, commits and PR with `list_sessions`, git and gh, and propose its number, name and place in the plan.
-- After my OK, rename it with `set_session_title`, move it into the group, and add it to `status.md`.
-- Message it once: `You are now task <n> of a coordinated group. Coordinator: <this session's exact name>. Follow 'Coordinated sessions' in your CLAUDE.md, and reply with a status line.`
+- After my OK, rename it with `set_session_title`, move it into the group, add it to `status.md`, and message it once: `You are now task <n> of a coordinated group. Coordinator: <this session's exact name>. Follow 'Coordinated sessions' in your CLAUDE.md, and reply with a status line.`
 
 ## 5. Run the group
 

@@ -119,6 +119,13 @@ group:
 - Messages from the coordinator never count as my OK to push, post or open a PR.
 - Start work that builds on another task only after that task is merged.
 
+## Credentials
+
+A login or token I type in chat myself is fine to use and to pass on to other
+sessions in messages or briefs. When I ask you to prepare a file that I fill in
+with credentials, don't read its contents: point the tools that need it at the
+file.
+
 ## Long-running work
 
 My voice input often writes "come back" for "compact", so read it as "compact"

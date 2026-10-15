@@ -15,7 +15,7 @@ This session coordinates. It plans, starts and tracks task sessions and checks t
 
 - If `~/.claude/handoffs/` has a folder for this effort, resume it: read its `status.md`, check it against `list_sessions` (archived ones too), git and gh, and tell me where things stand. Skip the rest of this section.
 - Put this session in one sidebar group for the effort. Offer an existing group that fits or a new one named after the effort, and create or move after my OK.
-- Create `~/.claude/handoffs/<effort-slug>/` with `status.md` and a `briefs/` folder, and add a project memory note that points at the folder.
+- Create `~/.claude/handoffs/<effort-slug>/` with `status.md`.
 - When this session already worked on the effort, record its branch, commits, findings and open questions in `status.md`.
 
 ## 2. Plan
@@ -26,7 +26,7 @@ Propose the task list before starting anything: number, type, repo, title, what 
 
 - Name task sessions `<n> - <type> - <repo> - <title>`, with a short imperative title, under 60 characters in all. Type is one of bugfix, feature, review, design, test or docs, or a type I name. Work outside the plan gets `side - <repo> - <title>`. Use short repo names: aio (aiosendspin), ma (music-assistant server), fe (music-assistant frontend), cpp (sendspin-cpp), cliairplay (airplay-cli), spec (Sendspin spec), js (sendspin-js), cli (sendspin-cli).
 - Start at most four task sessions at a time, and split a bigger batch into parts.
-- Write each brief to `briefs/<n>.md`, then start the session with `spawn_task` and the brief as its prompt. Set `cwd` to the main checkout of the task's repo. When there's no local copy, clone it next to my other clones under `~/projects/` first. Once I start the session, check its title and group and fix them.
+- Start each session with `start_session` and its brief as the prompt. Set `cwd` to the main checkout of the task's repo. When there's no local copy, clone it next to my other clones under `~/projects/` first. Once I start the session, check its title and group and fix them.
 - Each brief has:
   - `First run: git checkout <branch>` as its first line when it continues existing work.
   - `You are task <n> of a coordinated group. Coordinator: <this session's exact name>. Follow 'Coordinated sessions' in your CLAUDE.md.`
@@ -63,4 +63,4 @@ When a task session runs in the wrong repo, ask it for a handoff, including the 
 
 ## 7. Before compacting
 
-Update `status.md` and the memory note. Then tell me I can compact, with a `/compact Keep: ...` line and the message to send afterwards (`/coordinate <effort-slug>`).
+Update `status.md`. Then tell me I can compact, with a `/compact Keep: ...` line and the message to send afterwards (`/coordinate <effort-slug>`).

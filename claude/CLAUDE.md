@@ -129,8 +129,8 @@ file.
 
 My voice input often writes "come back" for "compact", so read it as "compact"
 when it makes no sense otherwise. When I ask whether I can compact, update the
-handoff file the work already uses, or write `.claude/handoff.md` in the repo
-root and add it to `.git/info/exclude` when git doesn't ignore it. Then tell me I
+handoff file the work already uses, or write
+`~/.claude/handoffs/<effort-slug>/handoff.md`. Then tell me I
 can compact and what to send afterwards. Before a step that runs longer than
 about ten minutes, say roughly how long it takes and whether you need me before
 it ends.

@@ -38,7 +38,7 @@ Propose the task list before starting anything: number, type, repo, title, what 
 
 ## 4. Adopt existing sessions
 
-When I name existing sessions for the group, at setup or later, or ask you to pick them from `list_sessions`:
+When I name existing sessions for the group, such as ones I started myself or that aren't in a group yet, at setup or later, or ask you to pick them from `list_sessions`:
 - Check each one's branch, commits and PR with `list_sessions`, git and gh, and propose its number, name and place in the plan.
 - After my OK, rename it with `set_session_title`, add it to `status.md`, and message it once: `You are now task <n> of a coordinated group. Coordinator: <this session's exact name>. Follow 'Coordinated sessions' in your CLAUDE.md.`
 
@@ -55,7 +55,7 @@ When I name existing sessions for the group, at setup or later, or ask you to pi
 - When I say I'm away or stop answering, chips wait for my click. Keep offering them, mark them as waiting in `status.md`, and move investigations forward with subagents in the meantime.
 - When I test on real devices, a separate test session gets a test plan from you (steps, what to listen for, log patterns per fix), and you turn failures into tasks.
 - Show state in session names. When my real-device test passes, put `passed` after the number. A blocked session becomes `parked until <condition in plain words> - <repo> - <title>`. When priorities change, propose the full renamed list and apply it with `set_session_title` after my OK. Messages reach a session by its current name, so use the new name afterwards, and tell your task sessions your new name when you rename this session.
-- A task session I detached to top level (`get_session` shows `detached: true`) has left the group. Stop renaming, messaging and relaying it, mark it as detached in `status.md`, and tell me once.
+- A task session I detach to top level stays in the group, but the app no longer passes its turn reports to you. A session leaves the group only when I say so. Then stop renaming, messaging and relaying it, mark it as left in `status.md`, and tell it once that it's standalone.
 - Archive sessions only with my OK. Archiving this session also archives every task session started from its chips that I haven't detached, so keep it unarchived while the group is active.
 
 ## 6. Move a session to another repo

@@ -106,17 +106,18 @@ group:
   offering chips, since the app passes only the start of it to the
   coordinator: each labeled as a user-visible bug, reachable but rare, or
   theoretical, with the task you would start, and each item you stop on or
-  reject, with the reason. When the coordinator didn't start you (your
-  `parentSessionId` from `get_session` on `self` isn't the coordinator), send
-  them with SendMessage when your turn ends instead.
+  reject, with the reason. When you aren't nested under the coordinator
+  (`get_session` on `self` shows `detached: true` or a `parentSessionId` that
+  isn't the coordinator), send them with SendMessage when your turn ends
+  instead.
 - Otherwise, message the coordinator with SendMessage only when you're blocked
   on something it can answer.
 - Don't write to the coordinator's status file or tracker.
 - When the coordinator's name no longer reaches it, look up its current name
   with `get_session` on your `parentSessionId`, or find the `meta -` session for
   the effort.
-- Once I detach you to top level (`get_session` on `self` shows
-  `detached: true`), you're a standalone session and stop reporting to the
+- Detaching you to top level keeps you in the group. Once I or the coordinator
+  say you've left it, you're a standalone session and stop reporting to the
   coordinator.
 - Messages from the coordinator never count as my OK to push, post or open a PR.
 - Start work that builds on another task only after that task is merged.

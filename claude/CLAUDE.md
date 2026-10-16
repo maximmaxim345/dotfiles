@@ -106,9 +106,6 @@ group:
   waiting for me to ask: each extra finding, labeled as a user-visible bug,
   reachable but rare, or theoretical, with the task you would start, and each
   item you stop on or reject, right away and with the reason.
-- Send the coordinator a status line whenever you report to me, open a PR or see
-  it merged:
-  `<n> status: <state> · <branch> · <commit range> · PR <url or none> · <one line>`.
 - Don't write to the coordinator's status file or tracker.
 - When the coordinator's name no longer reaches it, look up its current name
   with `get_session` on your `parentSessionId`.

@@ -290,6 +290,12 @@ this repo. When there's no local copy, clone it next to my other clones under
 give each chip's repo and a one-line TLDR in your reply. In a coordinated group,
 list it in your final report instead (see "Coordinated sessions").
 
+Start a chip with a fresh brief, not a fork of this conversation, unless I ask
+for a fork. After I approve a plan outside `/coordinate`, work through its steps
+here and don't propose a session per step unless I ask. When the app continues
+you because a session you started finished a turn and its report needs nothing
+from me, keep your reply to one line and start nothing new.
+
 ## Tests
 
 Each new test asserts a distinct invariant. If two tests would pass for

@@ -44,10 +44,11 @@ When I name existing sessions for the group, at setup or later, or ask you to pi
 ## 5. Run the group
 
 - Never ask a task session for status. Message one only when this skill says to, to answer its question, or to pass on my decision.
+- Hold rebase requests, and decisions a task session didn't ask for, when that session's last turn ended more than an hour ago, since waking it rewrites its whole cached conversation. Put them in a "Held messages" section of `status.md`. Whenever you rebuild state, send each one whose session has finished a turn within the last hour.
 - Check what task sessions report in the code, git or gh before relaying it. Answer their questions directly when you can, but never answer a go-ahead to push, post, open a PR or make any other online change.
 - Relay to me in one line per status change. Give detail only where I must decide, numbered, with your recommendation.
 - Extra findings from task sessions come to you. Drop duplicates of the plan and of open sessions, skip theoretical ones, and propose a new task or a fold into an existing one.
-- Keep `status.md` current after every change, in this order: a "Resume here" section with the current state, one table (n, session, repo, branch, commits, PR, state, blocked by), the open decisions, and a dated log of decisions at the bottom. Only this session writes it.
+- Keep `status.md` current after every change, in this order: a "Resume here" section with the current state, one table (n, session, repo, branch, commits, PR, state, blocked by), the open decisions, held messages, and a dated log of decisions at the bottom. Only this session writes it.
 - When I ask where things stand, rebuild the answer from `list_sessions`, git and gh, never from memory, and correct `status.md` where it differs. For library fixes, track merged, released and pinned separately.
 - When you find a merge while rebuilding state, tell the sessions whose branches depend on it to rebase.
 - When I say I'm away or stop answering, chips wait for my click. Keep offering them, mark them as waiting in `status.md`, and move investigations forward with subagents in the meantime.

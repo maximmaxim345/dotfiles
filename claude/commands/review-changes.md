@@ -3,7 +3,7 @@ description: Review a PR or the local changes with parallel reviewers, verify ev
 argument-hint: "[PR number or URL] [sage|nosage]"
 ---
 
-Write every comment in the voice of @~/.claude/writing-examples.md and follow the "Review comment style" and "Writing style" rules in `CLAUDE.md`.
+Write every comment in the voice of @~/.claude/writing-examples.md and follow the "Writing style" rules in `CLAUDE.md` and the "Review comment style" section at the end of this file.
 
 Arguments: `$ARGUMENTS`. A PR number or URL reviews that PR. Without one, review `./` in local mode (see the end). `sage` forces ohf-sage on, `nosage` turns it off.
 
@@ -45,3 +45,20 @@ Review the changes in `./` against its merge base with the default branch, inclu
 - Run steps 4 to 7 as written, with small meaning a small diff. For the linter check in step 7, run the repo's linters on the changed files in check-only mode. Skip a tool that can only fix files in place.
 - The results file is `<repo>/.claude/reviews/local-<branch>.md`, with each `/` in the branch name replaced by `-`. In step 8, describe each finding with a suggested fix instead of a comment for someone else. Don't change any code until I ask.
 - Skip steps 9 and 10.
+
+## Review comment style
+
+One sentence, two if needed, never three. State what's wrong and stop. Add the
+mechanism only when the reader can't see why it matters. Suggest at most one
+direction, never "either X or Y". A short concrete code fix is fine.
+- Leave out line numbers, history, and supporting quotes. The inline anchor
+  shows the spot.
+- Start minor points with a label: "Nit:", "Idea:", "Question:", or
+  "Just noticed (was pre-existing):".
+- Hedge judgments of the author's text ("I think", "as I'm reading this", "IMO").
+- Ask at most one question, and only when the author's intent is unclear.
+- Describe the impact plainly, without worst-case framing.
+- No suggestion blocks, since GitHub doesn't show a word-level diff for them.
+
+No multi-paragraph analysis in inline comments. That belongs in the PR
+description or a separate discussion thread.

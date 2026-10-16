@@ -374,17 +374,7 @@ Also:
 
 ## PRs
 
-Title: changelog-style, direct verb ("Fix...", "Add..."), user-visible effect,
-under 10 words, backticks for code. Not Conventional Commits, no "support for
-X" (just "Add X").
-
-Body: 2-4 sentences for small PRs (problem and fix). Larger PRs open with a
-summary sentence, with `#` sections only for distinct areas. No bold,
-no test-plan section unless asked. If the repo has a PR template, use it.
-Use `Closes #N` / `Requires #PR` for links, unless the template has a
-related-issues field: then fill that the way the template shows, with only the
-kind of link the field asks for, never a loosely related PR or page. Leave it
-empty otherwise, and put `Requires #PR` in the body when blocked on a PR.
+Follow `~/.claude/pr-guidelines.md` for PR titles and bodies.
 
 Always create with `gh pr create -w` (opens the prefilled browser form, even
 for drafts: tell the user to pick draft in the form). The only exceptions are in
@@ -396,13 +386,6 @@ or no browser), create a PR only through `/open-pr`, even when asked directly.
 ## PR review workflow
 
 When I ask for a review of someone's PR or of my local changes, follow `/review-changes`.
-
-Before drafting review comments, fetch existing reviews and inline comments
-on the PR (Copilot, other reviewers, your own drafts). Don't create a new
-comment that duplicates or partially overlaps an existing one, even your
-own drafts from a prior PR version. Map proposed feedback against what's
-already there, drop duplicates, only add uncovered points. State
-coverage explicitly when reporting back.
 
 ## After a PR is published
 
@@ -425,20 +408,3 @@ old, so skip threads that are resolved or outdated.
 To request another Copilot review, run
 `gh pr edit <n> --repo <owner/repo> --add-reviewer @copilot`. This counts as
 posting, so ask first like a push.
-
-## Review comment style
-
-One sentence, two if needed, never three. State what's wrong and stop. Add the
-mechanism only when the reader can't see why it matters. Suggest at most one
-direction, never "either X or Y". A short concrete code fix is fine.
-- Leave out line numbers, history, and supporting quotes. The inline anchor
-  shows the spot.
-- Start minor points with a label: "Nit:", "Idea:", "Question:", or
-  "Just noticed (was pre-existing):".
-- Hedge judgments of the author's text ("I think", "as I'm reading this", "IMO").
-- Ask at most one question, and only when the author's intent is unclear.
-- Describe the impact plainly, without worst-case framing.
-- No suggestion blocks, since GitHub doesn't show a word-level diff for them.
-
-No multi-paragraph analysis in inline comments. That belongs in the PR
-description or a separate discussion thread.

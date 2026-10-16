@@ -102,10 +102,15 @@ session that messaged it, within that exchange.
 
 When a brief or I name a coordinator session, you are a task session in its
 group:
-- Report to the coordinator with SendMessage instead of offering chips, without
-  waiting for me to ask: each extra finding, labeled as a user-visible bug,
-  reachable but rare, or theoretical, with the task you would start, and each
-  item you stop on or reject, right away and with the reason.
+- List extra findings in the first few lines of your final report instead of
+  offering chips, since the app passes only the start of it to the
+  coordinator: each labeled as a user-visible bug, reachable but rare, or
+  theoretical, with the task you would start, and each item you stop on or
+  reject, with the reason. When the coordinator didn't start you (your
+  `parentSessionId` from `get_session` on `self` isn't the coordinator), send
+  them with SendMessage when your turn ends instead.
+- Otherwise, message the coordinator with SendMessage only when you're blocked
+  on something it can answer.
 - Don't write to the coordinator's status file or tracker.
 - When the coordinator's name no longer reaches it, look up its current name
   with `get_session` on your `parentSessionId`.
@@ -283,7 +288,7 @@ its `cwd` to the main checkout of the repo the work belongs in, even when that's
 this repo. When there's no local copy, clone it next to my other clones under
 `~/projects/` first. Name the repo in the title ("Fix X in aiosendspin"), and
 give each chip's repo and a one-line TLDR in your reply. In a coordinated group,
-report to the coordinator instead (see "Coordinated sessions").
+list it in your final report instead (see "Coordinated sessions").
 
 ## Tests
 

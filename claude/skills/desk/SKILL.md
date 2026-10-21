@@ -1,27 +1,53 @@
 ---
-name: move-to-desk
-description: Move Claude desktop sessions to T3 Code through the desk, on the same branch, and archive them once their T3 thread runs.
-argument-hint: "[session names or task numbers, all, or archive; nothing moves this session]"
+name: desk
+description: Hand this thread to the desk, pause it there until something happens, or move Claude desktop sessions to T3 Code threads.
+argument-hint: "[block <what it waits for> | move [session names or task numbers, all, or archive]]"
 disable-model-invocation: true
 ---
 
-Sessions: $ARGUMENTS
+Arguments: $ARGUMENTS
 
-For each session this moves, the desk (`~/desk`, see its `AGENTS.md`) starts a T3 Code thread on the same branch with a brief the session wrote. A session is archived only after its T3 thread confirmed the branch, so nothing is lost when a launch fails.
+The desk (`~/desk`, see its `AGENTS.md`) tracks work as backlog items on its board. When `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8765/api/state` doesn't print 200, stop and tell me.
 
-The desk hears about moves through the board. When `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8765/api/state` doesn't print 200, stop and tell me.
+## Modes
 
-## Which sessions
+- Nothing: hand this thread to the desk (see "Hand over this thread"). It shows on the board as started, and the desk sweeps it like the threads it started.
+- `block <what it waits for>`: hand it over paused until that happens. The desk compacts and settles it after this turn. Once I remove the blocker on the board and press Start, the desk resumes this thread.
+- `move ...`: move Claude desktop sessions to T3 Code threads (see "Move desktop sessions").
 
-- Nothing: move this session alone. Do sections 1, 2 and 3 for it yourself.
+In the Claude Code desktop app (you have the `mcp__ccd_session_mgmt__*` tools), the desk can't track or resume this session. There, nothing means `move` for this session alone, and `block` isn't available: say so and stop.
+
+## Hand over this thread
+
+1. Take this thread's id from `t3_thread_configuration` without arguments.
+2. Commit everything, untracked files included, following my commit rules. Unfinished work goes in a `wip:` commit. Never commit secrets. Nothing is pushed.
+3. Write the brief as in step 3 of "Prepare" below.
+4. Run:
+
+   ```sh
+   ~/desk/bin/backlog adopt --title "<title>" --repo <short repo> [--kind <kind>] \
+     --summary "<one or two sentences>" --brief-file <brief path> --thread <thread id> \
+     [--pr <PR URL>] [--effort <effort>] [--blocked-by "<what it waits for>"]
+   ```
+
+   The title is the task without effort or repo prefixes. It prints the item id. When this thread already has an open item, it reuses that item and only adds the blocker.
+5. Reply in one line with the item id, and for `block` what it waits for. Ask nothing, since a question keeps the thread waiting on me and the desk won't settle it.
+
+## Move desktop sessions
+
+For each session this moves, the desk starts a T3 Code thread on the same branch with a brief the session wrote. A session is archived only after its T3 thread confirmed the branch, so nothing is lost when a launch fails.
+
+### Which sessions
+
+- Nothing after `move`: move this session alone. Do "Prepare", "Hand over" and "Archive" for it yourself.
 - Names or task numbers: this session coordinates an effort in `~/desk/efforts/<effort>/status.md`. Move those task sessions. `all` means every active task session in its table, and then this session last as the effort's manager.
-- `archive`: do only section 3, for items moved earlier whose sessions are still active (`~/desk/bin/backlog list` and the items' `move` fields).
+- `archive`: do only "Archive", for items moved earlier whose sessions are still active (`~/desk/bin/backlog list` and the items' `move` fields).
 
 List the sessions you'll move with their branch and PR, and wait for my OK.
 
-## 1. Prepare
+### Prepare
 
-A coordinator sends each task session "Prepare to move to T3 Code: follow section 1 of `~/.claude/skills/move-to-desk/SKILL.md` and reply with its result line." with SendMessage, and waits for every reply. Each session then:
+A coordinator sends each task session "Prepare to move to T3 Code: follow the Prepare steps in `~/.claude/skills/desk/SKILL.md` and reply with their result line." with SendMessage, and waits for every reply. Each session then:
 
 1. Stops after its current step and starts nothing new.
 2. Commits everything, untracked files included, following my commit rules. Unfinished work goes in a `wip:` commit. Never commit secrets. Nothing is pushed.
@@ -35,7 +61,7 @@ A coordinator sends each task session "Prepare to move to T3 Code: follow sectio
 4. Frees the branch once `git status --porcelain` prints nothing: `git switch --detach` in a worktree, or a switch to the default branch in the main checkout. `git worktree list` must no longer show it. When something is still uncommitted, stop and report it instead. Skip this step when the session has no branch of its own.
 5. Replies with one line: `<title> | <short repo> | <kind> | <branch or none> | <PR URL or none> | <brief path> | <main checkout> | <session id>`. The title is the task title without its number and type, the main checkout is the parent of `git rev-parse --path-format=absolute --git-common-dir`, and the session id comes from `get_session` on `self`.
 
-## 2. Hand over
+### Hand over
 
 For each reply, run:
 
@@ -49,7 +75,7 @@ It adds the backlog item, presses Start for it and prints its id. The desk then 
 
 A coordinator moving itself goes last. First it brings the "Resume here" part of `status.md` up to date, including which session moved to which item, and writes a brief that points to `status.md`. Then it runs the command with `--manager` and without `--kind`, `--branch` or `--checkout`. Its T3 thread becomes `meta - <effort>` and rewrites `status.md` in the desk's format.
 
-## 3. Archive
+### Archive
 
 Run `~/desk/bin/backlog wait-moved <item ids>` as a background Bash command (`run_in_background`, timeout 7200000). It prints `<session id> <thread id>` for each item once the desk started all their threads, or `timeout`.
 

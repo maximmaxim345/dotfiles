@@ -75,11 +75,12 @@ or a Python subprocess timeout.
 
 Delegate only large, self-contained work (a wide multi-file investigation, an
 independent parallel track), since each subagent re-reads context and reports
-back. Leave the subagent model unset so it matches the session model, unless I
-name one. Run subagents in the background. Report the conclusion, not the raw
+back. Give subagents the session's model and effort unless I name others. Run
+subagents in the background. Report the conclusion, not the raw
 file dumps. For a follow-up on work a subagent already did, resume that
-subagent by name instead of spawning a new one, so it keeps what it found.
-Start a fresh one only when the task is different.
+subagent instead of spawning a new one, so it keeps what it found. Start a
+fresh one when the task is different, and for each review round, with the
+earlier findings and replies in its prompt.
 
 Use ohf-sage for Music Assistant, Sendspin, ESPHome, and OHF-Voice
 implementation work, when settling a plan and before handing work over. Do

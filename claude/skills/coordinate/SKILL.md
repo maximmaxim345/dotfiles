@@ -14,8 +14,8 @@ This session coordinates. It plans, starts and tracks task sessions and checks t
 ## 1. Set up
 
 - Rename this session to `meta - <repos> - <effort>` with `set_session_title`, using the short repo names from section 3.
-- If `~/.claude/handoffs/` has a folder for this effort, resume it: read its `status.md`, check it against `list_sessions` (archived ones too), git and gh, and tell me where things stand. Skip the rest of this section.
-- Create `~/.claude/handoffs/<effort-slug>/` with `status.md`.
+- If `~/desk/efforts/` has a folder for this effort, resume it: read its `status.md`, check it against `list_sessions` (archived ones too), git and gh, and tell me where things stand. Skip the rest of this section.
+- Create `~/desk/efforts/<effort-slug>/` with `status.md`.
 - When this session already worked on the effort, record its branch, commits, findings and open questions in `status.md`.
 
 ## 2. Plan

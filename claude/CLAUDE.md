@@ -273,7 +273,8 @@ it out of this change unless I say to include it, and give its repo and a
 one-line TLDR in your reply.
 
 Check first that the default branch and `~/desk/bin/backlog list` don't already
-cover it, then add it with:
+cover it, then add it with the command below. When `~/desk` doesn't exist, list
+the item in your reply instead.
 
 ```sh
 ~/desk/bin/backlog add --repo <short repo name> --title "<imperative title>" \

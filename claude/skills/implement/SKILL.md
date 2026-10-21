@@ -1,8 +1,7 @@
 ---
 name: implement
-description: Build a feature or fix end to end in my workflow (branch, plan, implement, fresh-context review, handoff).
+description: Build a feature or fix end to end in my workflow (branch, plan, implement, fresh-context review, handoff). Use for code changes in a repo listed under "Project rules" in my CLAUDE.md, even without /implement.
 argument-hint: "<task description or issue URL>"
-disable-model-invocation: true
 ---
 
 Task: $ARGUMENTS
@@ -22,7 +21,7 @@ Nothing gets pushed during this skill. Shipping happens through `/open-pr` after
 
 Read the code the change touches and the closest sibling code it should match. If the requirements are unclear, interview me first, using the `grilling` skill when it's available.
 
-Then present a plan and wait for my approval:
+Then present a plan:
 - the files that change and where new state lives
 - which existing code it follows
 - the tests, each with the realistic regression it would catch
@@ -30,6 +29,14 @@ Then present a plan and wait for my approval:
 - whether this should be more than one PR
 
 For Music Assistant, Sendspin (except the spec), ESPHome, and OHF-Voice work, run the plan past ohf-sage before presenting it and include what it cites.
+
+Continue without waiting for my approval when all of these hold, and say so under the plan:
+- the requirements are clear and you asked me nothing
+- one approach clearly fits the existing code
+- it's one PR, with no protocol, public API or migration change
+- ohf-sage agrees, where it applies
+
+Otherwise wait for my approval.
 
 ## 3. Implement
 

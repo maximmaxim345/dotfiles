@@ -38,6 +38,9 @@ phrased politely as a question ("can you fix X?") is a request.
 When the fix or the architecture isn't clear, present a plan first and work
 out the approach. Only start coding immediately when the task is unambiguous.
 
+For code changes in a repo listed under "Project rules", follow the `implement`
+skill even when I didn't type `/implement`.
+
 ## Success criteria
 
 Define what "done" looks like before starting a non-trivial task, then verify

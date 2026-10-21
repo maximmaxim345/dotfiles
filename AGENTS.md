@@ -239,6 +239,8 @@ module builds `DEPENDENCIES` and other module level values (`from df.osinfo impo
 - `move_path(source: Path, target: Path) -> None`: Moves a file or directory from a source to a target. Works across filesystem boundaries.
 - `delete_or_unlink(path: Path, delete_recursively: bool = False) -> bool`: Deletes a file or directory, or unlinks a symbolic link. Returns `True` if something was deleted.
 - `ensure_parent_exists(path: Path) -> None`: Ensures that the parent directory of a given path exists.
+- `read_frontmatter(text: str) -> Tuple[Dict[str, str], str]`: Splits a Markdown file into its YAML frontmatter fields and its body. Handles plain and folded (`>-`) values only, which covers skill, agent and output style files.
+- `build_agent_instructions() -> str`: Builds `claude/CLAUDE.md` as one file for Codex and Copilot, with the output style appended.
 
 #### Backup Management
 

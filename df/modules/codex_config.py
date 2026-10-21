@@ -5,12 +5,14 @@ from typing import List, Optional, Tuple, Union
 
 import df
 from df.config import ModuleConfig
-from df.osinfo import system
+from df.osinfo import running_in_termux, system
 
 ID: str = "codex_config"
 NAME: str = "Codex Config"
 DESCRIPTION: str = "Global instructions and the OHF Sage agent for the Codex CLI, built from the Claude Code config"
 DEPENDENCIES: List[str] = ["claude_config", "agent_skills", "codex"]
+if system() == "Windows" or running_in_termux():
+    DEPENDENCIES = ["claude_config", "agent_skills"]  # The user has to install Codex manually there
 CONFLICTING: List[str] = []
 
 codex_path = Path.home() / ".codex"

@@ -6,12 +6,14 @@ from typing import List, Optional, Tuple, Union
 
 import df
 from df.config import ModuleConfig
-from df.osinfo import system
+from df.osinfo import running_in_termux, system
 
 ID: str = "opencode_config"
 NAME: str = "OpenCode Config"
 DESCRIPTION: str = "Global instructions and the OHF Sage agent for OpenCode, built from the Claude Code config"
 DEPENDENCIES: List[str] = ["claude_config", "opencode"]
+if system() == "Windows" or running_in_termux():
+    DEPENDENCIES = ["claude_config"]  # The user has to install OpenCode manually there
 CONFLICTING: List[str] = []
 
 opencode_path = Path.home() / ".config" / "opencode"

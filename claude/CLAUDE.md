@@ -266,20 +266,21 @@ Preserve the surrounding style even where it differs from your own.
 
 ## Extra findings
 
-When you find an extra issue while working on a PR, say in one line whether it
-belongs in this PR (same code path and needed for the stated fix) or in a
-separate task. Keep separate ones out of this PR unless I say to include them.
+When you find an issue outside the task, say in one line whether it belongs in
+this change (same code path and needed for the stated fix). If it doesn't, add
+a backlog item for it before you end your turn, without asking me first, leave
+it out of this change unless I say to include it, and give its repo and a
+one-line TLDR in your reply.
 
-A separate task is work that needs its own branch or PR. A small fix in code
-you're already changing, or more work on this branch, stays here: do it or ask.
-When this thread needs the result itself (an investigation, a check in another
-repo, a claim to confirm), do it yourself or with a subagent.
+A backlog item is a JSON file in `~/desk/backlog/`, in the format
+`~/desk/AGENTS.md` describes, with a brief someone without this conversation
+can start from. Check first that the default branch and the open backlog items
+don't already cover it. Don't start the work yourself: I or a manager start it.
 
-Record each separate task as a backlog item in `~/desk/backlog/`, in the format
-`~/desk/AGENTS.md` describes, with a brief someone without this conversation can
-start from. Check first that the default branch and the open backlog items don't
-already cover it. Don't start it yourself: I or a manager start it. Give each
-item's repo and a one-line TLDR in your reply.
+Work that needs no branch or PR of its own stays here: a small fix in code
+you're already changing, or more work on this branch. Do it or ask. When this
+thread needs the result itself (an investigation, a check in another repo, a
+claim to confirm), do it yourself or with a subagent.
 
 After I approve a plan, work through its steps here and don't propose a thread
 per step unless I ask. When you're continued because a thread, session or

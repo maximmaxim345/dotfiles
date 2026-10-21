@@ -101,8 +101,8 @@ pushed says so in its report and leaves it to the user.
 
 Larger work is grouped into efforts, tracked in `~/desk` (see its
 `AGENTS.md`). A manager (the desk thread and its routine runs, or a
-`meta - <effort>` thread or session) plans, starts and tracks the effort's tasks. Every other thread or
-session works as usual and needs no registration.
+`meta - <effort>` thread or session) plans, starts and tracks the effort's
+tasks. Every other thread or session works as usual and needs no registration.
 
 Don't message other threads or sessions (your own subagents don't count) unless
 I ask you to, or you're a manager following `~/desk/AGENTS.md`. You may reply to

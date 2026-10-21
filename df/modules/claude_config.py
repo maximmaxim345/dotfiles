@@ -91,24 +91,37 @@ def desk_allowed() -> bool:
     return str(desk_path) in settings.get("permissions", {}).get("additionalDirectories", [])
 
 
-def allow_desk() -> None:
+def allow_desk(config: ModuleConfig) -> None:
     if desk_allowed():
         return
     settings = json.loads(settings_path.read_text(encoding="utf-8"))
     settings.setdefault("permissions", {}).setdefault("additionalDirectories", []).append(str(desk_path))
     settings_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+    config.set("allowed_desk", True)
     print(f"Allowed {desk_path} in {settings_path}")
+
+
+def disallow_desk(config: ModuleConfig) -> None:
+    if not config.get("allowed_desk", False) or not settings_path.is_file():
+        return
+    settings = json.loads(settings_path.read_text(encoding="utf-8"))
+    allowed = settings.get("permissions", {}).get("additionalDirectories", [])
+    if str(desk_path) in allowed:
+        allowed.remove(str(desk_path))
+        settings_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+    config.unset("allowed_desk")
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     for source_name, target_name, key in ENTRIES:
         link(source_name, target_name, key, config)
     link_accounts(config)
-    allow_desk()
+    allow_desk(config)
     print("Claude Code config installed, run /output-style Plain English once to select the output style")
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
+    disallow_desk(config)
     for _, target_name, key in ENTRIES:
         df.restore_backup(claude_path / target_name, config, key)
         print(f"Restored {claude_path / target_name}")
@@ -127,4 +140,4 @@ def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         if not is_linked(source_name, target_name):
             link(source_name, target_name, key, config)
     link_accounts(config)
-    allow_desk()
+    allow_desk(config)

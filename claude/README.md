@@ -24,6 +24,7 @@ live on every device without re-running anything.
 | `skills/ma-device-test/` | Tests Music Assistant changes on my real speakers, locally or on a remote instance |
 | `skills/blast-radius/` | Finds what a change breaks outside its diff, adapted with permission from [MarvinSchenkel/ai-agent-instructions](https://github.com/MarvinSchenkel/ai-agent-instructions) |
 | `skills/commit/`, `skills/commit-split/`, `skills/open-pr/`, `skills/review-changes/` | Commit, PR and review workflow skills, each linked into `~/.claude/skills/` |
+| `skills/move-to-desk/` | Moves Claude desktop sessions to T3 Code threads through the desk, linked into `~/.claude/skills/` |
 
 Not to be confused with the repository root `CLAUDE.md`, which is a symlink to
 `AGENTS.md` and describes this repo as a project. The file here is the global

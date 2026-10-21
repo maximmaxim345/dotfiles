@@ -42,6 +42,7 @@ ENTRIES: List[Tuple[str, str, str]] = [
     ("skills/commit-split", "skills/commit-split", "old_skill_commit_split"),
     ("skills/open-pr", "skills/open-pr", "old_skill_open_pr"),
     ("skills/review-changes", "skills/review-changes", "old_skill_review_changes"),
+    ("skills/move-to-desk", "skills/move-to-desk", "old_skill_move_to_desk"),
 ]
 
 

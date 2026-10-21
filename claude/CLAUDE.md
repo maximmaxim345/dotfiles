@@ -230,7 +230,7 @@ dashes and semicolons, speculative or out-of-scope changes, and workarounds.
 For Music Assistant, Sendspin (not the spec), ESPHome, and OHF-Voice, also
 have ohf-sage review the diff. Fix what they find and tell me what you kept on
 purpose. Skip this only when the diff changes no behavior and touches no tests
-or docstrings.
+or docstrings. A small diff is no reason to skip it or to ask whether to run it.
 
 Then hand the work over with the `review-brief` skill instead of a free-form
 summary.

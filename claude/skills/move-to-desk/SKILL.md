@@ -31,8 +31,8 @@ A coordinator sends each task session "Prepare to move to T3 Code: follow sectio
    - what's done and how it was verified, labeled verified or inferred;
    - the next step, and what waits on me (a push OK, a decision, a review), with any draft reply or description I haven't seen yet quoted in full;
    - open questions, approaches rejected and why, and extra findings not filed yet;
-   - git-ignored files the work needs, like env files or test data, by path only.
-4. Frees the branch: `git switch --detach` in a worktree, or a switch to the default branch in the main checkout. `git worktree list` must no longer show it. Skip this when the session has no branch of its own.
+   - git-ignored files the work needs, like env files or test data. Copy them to `~/desk/efforts/<effort>/work/<slug>/`, which git ignores, or next to the brief without an effort, and list them by name. Archiving removes the old worktree with everything in it.
+4. Frees the branch once `git status --porcelain` prints nothing: `git switch --detach` in a worktree, or a switch to the default branch in the main checkout. `git worktree list` must no longer show it. When something is still uncommitted, stop and report it instead. Skip this step when the session has no branch of its own.
 5. Replies with one line: `<title> | <short repo> | <kind> | <branch or none> | <PR URL or none> | <brief path> | <main checkout> | <session id>`. The title is the task title without its number and type, the main checkout is the parent of `git rev-parse --path-format=absolute --git-common-dir`, and the session id comes from `get_session` on `self`.
 
 ## 2. Hand over
@@ -47,7 +47,7 @@ For each reply, run:
 
 It adds the backlog item, presses Start for it and prints its id. The desk then starts the T3 thread.
 
-A coordinator moving itself goes last. First it brings the "Resume here" part of `status.md` up to date, including which session moved to which item, and writes a brief that points to `status.md`. Then it runs the command with `--manager` and without `--kind` or `--branch`. Its T3 thread becomes `meta - <effort>` and rewrites `status.md` in the desk's format.
+A coordinator moving itself goes last. First it brings the "Resume here" part of `status.md` up to date, including which session moved to which item, and writes a brief that points to `status.md`. Then it runs the command with `--manager` and without `--kind`, `--branch` or `--checkout`. Its T3 thread becomes `meta - <effort>` and rewrites `status.md` in the desk's format.
 
 ## 3. Archive
 

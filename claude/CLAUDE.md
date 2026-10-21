@@ -413,8 +413,8 @@ These apply when you have the T3 Code tools (`t3_thread_*`).
 
 - Start a separate thread only when I ask or you're a manager, with
   `t3_thread_launch` and an explicit `workspaceStrategy` and `modelSelection`,
-  never by creating a worktree yourself, except to continue an existing branch
-  as `~/desk/AGENTS.md` describes. Unless the effort's `status.md` or I
+  never by creating a worktree yourself, except under `~/.t3/worktrees` to
+  continue an existing branch as `~/desk/AGENTS.md` describes. Unless the effort's `status.md` or I
   say otherwise, use Claude 2 (`claudeAgent_claude_2`), `claude-opus-5-5`,
   effort `low`.
 - Watch a published PR with `watch_pull_request`. Its wake-ups are news, not

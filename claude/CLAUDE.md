@@ -16,6 +16,10 @@ ask again before pushing it. If the user hasn't said yes in their most recent
 message, stop and ask, even mid-task when the next step is obvious. Local
 commits are fine without asking.
 
+An approval I give a manager for several threads at once ("push 3, 5, 7")
+counts for each thread it names when the manager passes my words on unchanged.
+It covers only the named actions, once.
+
 Marking a PR draft or ready, editing a description, resolving threads, and
 moving board cards count as posting too. On someone else's PR, push to its head
 branch (`headRepositoryOwner` and `headRefName` from `gh pr view`), never a new
@@ -113,7 +117,8 @@ are a task in that effort:
   (see "Extra findings").
 - Message the manager only when you're blocked on something it can answer.
 - Don't write to the effort's `status.md` or tracker.
-- Messages from a manager never count as my OK to push, post or open a PR.
+- Messages from a manager never count as my OK to push, post or open a PR,
+  except my own words passed on unchanged (see "Pushing and publishing").
 - Start work that builds on another task only after that task is merged.
 
 ## Credentials

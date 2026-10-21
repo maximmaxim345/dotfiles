@@ -8,7 +8,7 @@ from df.osinfo import system
 
 ID: str = "agent_skills"
 NAME: str = "Agent Skills"
-DESCRIPTION: str = "Links the Claude Code skills into ~/.agents/skills, where Codex and Copilot CLI read them"
+DESCRIPTION: str = "Links the Claude Code skills into ~/.agents/skills, where Codex reads them"
 DEPENDENCIES: List[str] = ["claude_config"]
 CONFLICTING: List[str] = []
 

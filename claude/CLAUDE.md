@@ -272,10 +272,18 @@ a backlog item for it before you end your turn, without asking me first, leave
 it out of this change unless I say to include it, and give its repo and a
 one-line TLDR in your reply.
 
-A backlog item is a JSON file in `~/desk/backlog/`, in the format
-`~/desk/AGENTS.md` describes, with a brief someone without this conversation
-can start from. Check first that the default branch and the open backlog items
-don't already cover it. Don't start the work yourself: I or a manager start it.
+Check first that the default branch and `~/desk/bin/backlog list` don't already
+cover it, then add it with:
+
+```sh
+~/desk/bin/backlog add --repo <short repo name> --title "<imperative title>" \
+  --kind <bugfix|feature|review|design|test|docs> \
+  --label "<user-visible bug|reachable but rare|theoretical>" \
+  --summary "<one or two sentences>" --brief "<evidence and plan>"
+```
+
+Write the brief so someone without this conversation can start from it. Don't
+start the work yourself: I or a manager start it.
 
 Work that needs no branch or PR of its own stays here: a small fix in code
 you're already changing, or more work on this branch. Do it or ask. When this

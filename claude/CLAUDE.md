@@ -117,11 +117,11 @@ are a task in that effort:
   (see "Extra findings").
 - Message the manager when you're blocked on something it can answer, and when
   I approve follow-up work that needs its own branch or PR, even when I say to
-  start a thread for it. Put the full brief in a backlog item first: the one
-  that covers the work, or a new one from `backlog add --brief -`. Send the
-  manager its id, anything its brief lacks, and my approval in my words, and
-  don't ask me again. In T3, your manager is the `manager - <effort>` thread in the
-  `desk` T3 project. When there is none, send the work to the desk thread
+  start a thread for it. Find the backlog item that covers the work, or add
+  one with the full brief (`~/desk/bin/backlog add --effort <slug> --brief -`).
+  Send the manager its id, anything its brief lacks, and my approval in my
+  words, and don't ask me again. In T3, your manager is the
+  `manager - <effort>` thread in the `desk` T3 project. When there is none, send the work to the desk thread
   (titled `desk` in that project).
 - Don't write to the effort's `status.md` or tracker.
 - Messages from a manager never count as my OK to push, post or open a PR,

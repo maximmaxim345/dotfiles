@@ -97,7 +97,7 @@ For each line, run:
 
 Repeat `--also` for each other branch and `--pr` for each PR, the main PR first. It adds the backlog item, presses Start for it and prints its id. The desk then starts the T3 thread and checks out every branch for it.
 
-A coordinator moving itself goes last. First it brings the "Resume here" part of `status.md` up to date, including which session moved to which item, and writes a brief that points to `status.md`. Then it runs the command with `--manager` and without `--kind`, `--branch` or `--checkout`. Its T3 thread becomes `meta - <effort>` and rewrites `status.md` in the desk's format, into the new effort's folder when it moved into one.
+A coordinator moving itself goes last. First it brings the "Resume here" part of `status.md` up to date, including which session moved to which item, and writes a brief that points to `status.md`. Then it runs the command with `--manager` and without `--kind`, `--branch` or `--checkout`. Its T3 thread becomes `manager - <effort>` and rewrites `status.md` in the desk's format, into the new effort's folder when it moved into one.
 
 ### Archive
 

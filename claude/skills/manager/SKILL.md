@@ -1,5 +1,5 @@
 ---
-name: coordinate
+name: manager
 description: Run this session as the coordinator of a group of task sessions (names, status file, briefs, relays).
 argument-hint: "[effort to start, or the name of one to resume]"
 disable-model-invocation: true
@@ -13,7 +13,7 @@ This session coordinates. It plans, starts and tracks task sessions and checks t
 
 ## 1. Set up
 
-- Rename this session to `meta - <repos> - <effort>` with `set_session_title`, using the short repo names from section 3.
+- Rename this session to `manager - <repos> - <effort>` with `set_session_title`, using the short repo names from section 3.
 - If `~/desk/efforts/` has a folder for this effort, resume it: read its `status.md`, check it against `list_sessions` (archived ones too), git and gh, and tell me where things stand. Skip the rest of this section.
 - Create `~/desk/efforts/<effort-slug>/` with `status.md`.
 - When this session already worked on the effort, record its branch, commits, findings and open questions in `status.md`.
@@ -66,4 +66,4 @@ When a task session runs in the wrong repo, ask it for a handoff, including the 
 
 Suggest compacting when this conversation gets long and the group is quiet, since every wake-up re-reads it.
 
-Update `status.md`. Then tell me I can compact, with a `/compact Keep: ...` line and the message to send afterwards (`/coordinate <effort-slug>`).
+Update `status.md`. Then tell me I can compact, with a `/compact Keep: ...` line and the message to send afterwards (`/manager <effort-slug>`).

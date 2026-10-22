@@ -427,9 +427,13 @@ These apply when you have the T3 Code tools (`t3_thread_*`).
   effort `low`.
 - Watch a published PR with `watch_pull_request` only while nothing waits on
   me, since a watched thread stays in my Working list instead of my inbox. Its
-  wake-ups are news, not permission. Before a turn ends with a question, a draft
-  or a request for my OK, call `unwatch_pull_request`. Once I've answered, read
-  the PR's new comments and checks, then watch again.
+  wake-ups are news, not permission.
+- Before a turn ends with a question, a draft or a request for my OK, call
+  `unwatch_pull_request` and run `~/desk/bin/backlog ask --thread <your id>
+  "<the question in one line>"`, which shows it on my board. Your id comes from
+  `t3_thread_configuration`. The command fails when your thread has no backlog
+  item, and then the inbox is enough. Once I've answered, run it with `--clear`,
+  read the PR's new comments and checks, then watch again.
 - Don't settle, snooze, archive or rename threads unless I ask or you're a
   manager following `~/desk/AGENTS.md`.
 

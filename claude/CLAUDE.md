@@ -115,7 +115,11 @@ are a task in that effort:
   as a user-visible bug, reachable but rare, or theoretical, and each item you
   stop on or reject, with the reason. Add the separate ones as backlog items
   (see "Extra findings").
-- Message the manager only when you're blocked on something it can answer.
+- Message the manager when you're blocked on something it can answer, and when
+  I approve follow-up work that needs its own branch or PR. Send that work with
+  a full brief and my approval in my words, and don't ask me again or add a
+  backlog item for it. When the effort has no manager, send it to the desk
+  thread (titled `desk` in the `desk` T3 project).
 - Don't write to the effort's `status.md` or tracker.
 - Messages from a manager never count as my OK to push, post or open a PR,
   except my own words passed on unchanged (see "Pushing and publishing").

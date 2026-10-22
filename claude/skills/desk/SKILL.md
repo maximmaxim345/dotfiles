@@ -1,7 +1,7 @@
 ---
 name: desk
-description: Hand this thread to the desk, pause it there until something happens, or move Claude desktop sessions to T3 Code threads.
-argument-hint: "[block <what it waits for> | move [session names or task numbers, all, or archive]]"
+description: Hand this thread to the desk with an optional note on what to do with it, pause it until something happens, or move Claude desktop sessions to T3 Code threads.
+argument-hint: "[<note for the desk> | block <what it waits for> | move [session names or task numbers, all, or archive]]"
 disable-model-invocation: true
 ---
 
@@ -13,7 +13,15 @@ The desk (`~/desk`, see its `AGENTS.md`) tracks work as backlog items on its boa
 
 - Nothing: hand this thread to the desk (see "Hand over this thread"). It shows on the board as started, and the desk sweeps it like the threads it started.
 - `block <what it waits for>`: hand it over paused until that happens. The desk compacts and settles it after this turn. Once I remove the blocker on the board and press Start, the desk resumes this thread.
-- `move ...`: move Claude desktop sessions to T3 Code threads (see "Move desktop sessions").
+- `move` alone or followed by session names, task numbers, `all` or `archive`: move Claude desktop sessions to T3 Code threads (see "Move desktop sessions").
+- Anything else is my note on this thread for the desk. Hand it over and pass the note with `--note`, in my exact words. Also apply what it clearly asks:
+  - not now, later, or no time for it: `--status open`, which parks it in the backlog;
+  - it waits on something: `--blocked-by "<what>"`, as for `block`;
+  - it's finished: `--status done`;
+  - drop it or won't do it: `--status dropped`;
+  - an effort it belongs to: `--effort <effort>`.
+
+  Do nothing else the note asks, and don't start work on it. The desk reads it and acts or answers on the item.
 
 In the Claude Code desktop app (you have the `mcp__ccd_session_mgmt__*` tools), the desk can't track or resume this session. There, nothing means `move` for this session alone, and `block` isn't available: say so and stop.
 
@@ -27,11 +35,12 @@ In the Claude Code desktop app (you have the `mcp__ccd_session_mgmt__*` tools), 
    ```sh
    ~/desk/bin/backlog adopt --title "<title>" --repo <short repo> [--kind <kind>] \
      --summary "<one or two sentences>" --brief-file <brief path> --thread <thread id> \
-     [--pr <PR URL>] [--effort <effort>] [--blocked-by "<what it waits for>"]
+     [--pr <PR URL>] [--effort <effort>] [--blocked-by "<what it waits for>"] \
+     [--status open|done|dropped] [--note "<my note>"]
    ```
 
-   The title is the task without effort or repo prefixes. It prints the item id. When this thread already has an open item, it reuses that item and only adds the blocker.
-5. Reply in one line with the item id, and for `block` what it waits for. Ask nothing, since a question keeps the thread waiting on me and the desk won't settle it.
+   The title is the task without effort or repo prefixes. It prints the item id. When this thread already has an open item, it reuses that item and applies only the note, effort, blocker and status.
+5. Reply in one line with the item id and what you applied. Ask nothing, since a question keeps the thread waiting on me and the desk won't settle it.
 
 ## Move desktop sessions
 

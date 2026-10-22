@@ -101,9 +101,9 @@ A coordinator moving itself goes last. First it brings the "Resume here" part of
 
 ### Archive
 
-Run `~/desk/bin/backlog wait-moved <item ids>` as a background Bash command (`run_in_background`, timeout 7200000). It returns once every item has started or the desk stopped it because it needs me. It prints `<session id> <thread id>` for each started item, `stuck <item id> <session id>: <what I must do>` for each stopped one, and `timeout <item ids>` for items still pending after about two hours.
+Run `~/desk/bin/backlog wait-moved <item ids>` as a background Bash command (`run_in_background`, timeout 7200000). It returns once every item has a thread, the desk stopped it because it needs me, or I took it back on the board before it started. It prints `<session id> <thread id>` for each item with a thread, `stuck <item id> <session id>: <what I must do>` for each stopped one, `held <item id> <session id>: <status>` for each one I took back, and `timeout <item ids>` for items still pending after about two hours.
 
-- Archive each session once with `archive_session` when all its items started. That also removes its old worktree, which nothing uses anymore. Archive this session last, and only when all its items started.
-- Leave every other session as it is. After I did what a `stuck` line asks and pressed Start, `/desk move archive` archives the rest.
+- Archive each session once with `archive_session` when all its items have a thread. That also removes its old worktree, which nothing uses anymore. Archive this session last, and only when all its items have a thread.
+- Leave every other session as it is, since a `held` or `stuck` session still holds its work. After I pressed Start for a `held` item, or did what a `stuck` line asks and pressed Start, `/desk move archive` archives the rest.
 
 Then reply with one line per item: its title and its T3 thread id, or what it needs from me.

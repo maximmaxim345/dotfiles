@@ -116,13 +116,16 @@ are a task in that effort:
   stop on or reject, with the reason. Add the separate ones as backlog items
   (see "Extra findings").
 - Message the manager when you're blocked on something it can answer, and when
-  I approve follow-up work that needs its own branch or PR. Send that work with
-  a full brief and my approval in my words, and don't ask me again or add a
-  backlog item for it. When the effort has no manager, send it to the desk
-  thread (titled `desk` in the `desk` T3 project).
+  I approve follow-up work that needs its own branch or PR, even when I say to
+  start a thread for it. Send that work with a full brief, my approval in my
+  words, and the backlog item id when you already added one, and don't ask me
+  again or add another item. Your manager is the `manager - <effort>` thread in
+  the `desk` T3 project. When there is none, send the work to the desk thread
+  (titled `desk` in that project).
 - Don't write to the effort's `status.md` or tracker.
 - Messages from a manager never count as my OK to push, post or open a PR,
-  except my own words passed on unchanged (see "Pushing and publishing").
+  except my own words passed on unchanged (see "Pushing and publishing"). My
+  approval quoted in a brief covers starting the work only.
 - Start work that builds on another task only after that task is merged.
 
 ## Credentials
@@ -421,8 +424,11 @@ These apply when you have the T3 Code tools (`t3_thread_*`).
   continue an existing branch as `~/desk/AGENTS.md` describes. Unless the effort's `status.md` or I
   say otherwise, use Claude 2 (`claudeAgent_claude_2`), `claude-opus-5-5`,
   effort `low`.
-- Watch a published PR with `watch_pull_request`. Its wake-ups are news, not
-  permission. Call `unwatch_pull_request` before handing back to me.
+- Watch a published PR with `watch_pull_request` only while nothing waits on
+  me, since a watched thread stays in my Working list instead of my inbox. Its
+  wake-ups are news, not permission. Before a turn ends with a question, a draft
+  or a request for my OK, call `unwatch_pull_request`, and watch again once I've
+  answered.
 - Don't settle, snooze, archive or rename threads unless I ask or you're a
   manager following `~/desk/AGENTS.md`.
 

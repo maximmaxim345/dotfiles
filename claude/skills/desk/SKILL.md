@@ -52,7 +52,7 @@ Pass my words, the blocker and the summary to the commands in single quotes, wri
 
 ## Move desktop sessions
 
-For each session this moves, the desk starts a T3 Code thread on the same branch with a brief the session wrote. A session is archived only after its T3 thread confirmed the branch, so nothing is lost when a launch fails.
+For each task this moves, usually one per session, the desk starts a T3 Code thread on the same branches with a brief the session wrote. A session is archived only after the T3 threads for all its tasks confirmed their branches, so nothing is lost when a launch fails.
 
 ### Which sessions
 
@@ -70,7 +70,7 @@ List the sessions you'll move with their branches and PRs, and the effort, marke
 A coordinator sends each task session "Prepare to move to T3 Code: follow the Prepare steps in `~/.claude/skills/desk/SKILL.md` and reply with their result line." with SendMessage, and waits for every reply. Each session then:
 
 1. Stops after its current step and starts nothing new.
-2. Lists every branch it worked on, in every repo it touched, with its worktree (`git worktree list` in each repo) and its PR. All of them form one task, unless a branch holds unrelated work that nothing else depends on, like a side fix. That branch becomes a task of its own.
+2. Lists every branch it worked on, in every repo it touched, with its worktree (`git worktree list` in each repo) and its PR. All of them form one task, unless a branch holds unrelated work that nothing else depends on, like a side fix. That branch becomes a task of its own. Each branch belongs to exactly one task, and a task with branches has one main branch.
 3. Commits everything in each of those worktrees, untracked files included, following my commit rules. Unfinished work goes in a `wip:` commit. Never commit secrets. Nothing is pushed.
 4. Writes one brief per task to `~/desk/efforts/<effort>/briefs/<slug>.md`, or to a file under `$TMPDIR` without an effort, since the backlog item keeps its text. Write it for someone who never saw this session:
    - the goal and the done criteria;
@@ -80,7 +80,7 @@ A coordinator sends each task session "Prepare to move to T3 Code: follow the Pr
    - open questions, approaches rejected and why, and extra findings not filed yet;
    - git-ignored files the work needs, like env files or test data. Copy them to `~/desk/efforts/<effort>/work/<slug>/`, which git ignores, or next to the brief without an effort, and list them by name. Archiving removes the old worktree with everything in it.
 5. Frees every branch once `git status --porcelain` prints nothing in its worktree: `git switch --detach` in a worktree, or a switch to the default branch in a main checkout. `git worktree list` must no longer show any of them. When something is still uncommitted, stop and report it instead. Skip this step when the session has no branch of its own.
-6. Replies with one line per task: `<title> | <short repo> | <kind> | <main branch or none> | <PR URLs, main first, or none> | <brief path> | <main checkout> | <session id> | <other branches as checkout=branch, or none>`. The main branch is the one the task's work centers on. The title is the task title without its number and type, a main checkout is the parent of `git rev-parse --path-format=absolute --git-common-dir`, and the session id comes from `get_session` on `self`.
+6. Replies with one line per task: `<title> | <short repo> | <kind> | <main branch or none> | <PR URLs separated by spaces, main first, or none> | <brief path> | <main checkout> | <session id> | <other branches as main-checkout=branch separated by spaces, or none>`. The main branch is the one the task's work centers on. The title is the task title without its number and type, a main checkout is the parent of `git rev-parse --path-format=absolute --git-common-dir`, and the session id comes from `get_session` on `self`.
 
 ### Hand over
 
@@ -106,4 +106,4 @@ Run `~/desk/bin/backlog wait-moved <item ids>` as a background Bash command (`ru
 - Archive each printed session once with `archive_session`, after all its items printed. That also removes its old worktree, which nothing uses anymore. Archive this session last.
 - On `timeout`, read the desk comments on the items that aren't `started`, tell me what went wrong, and archive none of those sessions.
 
-Then reply with one line per session: its title and its T3 thread id.
+Then reply with one line per item: its title and its T3 thread id.

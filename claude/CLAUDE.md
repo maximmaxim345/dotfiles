@@ -425,7 +425,7 @@ These apply when you have the T3 Code tools (`t3_thread_*`).
   never by creating a worktree yourself, except under `~/.t3/worktrees` to
   continue an existing branch as `~/desk/AGENTS.md` describes. Unless the effort's `status.md` or I
   say otherwise, use Claude 2 (`claudeAgent_claude_2`), `claude-opus-5-5`,
-  effort `low`.
+  effort `high`.
 - Watch a published PR with `watch_pull_request` only while nothing waits on
   me, since a watched thread stays in my Working list instead of my inbox. Its
   wake-ups are news, not permission.

@@ -33,7 +33,7 @@ With `setup`, do steps 1 to 4 and start nothing, not even the frontend, then giv
 
 ## Other servers
 
-A server that holds a port you need belongs to its owner. Find the owner: take the pid from `lsof`, its folder from `lsof -a -p <pid> -d cwd -Fn`, and read `.claude/ma-dev.json` there. Stop it only when that file names this thread and the same pid. When it names another thread, or there is no file or an older pid (often my own F5 run), tell me whose server it is and ask instead of stopping it. Never copy another server's data.
+A server that holds a port you need belongs to its owner. Find the owner: take the pid from `lsof`, its folder from `lsof -a -p <pid> -d cwd -Fn`, and read `.claude/ma-dev.json` there. Stop it only when that file names this thread and the same pid. When it names another thread, or there is no file or another pid (often my own F5 run), tell me whose server it is and ask instead of stopping it. Never copy another server's data.
 
 ## Logging in
 

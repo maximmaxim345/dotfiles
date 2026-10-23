@@ -56,7 +56,7 @@ Ask before each step that touches something I set up:
 
 ## Known traps
 
-- MA runs a pause on a Sendspin player as a STOP, which shows progress 0:00. That isn't a regression.
+- MA runs a pause on a Sendspin player as a STOP. The UI keeps the paused position, so 0:00 while paused is a regression.
 - A dynamic leader switch only happens through a sync group player.
 - A script that does its work at import time runs again when another script imports it. Keep reusable code in modules with a `__main__` guard.
 - Bridged speakers can register late or under a temporary id while the Cast and AirPlay bridges settle. Wait for the player before calling `play_media`, since a call to a missing player fails with "There is nothing to play here".

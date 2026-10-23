@@ -35,6 +35,9 @@ choice changes the outcome. Push back when a simpler approach exists rather
 than building what was literally asked. Stop and say so when confused instead
 of coding through it.
 
+When you ask me to choose, lead with your pick and one line why, then the
+alternatives.
+
 A question asking for information or an opinion ("why does X happen?",
 "should we do Y?") is not a request to act. Answer it and stop. A request
 phrased politely as a question ("can you fix X?") is a request.
@@ -145,6 +148,10 @@ handoff file the work already uses, or write
 can compact and what to send afterwards. Before a step that runs longer than
 about ten minutes, say roughly how long it takes and whether you need me before
 it ends.
+
+When I write while you're working, answer my message first in your next
+reply, before any progress update. Don't post a message only because a monitor
+expired or a routine progress event arrived: report when a stage ends.
 
 ## Dashes
 
@@ -392,6 +399,10 @@ NOT create the PR, so a missing PR afterward is expected: don't retry without
 `-w`, don't publish it yourself. When `-w` can't open the form (no working `gh`
 or no browser), create a PR only through `/open-pr`, even when asked directly.
 
+For a PR that changes docs or spec text, show me the diff in the thread and let
+me review the wording before pushing, then open the PR form once, after the last
+wording change.
+
 ## PR review workflow
 
 When I ask for a review of someone's PR or of my local changes, follow `/review-changes`.
@@ -430,12 +441,14 @@ These apply when you have the T3 Code tools (`t3_thread_*`).
   me, since a watched thread stays in my Working list instead of my inbox. Its
   wake-ups are news, not permission.
 - Before a turn ends with a question, a draft or a request for my OK, call
-  `unwatch_pull_request`. Outside the desk and manager threads, also run
+  `unwatch_pull_request`. Outside the desk thread, also run
   `~/desk/bin/backlog ask --thread <your id> "<the question in one line>"`,
-  which shows it on my board and needs no OK from me. Your id comes from
-  `t3_thread_configuration`. The command fails when your thread has no backlog
-  item, and then the inbox is enough. Once I've answered, run it with `--clear`,
-  read the PR's new comments and checks, then watch again.
+  which shows it on my board and needs no OK from me. Skip it while I'm active
+  in the thread (my last message is less than 10 minutes old), since I see the
+  question there. Your id comes from `t3_thread_configuration`. The command
+  fails when your thread has no backlog item, and then the inbox is enough.
+  Once I've answered, run it with `--clear`, read the PR's new comments and
+  checks, then watch again.
 - Don't settle, snooze, archive or rename threads unless I ask or you're a
   manager following `~/desk/AGENTS.md`.
 

@@ -42,6 +42,24 @@ Done, added the `psk_category` field instead in this PR.
 That's for a different PR though since it touches multiple roles, I'll write that once #175 is merged.
 ```
 
+Accepting a reviewer's suggestion:
+
+```
+Good catch! Adjusted it with 889ceab.
+```
+
+```
+Yes, that's what I meant, your wording is clearer. Applied it, thanks!
+```
+
+## Asking a reporter for more info
+
+```
+I'm having trouble reproducing this myself, since the nightly plays Opus fine on my ESP32 test device.
+Since this is an unsupported install, I'd appreciate it if you could try running the latest nightly through our Docker image to see if the stutter still happens there.
+If it does, please share the full server log with the Sendspin provider's log level set to verbose, plus the full ESPHome log from the same playback.
+```
+
 ## Asking a contributor for something
 
 ```

@@ -42,4 +42,4 @@ Running this command is not a go-ahead to push. Nothing leaves this machine unti
    ```bash
    perl -e 'alarm 1800; exec @ARGV' sh -c 'until gh pr list --repo "$1" --head "$2" --state all --json url,createdAt,headRepositoryOwner --jq ".[] | select(.headRepositoryOwner.login == \"$3\" and .createdAt >= \"$4\") | .url" | grep .; do sleep 30; done' _ <target> <branch> <owner> <time>
    ```
-   It prints the PR URL and exits once the PR exists. Then link and watch it: in T3 Code with `link_pull_request` and `watch_pull_request`, in the desktop app with its PR monitor and Auto-fix, as my CLAUDE.md says. If it ends after 30 minutes without a URL, say so in one line and leave it to me.
+   It prints the PR URL and exits once the PR exists. Then link and watch it with your app's PR tools, if it has any, as my CLAUDE.md says. If it ends after 30 minutes without a URL, say so in one line and leave it to me.

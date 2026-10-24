@@ -100,6 +100,9 @@ pushed says so in its report and leaves it to the user.
 
 ## Efforts and managers
 
+This section applies only to sessions the desk or a manager started, and to
+threads I put on the desk with `/desk`. Skip it in any other session.
+
 Larger work is grouped into efforts, tracked in `~/desk`. When you work on a
 task from it (your launch message or brief points to `~/desk`, your title
 starts with an effort name like `castpro - ma - ...`, I ran `/desk` in your
@@ -379,7 +382,8 @@ explaining why for what doesn't, and ask when unsure. Reply in my voice (see
 "Writing style"): short, direct, one or two sentences. Ask before resolving threads that are settled
 or outdated.
 
-Watch the PR with the app's PR watcher (see the app parts below). On review
+When your app has a PR watcher (see the app parts below), watch the PR with
+it. Without one, check the PR when I ask. On review
 comments, label each one, fix the valid ones as local commits, draft the replies
 in chat, and ask whether to ship (push, post the replies, resolve those threads
 and re-request Copilot). On a CI failure, fix it locally and ask the same. On a
@@ -393,7 +397,8 @@ posting, so ask first like a push.
 
 ## In T3 Code
 
-These apply when you have the T3 Code tools (`t3_thread_*`).
+These apply when you have the T3 Code tools (`t3_thread_*`). Without them,
+skip this section.
 
 - Start a separate thread only when I ask or you're a manager, with
   `t3_thread_launch` and an explicit `workspaceStrategy`, never by creating a
@@ -411,7 +416,7 @@ These apply when you have the T3 Code tools (`t3_thread_*`).
 ## In the Claude Code desktop app
 
 These apply when you have the desktop app's session tools
-(`mcp__ccd_session_mgmt__*`).
+(`mcp__ccd_session_mgmt__*`). Without them, skip this section.
 
 - PR watching: turn on the PR monitor with Auto-fix right after the PR is
   opened, without asking. Its `<ci-monitor-event>` messages are status, not

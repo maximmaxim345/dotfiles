@@ -26,7 +26,7 @@ stored command template. This module bridges that gap.
 - Skills already load in OpenCode from `~/.claude/skills/`. No module needed.
 - The `implement`, `review-brief`, `blast-radius`, `ma-dev` skills use
   `$ARGUMENTS` in the body. OpenCode loads the body as-is, so `$ARGUMENTS` can
-  render literally. Cosmetic only; the skills still function.
+  render literally. Cosmetic only. The skills still function.
 
 ## Decisions
 
@@ -43,7 +43,7 @@ prompt references inlined.
 
 Out of scope: the two subagent command variants, which are dropped. Skills need
 no module. Prompt guideline files (CLAUDE.md, commit-guidelines.md, etc.) stay
-in `~/.claude/` via `claude_config`; this module only consumes them.
+in `~/.claude/` via `claude_config`. This module only consumes them.
 
 Commands in: `commit`, `commit-split`, `open-pr`, `review-changes`.
 Commands out (dropped): `commit-subagent`, `commit-split-subagent`.
@@ -133,4 +133,4 @@ available. Repeated installation and uninstallation are safe.
 
 - Command templates stay in `claude/skills/<name>/SKILL.md`. There is no duplicate OpenCode copy.
 - Should `review-changes` later switch to OpenCode's native `subagent: true`
-  field instead of manual subagent prose? Deferred; current plan is manual.
+  field instead of manual subagent prose? Deferred. Current plan is manual.

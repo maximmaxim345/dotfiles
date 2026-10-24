@@ -3,11 +3,13 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 import df
 from df.config import Config
 from df.modules import MODULES
+from df.ui import InstallationScreen
 
 opencode_config = MODULES["opencode_config"]
 
@@ -250,6 +252,54 @@ class OpenCodeConfigTests(unittest.TestCase):
 
         self.assertTrue(target.is_symlink())
         self.assertEqual(target.resolve(), original.resolve())
+
+    def test_lifecycle_logs_to_stdout_with_tui_print_replacement(self) -> None:
+        self.commands.mkdir(parents=True)
+        target = self.commands / "commit.md"
+        target.write_text("Original command.\n", encoding="utf-8")
+        logger = InstallationScreen.print_log.__get__(SimpleNamespace(textlog=Mock()))
+
+        with patch.object(opencode_config, "print", logger, create=True):
+            opencode_config.install(self.config, self.stdout)
+            target.write_text("Local edit.\n", encoding="utf-8")
+            opencode_config.update(self.config, self.stdout)
+            opencode_config.uninstall(self.config, self.stdout)
+
+        self.stdout.seek(0)
+        log = self.stdout.read()
+        self.assertIn("Backed up ", log)
+        self.assertIn("Wrote ", log)
+        self.assertIn("Restored ", log)
+        self.assertEqual(target.read_text(), "Original command.\n")
+
+    def test_dangling_original_symlink_is_restored(self) -> None:
+        self.commands.mkdir(parents=True)
+        original = self.root / "missing.md"
+        target = self.commands / "commit.md"
+        target.symlink_to(original)
+
+        opencode_config.install(self.config, self.stdout)
+        opencode_config.uninstall(self.config, self.stdout)
+
+        self.assertTrue(target.is_symlink())
+        self.assertEqual(target.readlink(), original)
+
+    def test_local_edits_do_not_overwrite_dangling_original_backup(self) -> None:
+        self.commands.mkdir(parents=True)
+        original = self.root / "missing.md"
+        target = self.commands / "commit.md"
+        target.symlink_to(original)
+        opencode_config.install(self.config, self.stdout)
+        original_backup = Path(self.config.get("old_commit"))
+        target.write_text("Local edit.\n", encoding="utf-8")
+
+        opencode_config.update(self.config, self.stdout)
+
+        edited_backup = Path(self.config.get("edited_commit"))
+        self.assertNotEqual(edited_backup, original_backup)
+        self.assertTrue(original_backup.is_symlink())
+        self.assertEqual(original_backup.readlink(), original)
+        self.assertEqual(edited_backup.read_text(), "Local edit.\n")
 
     def test_missing_dependency_leaves_installed_commands_unchanged(self) -> None:
         opencode_config.install(self.config, self.stdout)

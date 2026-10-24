@@ -27,7 +27,7 @@ def find_backup_path(original: Path) -> Path:
     name = original.name
     backup_path = location / (name + ".old")
     i = 1
-    while backup_path.exists():
+    while backup_path.exists() or backup_path.is_symlink():
         backup_path = location / (name + f".old{i}")
         i += 1
     return backup_path
@@ -140,7 +140,7 @@ def restore_backup(path: Path, config: ModuleConfig, key: str) -> None:
     else:
         # Found a backup, restore it
         backup_path = Path(backup_path)
-        if backup_path.exists():
+        if backup_path.exists() or backup_path.is_symlink():
             move_path(backup_path, path)
         else:
             # The backup does not exist, we can't restore it, ignore it

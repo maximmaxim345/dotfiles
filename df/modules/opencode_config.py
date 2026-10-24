@@ -103,7 +103,7 @@ def remove_target(name: str, digest: Optional[str], config: ModuleConfig, stdout
     else:
         key = f"old_{name}" if digest is None else f"edited_{name}"
         df.create_backup(target, config, key)
-        print(f"Backed up {target} to {config.get(key)}", file=stdout)
+        stdout.write(f"Backed up {target} to {config.get(key)}\n")
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -122,7 +122,7 @@ def uninstall_commands(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         df.restore_backup(target, config, f"old_{name}")
         del hashes[name]
         config.set("hashes", hashes)
-        print(f"Restored {target}", file=stdout)
+        stdout.write(f"Restored {target}\n")
     config.unset("hashes")
 
 
@@ -156,7 +156,7 @@ def update_commands(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         target.write_text(text, encoding="utf-8", newline="\n")
         hashes[name] = digest
         config.set("hashes", hashes)
-        print(f"Wrote {target}", file=stdout)
+        stdout.write(f"Wrote {target}\n")
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

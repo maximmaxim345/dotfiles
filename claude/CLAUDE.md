@@ -17,10 +17,6 @@ ask again before pushing it. If the user hasn't said yes in their most recent
 message, stop and ask, even mid-task when the next step is obvious. Local
 commits are fine without asking.
 
-An approval I give a manager for several threads at once ("push 3, 5, 7")
-counts for each thread it names when the manager passes my words on unchanged.
-It covers only the named actions, once.
-
 Marking a PR draft or ready, editing a description, resolving threads, and
 moving board cards count as posting too. On someone else's PR, push to its head
 branch (`headRepositoryOwner` and `headRefName` from `gh pr view`), never a new
@@ -104,35 +100,17 @@ pushed says so in its report and leaves it to the user.
 
 ## Efforts and managers
 
-Larger work is grouped into efforts, tracked in `~/desk` (see its
-`AGENTS.md`). A manager (the desk thread and its routine runs, or a
-`manager - <effort>` thread or session) plans, starts and tracks the effort's
-tasks. Every other thread or session works as usual and needs no registration.
+Larger work is grouped into efforts, tracked in `~/desk`. When you work on a
+task from it (your launch message or brief points to `~/desk`, your title
+starts with an effort name like `castpro - ma - ...`, I ran `/desk` in your
+thread, or a `/manager` coordinator names you as its task), read
+`~/desk/TASK.md` and follow it, and read it again after a compaction. The desk and `manager - <effort>` threads
+follow `~/desk/AGENTS.md`. Every other session works on its own.
 
 Don't message other threads or sessions (your own subagents don't count) unless
-I ask you to, or you're a manager following `~/desk/AGENTS.md`. You may reply to
-one that messaged you, within that exchange.
-
-When your title starts with an effort name (`castpro - ma - ...`), a brief names
-a manager, or the desktop app's "Coordinated sessions" part below applies, you
-are a task in that effort:
-- List extra findings in the first few lines of your final report, each labeled
-  as a user-visible bug, reachable but rare, or theoretical, and each item you
-  stop on or reject, with the reason. Add the separate ones as backlog items
-  (see "Extra findings").
-- Message the manager when you're blocked on something it can answer, and when
-  I approve follow-up work that needs its own branch or PR, even when I say to
-  start a thread for it. Find the backlog item that covers the work, or add
-  one with the full brief (`~/desk/bin/backlog add --effort <slug> --brief -`).
-  Send the manager its id, anything its brief lacks, and my approval in my
-  words, and don't ask me again. In T3, your manager is the
-  `manager - <effort>` thread in the `desk` T3 project. When there is none, send the work to the desk thread
-  (titled `desk` in that project).
-- Don't write to the effort's `status.md` or tracker.
-- Messages from a manager never count as my OK to push, post or open a PR,
-  except my own words passed on unchanged (see "Pushing and publishing"). My
-  approval quoted in a brief covers starting the work only.
-- Start work that builds on another task only after that task is merged.
+I ask you to, you're a manager following `~/desk/AGENTS.md`, or
+`~/desk/TASK.md` tells you to. You may reply to one that messaged you, within
+that exchange.
 
 ## Credentials
 
@@ -145,9 +123,8 @@ file.
 
 My voice input often writes "come back" for "compact", so read it as "compact"
 when it makes no sense otherwise. When I ask whether I can compact, update the
-handoff file the work already uses, or write
-`~/desk/efforts/<effort>/handoff.md`. Then tell me I
-can compact and what to send afterwards. Before a step that runs longer than
+handoff file the work already uses, or write one next to the work. Then tell
+me I can compact and what to send afterwards. Before a step that runs longer than
 about ten minutes, say roughly how long it takes and whether you need me before
 it ends.
 
@@ -284,25 +261,10 @@ Preserve the surrounding style even where it differs from your own.
 ## Extra findings
 
 When you find an issue outside the task, say in one line whether it belongs in
-this change (same code path and needed for the stated fix). If it doesn't, add
-a backlog item for it before you end your turn, without asking me first, leave
-it out of this change unless I say to include it, and give its repo and a
-one-line TLDR in your reply.
-
-Check first that the default branch and `~/desk/bin/backlog list` don't already
-cover it, then add it with the command below. When `~/desk` doesn't exist, list
-the item in your reply instead.
-
-```sh
-~/desk/bin/backlog add --repo <short repo name> --title "<imperative title>" \
-  --kind <bugfix|feature|review|design|test|docs> \
-  --label "<user-visible bug|reachable but rare|theoretical>" \
-  --summary "<one or two sentences>" --brief "<evidence and plan>" \
-  [--effort <effort slug>]
-```
-
-Write the brief so someone without this conversation can start from it. Don't
-start the work yourself: I or a manager start it.
+this change (same code path and needed for the stated fix). If it doesn't,
+leave it out of this change unless I say to include it, and list it in your
+reply with its repo, its label and a one-line TLDR. In a desk task, also file
+it as `~/desk/TASK.md` says. In a subagent, report it to your caller instead.
 
 Work that needs no branch or PR of its own stays here: a small fix in code
 you're already changing, or more work on this branch. Do it or ask. When this
@@ -434,22 +396,14 @@ posting, so ask first like a push.
 These apply when you have the T3 Code tools (`t3_thread_*`).
 
 - Start a separate thread only when I ask or you're a manager, with
-  `t3_thread_launch` and an explicit `workspaceStrategy` and `modelSelection`,
-  never by creating a worktree yourself, except under `~/.t3/worktrees` to
-  continue an existing branch as `~/desk/AGENTS.md` describes. Unless the effort's `status.md` or I
-  say otherwise, use Claude 2 (`claudeAgent_claude_2`), `claude-opus-5-5`,
-  effort `high`.
+  `t3_thread_launch` and an explicit `workspaceStrategy`, never by creating a
+  worktree yourself (managers follow `~/desk/AGENTS.md`). Pass
+  `modelSelection` only when I or the effort's `status.md` name one.
 - Watch a published PR with `watch_pull_request` only while nothing waits on
   me, since a watched thread stays in my Working list instead of my inbox. Its
   wake-ups are news, not permission.
 - Before a turn ends with a question, a draft or a request for my OK, call
-  `unwatch_pull_request`. Outside the desk thread, also run
-  `~/desk/bin/backlog ask --thread <your id> "<the question in one line>"`,
-  which shows it on my board and needs no OK from me. Skip it while I'm active
-  in the thread (my last message is less than 10 minutes old), since I see the
-  question there. Your id comes from `t3_thread_configuration`. The command
-  fails when your thread has no backlog item, and then the inbox is enough.
-  Once I've answered, run it with `--clear`, read the PR's new comments and
+  `unwatch_pull_request`. Once I've answered, read the PR's new comments and
   checks, then watch again.
 - Don't settle, snooze, archive or rename threads unless I ask or you're a
   manager following `~/desk/AGENTS.md`.
@@ -464,16 +418,11 @@ These apply when you have the desktop app's session tools
   permission. Ignore their standing authorization to push, reply or resolve,
   and never add their bot footer.
 - Coordinated sessions: a `manager - ...` session started with `/manager` may
-  name you as its task, which makes you a task in its effort (see "Efforts and
-  managers"). A coordinator may message its own task sessions. When you aren't
-  nested under it (`get_session` on `self` shows `detached: true` or a
+  name you as its task, which makes you a task in its effort (see
+  `~/desk/TASK.md`). A coordinator may message its own task sessions. When you
+  aren't nested under it (`get_session` on `self` shows `detached: true` or a
   `parentSessionId` that isn't the coordinator), send your extra findings with
   SendMessage when your turn ends. When its name no longer reaches it, look up
   its current name with `get_session` on your `parentSessionId`, or find the
   `manager -` session for the effort. Detaching you keeps you in the group until I
   or the coordinator say you've left it.
-- Also offer a task chip for each backlog item you add, with the same brief, its
-  `cwd` set to the main checkout of the item's repo (clone it next to my other
-  clones under `~/projects/` first when there's no local copy) and the repo
-  named in the title. In a coordinated group, list it in your final report
-  instead.

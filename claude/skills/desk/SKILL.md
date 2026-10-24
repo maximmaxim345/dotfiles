@@ -48,7 +48,8 @@ Pass my words, the blocker and the summary to the commands in single quotes, wri
    ```
 
    The title is the task without effort or repo prefixes. It prints the item id. When this thread already has an item that isn't done or dropped, it reuses that item and applies only the note, effort, blocker and status. A blocker is added to the ones the item has.
-5. Reply in one line with the item id and what you applied. Ask nothing, since a question keeps the thread waiting on me and the desk won't settle it.
+5. Read `~/desk/TASK.md`, which applies to this thread from now on.
+6. Reply in one line with the item id and what you applied. Ask nothing, since a question keeps the thread waiting on me and the desk won't settle it.
 
 ## Move desktop sessions
 

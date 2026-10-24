@@ -44,7 +44,7 @@ Write the report in the chat:
 - Each finding, labeled as a regression from the change under test or as already on dev or stable, and as a user-visible bug, reachable but rare, or theoretical. For the ones that need a fix, give a proposed task title starting with a shared prefix, such as `found in backport test - `.
 - What wasn't covered, and why.
 
-Then ask whether to send the report to the session that owns the merged branch, and whether that session should add the follow-up tasks as backlog items. Send nothing until I say yes.
+Then ask whether to send the report to the session that owns the merged branch. In a desk task, also ask whether that session should add the follow-up tasks as backlog items. Send nothing until I say yes.
 
 ## 5. Clean up
 

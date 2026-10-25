@@ -28,13 +28,13 @@ Then present a plan:
 - what "done" means and how you'll verify it
 - whether this should be more than one PR
 
-For Music Assistant, Sendspin (except the spec), ESPHome, and OHF-Voice work, run the plan past ohf-sage before presenting it and include what it cites.
+For Music Assistant, Sendspin (except the spec), ESPHome, and OHF-Voice work, run the plan past ohf-sage before presenting it when it involves a real design choice, and include what it cites.
 
 Continue without waiting for my approval when all of these hold, and say so under the plan:
 - the requirements are clear and you asked me nothing
 - one approach clearly fits the existing code
 - it's one PR, with no protocol, public API or migration change
-- ohf-sage agrees, where it applies
+- ohf-sage agrees, where it ran
 
 Otherwise wait for my approval.
 

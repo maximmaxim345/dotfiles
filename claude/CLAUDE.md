@@ -88,7 +88,7 @@ fresh one when the task is different, and for each review round, with the
 earlier findings and replies in its prompt.
 
 Use ohf-sage for Music Assistant, Sendspin, ESPHome, and OHF-Voice
-implementation work when settling a plan, and see "Before handing over". Do
+implementation work when a plan involves a real design choice, and see "Before handing over". Do
 small reviews and Sendspin spec text yourself, and use ohf-sage for those only
 when I ask.
 

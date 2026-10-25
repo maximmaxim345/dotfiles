@@ -37,9 +37,6 @@ def is_linked(source_name: str, target_name: str) -> bool:
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     for name in DATA_DIRS:
         (desk_path / name).mkdir(parents=True, exist_ok=True)
-    repos_path = desk_path / "repos.json"
-    if not repos_path.exists():
-        repos_path.write_text("{}\n")
     for source_name, target_name, key in ENTRIES:
         if is_linked(source_name, target_name):
             continue

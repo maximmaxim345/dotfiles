@@ -10,14 +10,14 @@ Efforts are larger bodies of work, tracked in `~/desk`. A manager (the desk thre
 - File each extra finding that doesn't belong in this change as a backlog item before you end your turn, without asking me first, and give its repo and a one-line TLDR in your reply. Check first that the default branch and `~/desk/bin/backlog list` don't already cover it. Write the brief so someone without this conversation can start from it, and don't start the work yourself: I or a manager start it.
 
 ```sh
-~/desk/bin/backlog add --repo <short repo name> --title "<imperative title>" \
+~/desk/bin/backlog add --repo <repo name> --title "<imperative title>" \
   --kind <bugfix|feature|review|design|test|docs> \
   --label "<user-visible bug|reachable but rare|theoretical>" \
   --summary "<one or two sentences>" --brief "<evidence and plan>" \
   [--effort <effort slug>]
 ```
 
-Short repo names are the keys of `~/desk/repos.json`.
+`~/desk/bin/backlog add --help` lists the repo names.
 
 ## Working with the manager
 

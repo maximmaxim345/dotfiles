@@ -10,7 +10,7 @@ This repo holds the state of my work across repos: efforts, the backlog and the 
 - `backlog/<id>.json`: one item per file, see "Backlog items".
 - `board/`: the local board page and its server.
 - `bin/`: scripts the routines call.
-- `repos.json`: short repo names.
+- `repos.json`: optional, repo names that have no T3 project.
 - `state/`: the board's and listener's runtime state, not committed.
 
 `AGENTS.md`, `TASK.md`, `bin/` and `board/` are links into my dotfiles. Don't edit them: add a backlog item with repo `dotfiles` instead.
@@ -27,7 +27,7 @@ An effort is a body of work with one goal, spread over several tasks and often s
 
 `<effort> - <repo> - <title>`, or `<repo> - <title>` without an effort. The title is fixed: no numbers and no state words. Priority is the order of the effort's task table, state is the thread's lifecycle state.
 
-Short repo names are the keys of `repos.json`, and each value names the repo. Backlog items use these names only, and `bin/backlog` rejects others.
+Repo names are the names of T3 projects that are git repos, plus the names in `repos.json`. `bin/backlog add --help` lists them. Backlog items use these names only, and `bin/backlog` rejects others.
 
 ## Thread lifecycle
 
@@ -58,7 +58,7 @@ Never delete threads, backlog items or task rows. Done and dropped work only lea
 7. Read the thread of every `started` item (`t3_thread_read`). When the thread is archived or gone, mark the item done with today's date and add a desk comment that it was closed outside the desk. When the thread isn't snoozed, is idle and has no PR, and its last reply says the work is finished, list it in `needsYou` with the why "finished? mark it done on the board". When the thread isn't snoozed, a reply since my last message asks me something, and the item has no `asks`, set it with `bin/backlog ask --thread <id> "<the question in one line>"`. When the item has `asks` and I answered in the thread after `asks.at`, with no later reply asking me something, clear it with `bin/backlog ask --thread <id> --clear`. Unsettle a settled thread whose item has `asks`, since a settled thread leaves my inbox.
 8. Run `bin/board-threads`, which rebuilds `state/threads.json` from T3's database and the backlog and prints the entries that changed, then fix any new `needsYou` why that is wrong (see "Board"). Read `threads.json` only when you need more than that. When it fails because T3's database changed, call `t3_thread_list` for every project, settled and snoozed included, and pipe the results into `bin/board-threads --stdin`. Then reply with what needs me, in priority order, one line each.
 9. Sort my captures (status `new`, my raw notes in `brief`): turn each into one or more proper items, one per idea, with title, kind, label, repo, effort, summary and brief, status `open`, and the original note quoted in a desk comment. When a capture becomes one item, run `bin/backlog reslug <id>` after giving it its title, fix the effort files it lists, and tell a started thread its brief's new path. Keep a repo or effort I picked. When a note is too unclear to sort, leave it `new` and ask in a comment.
-10. Triage open backlog items: set the short repo name and the effort, drop duplicates and items whose fix is already on the default branch (with a comment saying why), and fill in missing briefs. Set `blockedBy` when none of an item can move before another item or an outside event, and remove blockers that no longer hold, also on started items. Mark up to five open items I should do soon with `suggested` (a one-line reason) and remove it from items that no longer fit. In efforts with a manager, leave `suggested` to the manager. Move items into Next only when my note or message asks for it, and put them last, since that column is my order.
+10. Triage open backlog items: set the repo name and the effort, drop duplicates and items whose fix is already on the default branch (with a comment saying why), and fill in missing briefs. Set `blockedBy` when none of an item can move before another item or an outside event, and remove blockers that no longer hold, also on started items. Mark up to five open items I should do soon with `suggested` (a one-line reason) and remove it from items that no longer fit. In efforts with a manager, leave `suggested` to the manager. Move items into Next only when my note or message asks for it, and put them last, since that column is my order.
 11. Answer new comments on backlog items (`"by": "me"`) with a comment of your own (`"by": "desk"`), and apply what they ask that needs no launch.
 
 After a sweep, run `bin/desk-wait --refreshed`, since the sweep covers a refresh.

@@ -21,7 +21,7 @@ LABELS = ["user-visible bug", "reachable but rare", "theoretical"]
 BOARD = "http://127.0.0.1:8765"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import REPOS, apply_status, log_event, write_json  # noqa: E402
+from server import apply_status, log_event, repos, write_json  # noqa: E402
 
 
 def slug_id(day: datetime.date, title: str) -> str:
@@ -247,11 +247,12 @@ def list_items(args: argparse.Namespace) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    known_repos = repos()
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_add = sub.add_parser("add", help="add an open item and print its path")
     p_add.add_argument("--title", required=True)
-    p_add.add_argument("--repo", required=True, choices=REPOS, metavar="REPO", help="short repo name: " + ", ".join(REPOS))
+    p_add.add_argument("--repo", required=True, choices=known_repos, metavar="REPO", help="repo name: " + ", ".join(known_repos))
     p_add.add_argument("--kind", required=True, choices=KINDS)
     p_add.add_argument("--label", required=True, choices=LABELS)
     p_add.add_argument("--summary", required=True, help="one or two sentences")
@@ -262,7 +263,9 @@ def main() -> None:
 
     p_adopt = sub.add_parser("adopt", help="add a started item for a running T3 thread, or reuse its item")
     p_adopt.add_argument("--title", required=True)
-    p_adopt.add_argument("--repo", required=True, choices=REPOS, metavar="REPO", help="short repo name: " + ", ".join(REPOS))
+    p_adopt.add_argument(
+        "--repo", required=True, choices=known_repos, metavar="REPO", help="repo name: " + ", ".join(known_repos)
+    )
     p_adopt.add_argument("--kind", choices=KINDS)
     p_adopt.add_argument("--summary", required=True, help="one or two sentences")
     p_adopt.add_argument("--brief-file", required=True, help="the brief the thread wrote")
@@ -276,7 +279,7 @@ def main() -> None:
 
     p_move = sub.add_parser("move", help="add an item for a Claude desktop session and press Start for it")
     p_move.add_argument("--title", required=True)
-    p_move.add_argument("--repo", required=True, choices=REPOS, metavar="REPO", help="short repo name: " + ", ".join(REPOS))
+    p_move.add_argument("--repo", required=True, choices=known_repos, metavar="REPO", help="repo name: " + ", ".join(known_repos))
     p_move.add_argument("--kind", choices=KINDS)
     p_move.add_argument("--summary", required=True, help="one or two sentences")
     p_move.add_argument("--brief-file", required=True, help="the brief the session wrote")

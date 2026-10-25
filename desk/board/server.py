@@ -8,6 +8,7 @@ import datetime
 import json
 import os
 import re
+import sqlite3
 import tempfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -18,12 +19,13 @@ BACKLOG = DESK / "backlog"
 EFFORTS = DESK / "efforts"
 PAGE = Path(__file__).resolve().parent / "index.html"
 STATE = DESK / "state"
+T3_DB = Path.home() / ".t3" / "userdata" / "statev2.sqlite"
+EXTRA_REPOS = DESK / "repos.json"
 THREADS = STATE / "threads.json"
 EVENTS = STATE / "events.jsonl"
 LISTENER = STATE / "listener.pid"
 SETTABLE_STATUSES = {"open", "next", "requested", "done", "dropped"}
 CLOSED_STATUSES = {"done", "dropped"}
-REPOS = list(json.loads((DESK / "repos.json").read_text()))
 
 
 def write_json(path: Path, data: dict) -> None:
@@ -49,9 +51,25 @@ def efforts() -> list[dict]:
     return result
 
 
+def repos() -> list[str]:
+    """Names of T3 projects that are git repos, plus the names listed in repos.json."""
+    rows = []
+    if T3_DB.exists():
+        conn = sqlite3.connect(f"file:{T3_DB}?mode=ro", uri=True)
+        try:
+            rows = conn.execute("SELECT title, workspace_root FROM projection_projects WHERE deleted_at IS NULL").fetchall()
+        finally:
+            conn.close()
+    names = {title for title, root in rows if (Path(root) / ".git").exists()}
+    if EXTRA_REPOS.exists():
+        names.update(json.loads(EXTRA_REPOS.read_text()))
+    return sorted(names)
+
+
 def check_repo(repo: str | None) -> None:
-    if repo and repo not in REPOS:
-        raise ValueError(f"unknown repo {repo}, use one of: {', '.join(REPOS)}")
+    known = repos()
+    if repo and repo not in known:
+        raise ValueError(f"unknown repo {repo}, use one of: {', '.join(known)}")
 
 
 def listening() -> bool:
@@ -80,7 +98,7 @@ def all_items() -> dict[str, dict]:
 def load_state() -> dict:
     items = list(all_items().values())
     threads = json.loads(THREADS.read_text()) if THREADS.exists() else None
-    return {"items": items, "threads": threads, "efforts": efforts(), "repos": REPOS, "listening": listening()}
+    return {"items": items, "threads": threads, "efforts": efforts(), "repos": repos(), "listening": listening()}
 
 
 def apply_status(item: dict, status: str) -> None:

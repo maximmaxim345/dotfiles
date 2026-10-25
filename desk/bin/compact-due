@@ -22,7 +22,7 @@ COMPACTABLE = ("claudeAgent", "codex")
 ENDED = {"completed", "interrupted", "cancelled", "failed"}
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import write_json
+from server import write_json  # noqa: E402
 
 
 def parse_time(value: str | None) -> datetime.datetime | None:
@@ -35,7 +35,8 @@ def main() -> None:
         rows = conn.execute(
             "SELECT t.thread_id, t.title, t.payload_json, r.run_id, r.status, r.completed_at, r.provider,"
             " (SELECT COUNT(*) FROM orchestration_v2_projection_turn_items i WHERE i.thread_id = t.thread_id),"
-            " (SELECT COUNT(*) FROM orchestration_v2_projection_runtime_requests q WHERE q.thread_id = t.thread_id AND q.status != 'resolved')"
+            " (SELECT COUNT(*) FROM orchestration_v2_projection_runtime_requests q"
+            " WHERE q.thread_id = t.thread_id AND q.status != 'resolved')"
             " FROM orchestration_v2_projection_threads t LEFT JOIN orchestration_v2_projection_runs r"
             " ON r.thread_id = t.thread_id"
             " AND r.ordinal = (SELECT MAX(ordinal) FROM orchestration_v2_projection_runs WHERE thread_id = t.thread_id)"
@@ -53,22 +54,32 @@ def main() -> None:
         snoozed = parse_time(payload.get("snoozedUntil"))
         completed = parse_time(completed_at)
         if (
-            title == "desk" or title.startswith("manager - ")
+            title == "desk"
+            or title.startswith("manager - ")
             or payload.get("lineage", {}).get("relationshipToParent")
-            or snoozed and snoozed > now
+            or snoozed
+            and snoozed > now
         ):
             continue
         if thread_id not in managed:
             settled_at = parse_time(payload.get("settledAt"))
             marker = f"archive:{thread_id}:{payload.get('settledAt')}"
-            if payload.get("settledOverride") == "settled" and settled_at and now - settled_at >= SETTLED_FOR and marker not in seen:
+            if (
+                payload.get("settledOverride") == "settled"
+                and settled_at
+                and now - settled_at >= SETTLED_FOR
+                and marker not in seen
+            ):
                 due["archive"].append({"thread": thread_id, "title": title})
                 seen.append(marker)
             continue
         if (
             payload.get("settledOverride") == "settled"
-            or status not in ENDED or pending or completed is None
-            or run_id in seen or not IDLE <= now - completed < RECENT
+            or status not in ENDED
+            or pending
+            or completed is None
+            or run_id in seen
+            or not IDLE <= now - completed < RECENT
         ):
             continue
         compact = items >= MIN_ITEMS and provider.startswith(COMPACTABLE) and now - completed < CACHED

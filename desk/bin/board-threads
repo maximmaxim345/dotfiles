@@ -26,11 +26,13 @@ COLUMNS = {
 PAYLOAD_KEYS = {"lineage", "settledOverride", "snoozedUntil", "snoozedAt"}
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import write_json
+from server import write_json  # noqa: E402
 
 
 def schema_changed(detail: str) -> None:
-    sys.exit(f"T3's database no longer looks as expected ({detail}). Run with --stdin and pipe in the t3_thread_list results instead.")
+    sys.exit(
+        f"T3's database no longer looks as expected ({detail}). Run with --stdin and pipe in the t3_thread_list results instead."
+    )
 
 
 def parse_time(value: str | None) -> datetime.datetime | None:
@@ -68,17 +70,19 @@ def from_db(db: Path) -> list[dict]:
             continue
         until, snoozed_at, completed = (parse_time(v) for v in (payload["snoozedUntil"], payload["snoozedAt"], completed_at))
         failed_since = status == "failed" and (snoozed_at is None or completed is not None and completed > snoozed_at)
-        threads.append({
-            "id": thread_id,
-            "title": title,
-            "status": status,
-            "settled": payload["settledOverride"] == "settled",
-            "snoozedUntil": until if until and until > now and status != "waiting" and not failed_since else None,
-            "prs": [
-                {"url": pr["url"], "number": pr["number"], "state": (pr.get("snapshot") or {}).get("state")}
-                for pr in payload.get("pullRequests") or []
-            ],
-        })
+        threads.append(
+            {
+                "id": thread_id,
+                "title": title,
+                "status": status,
+                "settled": payload["settledOverride"] == "settled",
+                "snoozedUntil": until if until and until > now and status != "waiting" and not failed_since else None,
+                "prs": [
+                    {"url": pr["url"], "number": pr["number"], "state": (pr.get("snapshot") or {}).get("state")}
+                    for pr in payload.get("pullRequests") or []
+                ],
+            }
+        )
     return threads
 
 
@@ -89,14 +93,19 @@ def from_thread_list(data: object) -> list[dict]:
     for thread in [t for page in pages for t in (page["threads"] if "threads" in page else [page])]:
         if thread.get("relationshipToParent"):
             continue
-        threads.append({
-            "id": thread["threadId"],
-            "title": thread["title"],
-            "status": thread["status"],
-            "settled": thread["settled"],
-            "snoozedUntil": parse_time(thread["snoozedUntil"]) if thread["snoozed"] else None,
-            "prs": [{"url": pr["url"], "number": pr["number"], "state": pr.get("state")} for pr in thread.get("pullRequests") or []],
-        })
+        threads.append(
+            {
+                "id": thread["threadId"],
+                "title": thread["title"],
+                "status": thread["status"],
+                "settled": thread["settled"],
+                "snoozedUntil": parse_time(thread["snoozedUntil"]) if thread["snoozed"] else None,
+                "prs": [
+                    {"url": pr["url"], "number": pr["number"], "state": pr.get("state")}
+                    for pr in thread.get("pullRequests") or []
+                ],
+            }
+        )
     return threads
 
 
@@ -104,7 +113,7 @@ def effort_of(title: str, item: dict | None, efforts: set[str]) -> str | None:
     if item and item.get("effort"):
         return item["effort"]
     if title.startswith("manager - "):
-        return title[len("manager - "):]
+        return title[len("manager - ") :]
     prefix, sep, _ = title.partition(" - ")
     return prefix if sep and prefix in efforts else None
 
@@ -133,7 +142,14 @@ def build(threads: list[dict], items: list[dict], efforts: set[str], old: dict) 
         if manager:
             managers[effort] = thread["id"]
         live = status in LIVE_RUNS
-        active = live or status == "waiting" or thread["id"] in before["needsYou"] and not thread["settled"] or item and item.get("asks")
+        active = (
+            live
+            or status == "waiting"
+            or thread["id"] in before["needsYou"]
+            and not thread["settled"]
+            or item
+            and item.get("asks")
+        )
         if item and (item["status"] in CLOSED or item["status"] in UNSTARTED and not manager and not active):
             continue
         pr = next((p["url"] for p in prs if p["state"] == "open"), prs[0]["url"] if prs else item and item.get("pr"))
@@ -165,7 +181,13 @@ def build(threads: list[dict], items: list[dict], efforts: set[str], old: dict) 
             lists["working"].append({**entry, "why": describe(status if status in ("failed", "interrupted") else "idle", prs)})
     order = [e["thread"] for e in old.get("needsYou") or []]
     for name, entries in lists.items():
-        entries.sort(key=lambda e: (order.index(e["thread"]) if name == "needsYou" and e["thread"] in order else len(order), e.get("effort") or "", e["title"]))
+        entries.sort(
+            key=lambda e: (
+                order.index(e["thread"]) if name == "needsYou" and e["thread"] in order else len(order),
+                e.get("effort") or "",
+                e["title"],
+            )
+        )
     environment = (T3 / "environment-id").read_text().strip() if (T3 / "environment-id").exists() else old.get("environment")
     return {
         "updated": f"{datetime.datetime.now():%Y-%m-%d %H:%M}",
@@ -177,7 +199,9 @@ def build(threads: list[dict], items: list[dict], efforts: set[str], old: dict) 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stdin", action="store_true", help="read t3_thread_list results as JSON from stdin instead of T3's database")
+    parser.add_argument(
+        "--stdin", action="store_true", help="read t3_thread_list results as JSON from stdin instead of T3's database"
+    )
     parser.add_argument("--db", type=Path, default=T3 / "statev2.sqlite", help="T3's database, opened read only")
     args = parser.parse_args()
 

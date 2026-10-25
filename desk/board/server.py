@@ -139,23 +139,26 @@ def capture(text: str, repo: str | None, effort: str | None) -> None:
     while path.exists():
         path = BACKLOG / f"{base}-{n}.json"
         n += 1
-    write_json(path, {
-        "id": path.stem,
-        "title": title,
-        "repo": repo or None,
-        "effort": effort or None,
-        "kind": None,
-        "label": None,
-        "summary": "",
-        "brief": text,
-        "source": "me",
-        "created": today.isoformat(),
-        "status": "new",
-        "thread": None,
-        "pr": None,
-        "done": None,
-        "comments": [],
-    })
+    write_json(
+        path,
+        {
+            "id": path.stem,
+            "title": title,
+            "repo": repo or None,
+            "effort": effort or None,
+            "kind": None,
+            "label": None,
+            "summary": "",
+            "brief": text,
+            "source": "me",
+            "created": today.isoformat(),
+            "status": "new",
+            "thread": None,
+            "pr": None,
+            "done": None,
+            "comments": [],
+        },
+    )
     log_event({"type": "capture", "id": path.stem})
 
 
@@ -207,11 +210,17 @@ class Handler(BaseHTTPRequestHandler):
             elif self.path == "/api/status":
                 set_status(body["ids"], body["status"])
             elif self.path == "/api/ask":
-                item = next((i for i in all_items().values() if i["thread"] == body["thread"] and i["status"] not in CLOSED_STATUSES), None)
+                item = next(
+                    (i for i in all_items().values() if i["thread"] == body["thread"] and i["status"] not in CLOSED_STATUSES),
+                    None,
+                )
                 if item is None:
                     raise FileNotFoundError(f"no open item for thread {body['thread']}")
                 if body.get("text"):
-                    item["asks"] = {"text": body["text"], "at": datetime.datetime.now().astimezone().isoformat(timespec="seconds")}
+                    item["asks"] = {
+                        "text": body["text"],
+                        "at": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+                    }
                 else:
                     item.pop("asks", None)
                 write_json(item_path(item["id"]), item)

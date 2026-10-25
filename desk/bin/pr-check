@@ -30,8 +30,15 @@ def check(url: str, me: str, seen: dict, first: bool) -> list[str]:
         return [f"closed {pr['closed_at'][:10]}"]
 
     news = []
-    people = lambda u: u["login"] != me and u["type"] != "Bot"
-    for kind, path in (("review", f"pulls/{number}/reviews"), ("comment", f"issues/{number}/comments"), ("inline comment", f"pulls/{number}/comments")):
+
+    def people(u: dict) -> bool:
+        return u["login"] != me and u["type"] != "Bot"
+
+    for kind, path in (
+        ("review", f"pulls/{number}/reviews"),
+        ("comment", f"issues/{number}/comments"),
+        ("inline comment", f"pulls/{number}/comments"),
+    ):
         for entry in gh("api", "--paginate", f"{base}/{path}"):
             key = f"{kind}:{entry['id']}"
             if key in seen["ids"] or not people(entry["user"]):

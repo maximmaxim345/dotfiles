@@ -21,7 +21,7 @@ LABELS = ["user-visible bug", "reachable but rare", "theoretical"]
 BOARD = "http://127.0.0.1:8765"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import REPOS, apply_status, log_event, write_json
+from server import REPOS, apply_status, log_event, write_json  # noqa: E402
 
 
 def slug_id(day: datetime.date, title: str) -> str:
@@ -300,7 +300,9 @@ def main() -> None:
     p_status.add_argument("status", choices=["open", "next", "started", "done", "dropped"])
     p_status.add_argument("--thread", help="the T3 thread id, required to start an item without one")
     p_status.add_argument("--pr", help="the PR URL")
-    p_status.add_argument("--by", required=True, choices=["desk", "manager"], help="who makes the change, so the desk is not woken for its own")
+    p_status.add_argument(
+        "--by", required=True, choices=["desk", "manager"], help="who makes the change, so the desk is not woken for its own"
+    )
     p_status.set_defaults(func=set_status)
 
     p_reslug = sub.add_parser("reslug", help="rename an item's id and file after its title and update references to it")

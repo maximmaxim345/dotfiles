@@ -1,5 +1,4 @@
 import io
-import json
 from pathlib import Path
 from typing import List, Tuple, Union
 
@@ -40,7 +39,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         (desk_path / name).mkdir(parents=True, exist_ok=True)
     repos_path = desk_path / "repos.json"
     if not repos_path.exists():
-        repos_path.write_text(json.dumps({}) + "\n")
+        repos_path.write_text("{}\n")
     for source_name, target_name, key in ENTRIES:
         if is_linked(source_name, target_name):
             continue

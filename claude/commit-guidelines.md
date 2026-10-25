@@ -9,8 +9,6 @@ The user may have modified files since your last interaction. Base the commit on
 3. Compose a message following the rules below
 4. Commit with `git commit -m "..."`
 
-The `commit-subagent` and `commit-split-subagent` skills delegate step 3 to a haiku subagent via `@~/.claude/commit-subagent-prompt.md`. The plain `commit` and `commit-split` skills compose the message inline.
-
 ## Format
 
 Default: Conventional Commits. Override only if the current branch's own

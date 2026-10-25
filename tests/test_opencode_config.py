@@ -86,13 +86,9 @@ class OpenCodeConfigTests(unittest.TestCase):
         for target in self.commands.iterdir():
             rendered = target.read_text()
             self.assertNotIn("@~/.claude/", rendered)
-            self.assertNotIn("commit-subagent", rendered)
-            self.assertNotIn("commit-split-subagent", rendered)
             self.assertNotIn("argument-hint:", rendered)
-        commit = (self.commands / "commit.md").read_text()
-        self.assertIn("# Commit Message Guidelines", commit)
-        self.assertIn("Do not delegate to a subagent.", commit)
         open_pr = (self.commands / "open-pr.md").read_text()
+        self.assertIn("# Commit Message Guidelines", open_pr)
         self.assertIn('description: "Commit, push, and open a PR', open_pr)
         self.assertIn("# PR Message Guidelines", open_pr)
         self.assertIn("# Writing examples", open_pr)
@@ -105,13 +101,13 @@ class OpenCodeConfigTests(unittest.TestCase):
 
     def test_source_command_changes_are_exported_again(self) -> None:
         opencode_config.install(self.config, self.stdout)
-        source = self.claude / "skills" / "commit" / "SKILL.md"
+        source = self.claude / "skills" / "open-pr" / "SKILL.md"
         source.write_text(source.read_text() + "\nShow the staged diff first.\n", encoding="utf-8")
 
         self.assertTrue(opencode_config.has_update(self.config))
         opencode_config.update(self.config, self.stdout)
 
-        self.assertIn("Show the staged diff first.", (self.commands / "commit.md").read_text())
+        self.assertIn("Show the staged diff first.", (self.commands / "open-pr.md").read_text())
         self.assertFalse(opencode_config.has_update(self.config))
 
     def test_shared_guideline_changes_update_only_dependent_commands(self) -> None:
@@ -124,8 +120,7 @@ class OpenCodeConfigTests(unittest.TestCase):
         self.assertTrue(opencode_config.has_update(self.config))
         opencode_config.update(self.config, self.stdout)
 
-        for name in ("commit", "commit-split", "open-pr"):
-            self.assertIn("New shared commit rule.", (self.commands / f"{name}.md").read_text())
+        self.assertIn("New shared commit rule.", (self.commands / "open-pr.md").read_text())
         self.assertEqual(review.stat().st_mtime_ns, review_mtime)
         self.assertEqual(list(self.commands.glob("*.old*")), [])
         self.assertFalse(opencode_config.has_update(self.config))
@@ -133,13 +128,13 @@ class OpenCodeConfigTests(unittest.TestCase):
     def test_retargeted_references_are_detected_even_with_identical_contents(self) -> None:
         opencode_config.install(self.config, self.stdout)
         shutil.copyfile(self.claude / "commit-guidelines.md", self.claude / "other-guidelines.md")
-        source = self.claude / "skills" / "commit" / "SKILL.md"
+        source = self.claude / "skills" / "open-pr" / "SKILL.md"
         source.write_text(source.read_text().replace("commit-guidelines.md", "other-guidelines.md"), encoding="utf-8")
 
         self.assertTrue(opencode_config.has_update(self.config))
         opencode_config.update(self.config, self.stdout)
 
-        rendered = (self.commands / "commit.md").read_text()
+        rendered = (self.commands / "open-pr.md").read_text()
         self.assertIn('path="~/.claude/other-guidelines.md"', rendered)
         self.assertNotIn('path="~/.claude/commit-guidelines.md"', rendered)
 
@@ -152,14 +147,14 @@ class OpenCodeConfigTests(unittest.TestCase):
 
         self.assertTrue(opencode_config.has_update(self.config))
         opencode_config.update(self.config, self.stdout)
-        rendered = (self.commands / "commit.md").read_text()
+        rendered = (self.commands / "open-pr.md").read_text()
         self.assertEqual(rendered.count('path="~/.claude/nested.md"'), 1)
         self.assertEqual(rendered.count('path="~/.claude/commit-guidelines.md"'), 1)
         self.assertNotIn("@~/.claude/", rendered)
         nested.write_text("Changed nested rule.\n", encoding="utf-8")
         self.assertTrue(opencode_config.has_update(self.config))
         opencode_config.update(self.config, self.stdout)
-        self.assertIn("Changed nested rule.", (self.commands / "commit.md").read_text())
+        self.assertIn("Changed nested rule.", (self.commands / "open-pr.md").read_text())
         self.assertFalse(opencode_config.has_update(self.config))
 
     def test_removed_dependencies_no_longer_affect_updates(self) -> None:
@@ -176,12 +171,12 @@ class OpenCodeConfigTests(unittest.TestCase):
 
     def test_missing_target_is_recreated(self) -> None:
         opencode_config.install(self.config, self.stdout)
-        (self.commands / "commit.md").unlink()
+        (self.commands / "open-pr.md").unlink()
 
         self.assertTrue(opencode_config.has_update(self.config))
         opencode_config.update(self.config, self.stdout)
 
-        self.assertTrue((self.commands / "commit.md").is_file())
+        self.assertTrue((self.commands / "open-pr.md").is_file())
         self.assertFalse(opencode_config.has_update(self.config))
 
     def test_new_command_is_picked_up_and_uninstalled_even_if_no_longer_defined(self) -> None:
@@ -197,38 +192,47 @@ class OpenCodeConfigTests(unittest.TestCase):
         opencode_config.uninstall(self.config, self.stdout)
         self.assertFalse((self.commands / "new-command.md").exists())
 
+    def test_dropped_command_is_removed_on_update(self) -> None:
+        opencode_config.install(self.config, self.stdout)
+
+        with patch.object(opencode_config, "COMMANDS", ("open-pr",)):
+            self.assertTrue(opencode_config.has_update(self.config))
+            opencode_config.update(self.config, self.stdout)
+            self.assertFalse((self.commands / "review-changes.md").exists())
+            self.assertFalse(opencode_config.has_update(self.config))
+
     def test_original_file_survives_updates_reinstall_and_repeated_uninstall(self) -> None:
         self.commands.mkdir(parents=True)
-        target = self.commands / "commit.md"
+        target = self.commands / "open-pr.md"
         target.write_text("Original command.\n", encoding="utf-8")
         unrelated = self.commands / "custom.md"
         unrelated.write_text("Unrelated command.\n", encoding="utf-8")
         opencode_config.install(self.config, self.stdout)
-        original_backup = self.config.get("old_commit")
-        source = self.claude / "skills" / "commit" / "SKILL.md"
+        original_backup = self.config.get("old_open-pr")
+        source = self.claude / "skills" / "open-pr" / "SKILL.md"
         source.write_text(source.read_text() + "\nUpdated source.\n", encoding="utf-8")
 
         opencode_config.update(self.config, self.stdout)
         opencode_config.install(self.config, self.stdout)
-        self.assertEqual(self.config.get("old_commit"), original_backup)
+        self.assertEqual(self.config.get("old_open-pr"), original_backup)
         self.assertEqual(Path(original_backup).read_text(), "Original command.\n")
         opencode_config.uninstall(self.config, self.stdout)
         opencode_config.uninstall(self.config, self.stdout)
 
         self.assertEqual(target.read_text(), "Original command.\n")
         self.assertEqual(unrelated.read_text(), "Unrelated command.\n")
-        self.assertFalse((self.commands / "open-pr.md").exists())
+        self.assertFalse((self.commands / "review-changes.md").exists())
 
     def test_local_edits_are_saved_separately_from_original_backup(self) -> None:
         self.commands.mkdir(parents=True)
-        target = self.commands / "commit.md"
+        target = self.commands / "open-pr.md"
         target.write_text("Original command.\n", encoding="utf-8")
         opencode_config.install(self.config, self.stdout)
         target.write_text("Local edits before update.\n", encoding="utf-8")
 
         self.assertTrue(opencode_config.has_update(self.config))
         opencode_config.update(self.config, self.stdout)
-        first_edit_backup = Path(self.config.get("edited_commit"))
+        first_edit_backup = Path(self.config.get("edited_open-pr"))
         self.assertEqual(first_edit_backup.read_text(), "Local edits before update.\n")
         self.assertFalse(opencode_config.has_update(self.config))
         target.write_text("Local edits before uninstall.\n", encoding="utf-8")
@@ -236,13 +240,13 @@ class OpenCodeConfigTests(unittest.TestCase):
 
         self.assertEqual(target.read_text(), "Original command.\n")
         self.assertEqual(first_edit_backup.read_text(), "Local edits before update.\n")
-        self.assertEqual(Path(self.config.get("edited_commit")).read_text(), "Local edits before uninstall.\n")
+        self.assertEqual(Path(self.config.get("edited_open-pr")).read_text(), "Local edits before uninstall.\n")
 
     def test_existing_symlink_is_restored_without_writing_to_its_source(self) -> None:
         self.commands.mkdir(parents=True)
         original = self.root / "original.md"
         original.write_text("Original linked command.\n", encoding="utf-8")
-        target = self.commands / "commit.md"
+        target = self.commands / "open-pr.md"
         target.symlink_to(original)
 
         opencode_config.install(self.config, self.stdout)
@@ -255,7 +259,7 @@ class OpenCodeConfigTests(unittest.TestCase):
 
     def test_lifecycle_logs_to_stdout_with_tui_print_replacement(self) -> None:
         self.commands.mkdir(parents=True)
-        target = self.commands / "commit.md"
+        target = self.commands / "open-pr.md"
         target.write_text("Original command.\n", encoding="utf-8")
         logger = InstallationScreen.print_log.__get__(SimpleNamespace(textlog=Mock()))
 
@@ -275,7 +279,7 @@ class OpenCodeConfigTests(unittest.TestCase):
     def test_dangling_original_symlink_is_restored(self) -> None:
         self.commands.mkdir(parents=True)
         original = self.root / "missing.md"
-        target = self.commands / "commit.md"
+        target = self.commands / "open-pr.md"
         target.symlink_to(original)
 
         opencode_config.install(self.config, self.stdout)
@@ -287,15 +291,15 @@ class OpenCodeConfigTests(unittest.TestCase):
     def test_local_edits_do_not_overwrite_dangling_original_backup(self) -> None:
         self.commands.mkdir(parents=True)
         original = self.root / "missing.md"
-        target = self.commands / "commit.md"
+        target = self.commands / "open-pr.md"
         target.symlink_to(original)
         opencode_config.install(self.config, self.stdout)
-        original_backup = Path(self.config.get("old_commit"))
+        original_backup = Path(self.config.get("old_open-pr"))
         target.write_text("Local edit.\n", encoding="utf-8")
 
         opencode_config.update(self.config, self.stdout)
 
-        edited_backup = Path(self.config.get("edited_commit"))
+        edited_backup = Path(self.config.get("edited_open-pr"))
         self.assertNotEqual(edited_backup, original_backup)
         self.assertTrue(original_backup.is_symlink())
         self.assertEqual(original_backup.readlink(), original)
@@ -304,8 +308,8 @@ class OpenCodeConfigTests(unittest.TestCase):
     def test_missing_dependency_leaves_installed_commands_unchanged(self) -> None:
         opencode_config.install(self.config, self.stdout)
         before = {path.name: path.read_bytes() for path in self.commands.iterdir()}
-        commit = self.claude / "skills" / "commit" / "SKILL.md"
-        commit.write_text(commit.read_text() + "\nValid source change.\n", encoding="utf-8")
+        open_pr = self.claude / "skills" / "open-pr" / "SKILL.md"
+        open_pr.write_text(open_pr.read_text() + "\nValid source change.\n", encoding="utf-8")
         review = self.claude / "skills" / "review-changes" / "SKILL.md"
         review.write_text("Follow @~/.claude/missing.md\n", encoding="utf-8")
 

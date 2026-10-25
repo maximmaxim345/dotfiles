@@ -11,12 +11,10 @@ live on every device without re-running anything.
 | File | Purpose |
 | --- | --- |
 | `CLAUDE.md` | Global instructions, applied to every project |
-| `commit-guidelines.md` | Referenced by `CLAUDE.md`, the commit skills and commands |
+| `commit-guidelines.md` | Commit message rules, referenced by `CLAUDE.md` and `open-pr` |
 | `pr-guidelines.md` | Referenced by `open-pr` |
-| `commit-subagent-prompt.md` | Prompt for the commit subagent |
 | `writing-examples.md` | Examples of my GitHub writing voice, read by `CLAUDE.md` |
 | `pr-followup.md` | What to do once a PR is published, read on demand as `CLAUDE.md` says |
-| `commands/` | Claude-only slash commands, linked as a whole directory so new ones need no module change |
 | `output-styles/` | Output styles, linked as a whole directory |
 | `project-rules/` | Per-repo rules, read on demand as listed in `CLAUDE.md` |
 | `skills/implement/` | My implementation workflow skill, linked into `~/.claude/skills/` |
@@ -24,7 +22,7 @@ live on every device without re-running anything.
 | `skills/ma-dev/` | Starts a Music Assistant dev server on a copy of my configured data folder |
 | `skills/ma-device-test/` | Tests Music Assistant changes on my real speakers, locally or on a remote instance |
 | `skills/blast-radius/` | Finds what a change breaks outside its diff, adapted with permission from [MarvinSchenkel/ai-agent-instructions](https://github.com/MarvinSchenkel/ai-agent-instructions) |
-| `skills/commit/`, `skills/commit-split/`, `skills/open-pr/`, `skills/review-changes/` | Commit, PR and review workflow skills, each linked into `~/.claude/skills/` |
+| `skills/open-pr/`, `skills/review-changes/` | PR and review workflow skills, each linked into `~/.claude/skills/` |
 | `skills/desk/` | Hands a T3 thread to the desk or pauses it there, and moves Claude desktop sessions to T3 Code threads, linked into `~/.claude/skills/` |
 
 Not to be confused with the repository root `CLAUDE.md`, which is a symlink to
@@ -93,7 +91,7 @@ mkdir -p "$CLAUDE_DIR"
 rm -rf "$DOTFILES"
 git clone --depth 1 https://github.com/maximmaxim345/dotfiles.git "$DOTFILES"
 
-# Link the same entries as the claude_config module, so the CLAUDE.md imports and commands resolve.
+# Link the same entries as the claude_config module, so the CLAUDE.md imports resolve.
 for src in "$DOTFILES"/claude/*; do
   name=$(basename "$src")
   case "$name" in README.md | CLAUDE.md | skills) continue ;; esac

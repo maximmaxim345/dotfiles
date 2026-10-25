@@ -19,6 +19,23 @@ def skill_sources() -> List[Path]:
     return sorted(path for path in (df.DOTFILES_PATH / "claude" / "skills").iterdir() if path.is_dir())
 
 
+def removed_links() -> List[Path]:
+    sources = (df.DOTFILES_PATH / "claude" / "skills").resolve()
+    if not skills_path.is_dir():
+        return []
+    return [
+        target
+        for target in skills_path.iterdir()
+        if target.is_symlink() and not target.exists() and target.resolve().parent == sources
+    ]
+
+
+def unlink_removed(config: ModuleConfig) -> None:
+    for target in removed_links():
+        df.restore_backup(target, config, f"old_skill_{target.name}")
+        print(f"Restored {target}")
+
+
 def is_linked(source: Path) -> bool:
     target = skills_path / source.name
     return target.exists() and target.resolve() == source.resolve()
@@ -41,16 +58,18 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
+    unlink_removed(config)
     for source in skill_sources():
         df.restore_backup(skills_path / source.name, config, f"old_skill_{source.name}")
         print(f"Restored {skills_path / source.name}")
 
 
 def has_update(config: ModuleConfig) -> Union[bool, str]:
-    return not all(is_linked(source) for source in skill_sources())
+    return bool(removed_links()) or not all(is_linked(source) for source in skill_sources())
 
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
+    unlink_removed(config)
     for source in skill_sources():
         if not is_linked(source):
             link(source, config)

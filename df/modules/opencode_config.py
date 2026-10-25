@@ -23,7 +23,7 @@ sage_path = opencode_path / "agents" / "ohf-sage.md"
 sage_source = Path.home() / ".claude" / "agents" / "ohf-sage.md"
 commands_path = opencode_path / "commands"
 
-COMMANDS = ("commit", "commit-split", "open-pr", "review-changes")
+COMMANDS = ("open-pr", "review-changes")
 REFERENCE = re.compile(r"@?~/\.claude/([\w./-]+\.md)")
 
 # Blocks other tools write into AGENTS.md, like codebase-memory-mcp
@@ -81,8 +81,6 @@ def render_command(name: str) -> str:
             if "description" in fields:
                 description = json.dumps(fields["description"], ensure_ascii=False)
                 text = f"---\ndescription: {description}\n---\n{text}"
-        text = re.sub(r" For the subagent variant use `/commit(?:-split)?-subagent`\.", "", text)
-        text = re.sub(r"(?m)^The `commit-subagent` and `commit-split-subagent` skills delegate [^\n]*\n?", "", text)
         for match in REFERENCE.finditer(text):
             dependency = match.group(1)
             if dependency not in pending:
@@ -114,20 +112,26 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     print("Restart OpenCode's background service to load it: opencode service restart")
 
 
-def uninstall_commands(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
+def uninstall_command(name: str, config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     hashes = config.get("hashes", {})
-    for name, digest in list(hashes.items()):
-        target = commands_path / f"{name}.md"
-        remove_target(name, digest, config, stdout)
-        df.restore_backup(target, config, f"old_{name}")
-        del hashes[name]
-        config.set("hashes", hashes)
-        stdout.write(f"Restored {target}\n")
+    target = commands_path / f"{name}.md"
+    remove_target(name, hashes.get(name), config, stdout)
+    df.restore_backup(target, config, f"old_{name}")
+    del hashes[name]
+    config.set("hashes", hashes)
+    stdout.write(f"Restored {target}\n")
+
+
+def uninstall_commands(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
+    for name in list(config.get("hashes", {})):
+        uninstall_command(name, config, stdout)
     config.unset("hashes")
 
 
 def commands_have_update(config: ModuleConfig) -> bool:
     hashes = config.get("hashes", {})
+    if any(name not in COMMANDS for name in hashes):
+        return True
     for name in COMMANDS:
         digest = hashlib.sha256(render_command(name).encode("utf-8")).hexdigest()
         target = commands_path / f"{name}.md"
@@ -140,6 +144,8 @@ def commands_have_update(config: ModuleConfig) -> bool:
 
 def update_commands(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     commands = {name: render_command(name) for name in COMMANDS}
+    for name in [name for name in config.get("hashes", {}) if name not in COMMANDS]:
+        uninstall_command(name, config, stdout)
     hashes = config.get("hashes", {})
     for name, text in commands.items():
         digest = hashlib.sha256(text.encode("utf-8")).hexdigest()

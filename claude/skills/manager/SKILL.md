@@ -9,7 +9,7 @@ Effort: $ARGUMENTS
 
 The effort is the overall piece of work the group handles. When none is given, name it from what this session has been working on and confirm the name with me.
 
-This session coordinates. It plans, starts and tracks task sessions and checks their claims, and does little coding itself. Task sessions follow "Coordinated sessions" in my CLAUDE.md.
+This session coordinates. It plans, starts and tracks task sessions and checks their claims, and does little coding itself. Task sessions follow "Coordinated sessions" in `~/desk/TASK.md`.
 
 ## 1. Set up
 
@@ -29,7 +29,7 @@ Propose the task list before starting anything: number, type, repo, title, what 
 - Start each session with `start_session` and its brief as the prompt. Set `cwd` to the main checkout of the task's repo. When there's no local copy, clone it next to my other clones under `~/projects/` first. Once I start the session, check its title and fix it.
 - Each brief has:
   - `First run: git checkout <branch>` as its first line when it continues existing work.
-  - `You are task <n> of a coordinated group. Coordinator: <this session's exact name>. Follow 'Coordinated sessions' in your CLAUDE.md.`
+  - `You are task <n> of a coordinated group. Coordinator: <this session's exact name>. Follow 'Coordinated sessions' in ~/desk/TASK.md.`
   - The repo's project rules file to read.
   - The evidence (file and line, log paths, spec quotes), each piece labeled verified or inferred.
   - The plan, the done criteria, and "confirm each item before changing code and stop on any that isn't real".
@@ -40,7 +40,7 @@ Propose the task list before starting anything: number, type, repo, title, what 
 
 When I name existing sessions for the group, such as ones I started myself or that aren't in a group yet, at setup or later, or ask you to pick them from `list_sessions`:
 - Check each one's branch, commits and PR with `list_sessions`, git and gh, and propose its number, name and place in the plan.
-- After my OK, rename it with `set_session_title`, add it to `status.md`, and message it once: `You are now task <n> of a coordinated group. Coordinator: <this session's exact name>. Follow 'Coordinated sessions' in your CLAUDE.md.`
+- After my OK, rename it with `set_session_title`, add it to `status.md`, and message it once: `You are now task <n> of a coordinated group. Coordinator: <this session's exact name>. Follow 'Coordinated sessions' in ~/desk/TASK.md.`
 
 ## 5. Run the group
 

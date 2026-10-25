@@ -45,8 +45,8 @@ Commit as you go. A pure refactor gets its own commit before the behavior change
 ## 4. Review with fresh context
 
 Launch these in parallel, passing the diff (`git diff <base>...HEAD`), the changed paths, and the approved plan, but not your own reasoning:
-- A review subagent that checks correctness and audits the diff against my CLAUDE.md and the project rules: comments and docstrings, tests, simplicity, speculative or out-of-scope changes, dashes, and workarounds.
-- ohf-sage, for the same projects as in step 2.
+- A review subagent that checks correctness and audits the diff as "Before handing over" in my CLAUDE.md says, and against the project rules.
+- ohf-sage, for the projects listed in step 2.
 
 Label each finding as a user-visible bug, reachable but rare, or theoretical. Fix bugs and rule violations in separate commits and skip theoretical ones.
 

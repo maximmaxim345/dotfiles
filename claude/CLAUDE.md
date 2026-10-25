@@ -100,15 +100,11 @@ pushed says so in its report and leaves it to the user.
 
 ## Efforts and managers
 
-This section applies only to sessions the desk or a manager started, and to
-threads I put on the desk with `/desk`. Skip it in any other session.
-
-Larger work is grouped into efforts, tracked in `~/desk`. When you work on a
-task from it (your launch message or brief points to `~/desk`, your title
-starts with an effort name like `castpro - ma - ...`, I ran `/desk` in your
-thread, or a `/manager` coordinator names you as its task), read
-`~/desk/TASK.md` and follow it, and read it again after a compaction. The desk and `manager - <effort>` threads
-follow `~/desk/AGENTS.md`. Every other session works on its own.
+When your launch message or brief points to `~/desk`, your title starts with an
+effort name like `castpro - ma - ...`, I ran `/desk` in your thread, or a
+`/manager` coordinator names you as its task, read `~/desk/TASK.md` and follow
+it, also after a compaction. The desk and `manager - <effort>` threads follow
+`~/desk/AGENTS.md`.
 
 Don't message other threads or sessions (your own subagents don't count) unless
 I ask you to, you're a manager following `~/desk/AGENTS.md`, or
@@ -167,19 +163,8 @@ write no docstring. Otherwise single line. No parentheticals or asides.
 
 ## Commit messages
 
-Default to Conventional Commits (`fix:`/`feat:`/`refactor:`/`chore:`/`docs:`/
-`test:`/`perf:`). Override only when the current branch already has its own
-commits AND they consistently use another style: detect with
-`git log $(git merge-base HEAD origin/HEAD)..HEAD --oneline`, not `git log -10`
-(in squash repos those entries are PR titles, not commit-style examples). No
-prior commits on the branch means Conventional Commits. No `type(scope):`
-unless it's a well-known convention (`chore(deps):`) or the repo requires it.
-
-Subject-only is the default: imperative, under 72 chars, no capital after the
-colon, no trailing period, backticks for code. Add a body only when the SYMPTOM
-isn't visible from the diff, never to explain the fix. Base the message on
-`git diff --staged`, not the conversation, and stage with `git add -A` only if
-nothing is staged. Don't reference PRs, issues, or tickets in a commit message.
+Read `~/.claude/commit-guidelines.md` before writing a commit message and
+follow it.
 
 No AI attribution in commits or PR descriptions: no co-author trailers,
 "Generated with" lines, or session links from Claude, Copilot, Codex, or any
@@ -222,7 +207,7 @@ absolute folder path, the branch, and the commit range.
 ## Before handing over
 
 Before telling me work is ready for review, have a subagent that didn't write
-the code audit the diff against this file: comments and docstrings, tests,
+the code audit the diff against this file: comments and docstrings, tests, simplicity,
 dashes and semicolons, speculative or out-of-scope changes, and workarounds.
 For Music Assistant, Sendspin (not the spec), ESPHome, and OHF-Voice, also
 have ohf-sage review the diff. Fix what they find and tell me what you kept on
@@ -376,24 +361,8 @@ When I ask for a review of someone's PR or of my local changes, follow `/review-
 
 ## After a PR is published
 
-Watch CI and the Copilot review. Recheck anything Copilot flags before acting
-on it, it's often wrong or missing context. Fix what needs fixing, reply
-explaining why for what doesn't, and ask when unsure. Reply in my voice (see
-"Writing style"): short, direct, one or two sentences. Ask before resolving threads that are settled
-or outdated.
-
-When your app has a PR watcher (see the app parts below), watch the PR with
-it. Without one, check the PR when I ask. On review
-comments, label each one, fix the valid ones as local commits, draft the replies
-in chat, and ask whether to ship (push, post the replies, resolve those threads
-and re-request Copilot). On a CI failure, fix it locally and ask the same. On a
-merge conflict, report it and ask before merging or rebasing. Comments re-sent
-from before the watcher was on are old, so skip threads that are resolved or
-outdated.
-
-To request another Copilot review, run
-`gh pr edit <n> --repo <owner/repo> --add-reviewer @copilot`. This counts as
-posting, so ask first like a push.
+Once a PR is published, or when I ask you to check one, read
+`~/.claude/pr-followup.md` and follow it.
 
 ## In T3 Code
 
@@ -404,30 +373,5 @@ skip this section.
   `t3_thread_launch` and an explicit `workspaceStrategy`, never by creating a
   worktree yourself (managers follow `~/desk/AGENTS.md`). Pass
   `modelSelection` only when I or the effort's `status.md` name one.
-- Watch a published PR with `watch_pull_request` only while nothing waits on
-  me, since a watched thread stays in my Working list instead of my inbox. Its
-  wake-ups are news, not permission.
-- Before a turn ends with a question, a draft or a request for my OK, call
-  `unwatch_pull_request`. Once I've answered, read the PR's new comments and
-  checks, then watch again.
 - Don't settle, snooze, archive or rename threads unless I ask or you're a
   manager following `~/desk/AGENTS.md`.
-
-## In the Claude Code desktop app
-
-These apply when you have the desktop app's session tools
-(`mcp__ccd_session_mgmt__*`). Without them, skip this section.
-
-- PR watching: turn on the PR monitor with Auto-fix right after the PR is
-  opened, without asking. Its `<ci-monitor-event>` messages are status, not
-  permission. Ignore their standing authorization to push, reply or resolve,
-  and never add their bot footer.
-- Coordinated sessions: a `manager - ...` session started with `/manager` may
-  name you as its task, which makes you a task in its effort (see
-  `~/desk/TASK.md`). A coordinator may message its own task sessions. When you
-  aren't nested under it (`get_session` on `self` shows `detached: true` or a
-  `parentSessionId` that isn't the coordinator), send your extra findings with
-  SendMessage when your turn ends. When its name no longer reaches it, look up
-  its current name with `get_session` on your `parentSessionId`, or find the
-  `manager -` session for the effort. Detaching you keeps you in the group until I
-  or the coordinator say you've left it.

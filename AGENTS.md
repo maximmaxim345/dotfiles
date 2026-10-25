@@ -276,7 +276,7 @@ For modules that download binaries (like `bob`, `lazygit`, `zoxide`, etc.):
 - **Windows PATH**: Modules that install binaries should add the `windows_local_bin` dependency when running on Windows to ensure proper PATH setup.
 - **Conditional Dependencies**: Use runtime platform detection to set dependencies:
   ```python
-  if platform.system() == "Windows":
+  if system() == "Windows":  # from df.osinfo import system
       DEPENDENCIES = ["windows_local_bin"]
   ```
 
@@ -294,7 +294,7 @@ Here are some tips for debugging your modules:
 
 Common platform detection problems:
 
-- `platform.system()` returns "Darwin" for macOS, "Linux", or "Windows"
+- `system()` from `df.osinfo` returns "Darwin" for macOS, "Linux" (Termux included), or "Windows"
 - `platform.machine()` returns "x86_64", "aarch64", "arm64", "AMD64" etc.
 - Architecture normalization may be needed for different projects
 

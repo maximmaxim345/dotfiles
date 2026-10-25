@@ -26,7 +26,7 @@ class OpenCodeConfigTests(unittest.TestCase):
             shutil.copytree(repository / "claude" / "skills" / name, self.claude / "skills" / name)
         shutil.copyfile(repository / "claude" / "CLAUDE.md", self.claude / "CLAUDE.md")
         shutil.copytree(repository / "claude" / "output-styles", self.claude / "output-styles")
-        for name in ("commit-guidelines.md", "pr-guidelines.md", "writing-examples.md"):
+        for name in ("commit-guidelines.md", "pr-guidelines.md", "pr-followup.md", "writing-examples.md"):
             shutil.copyfile(repository / "claude" / name, self.claude / name)
         self.commands = self.root / "home" / ".config" / "opencode" / "commands"
         self.config = Config(str(self.root / "config.json")).get_module("opencode_config")

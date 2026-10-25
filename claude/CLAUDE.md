@@ -103,7 +103,7 @@ pushed says so in its report and leaves it to the user.
 When your launch message or brief points to `~/desk`, your title starts with an
 effort name like `castpro - ma - ...`, I ran `/desk` in your thread, or a
 `/manager` coordinator names you as its task, read `~/desk/TASK.md` and follow
-it, also after a compaction. The desk and `manager - <effort>` threads follow
+it, and read it again after a compaction. The desk and `manager - <effort>` threads follow
 `~/desk/AGENTS.md`.
 
 Don't message other threads or sessions (your own subagents don't count) unless
@@ -361,8 +361,9 @@ When I ask for a review of someone's PR or of my local changes, follow `/review-
 
 ## After a PR is published
 
-Once a PR is published, or when I ask you to check one, read
-`~/.claude/pr-followup.md` and follow it.
+Once a PR is published, when you watch one or get a PR or CI event, or when I
+ask you to check one, read `~/.claude/pr-followup.md` and follow it, and read
+it again after a compaction.
 
 ## In T3 Code
 

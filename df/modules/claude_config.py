@@ -114,21 +114,24 @@ def link_accounts(config: ModuleConfig) -> None:
     config.set("account_links", created)
 
 
-def desk_allowed() -> bool:
+def missing_desk_dirs() -> List[str]:
     if not desk_path.is_dir() or not settings_path.is_file():
-        return True
+        return []
     settings = json.loads(settings_path.read_text(encoding="utf-8"))
-    return str(desk_path) in settings.get("permissions", {}).get("additionalDirectories", [])
+    allowed = settings.get("permissions", {}).get("additionalDirectories", [])
+    # Reads through the links in ~/desk also need their dotfiles targets allowed
+    return [str(path) for path in (desk_path, df.DOTFILES_PATH / "desk") if str(path) not in allowed]
 
 
 def allow_desk(config: ModuleConfig) -> None:
-    if desk_allowed():
+    missing = missing_desk_dirs()
+    if not missing:
         return
     settings = json.loads(settings_path.read_text(encoding="utf-8"))
-    settings.setdefault("permissions", {}).setdefault("additionalDirectories", []).append(str(desk_path))
+    settings.setdefault("permissions", {}).setdefault("additionalDirectories", []).extend(missing)
     settings_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
     config.set("allowed_desk", True)
-    print(f"Allowed {desk_path} in {settings_path}")
+    print(f"Allowed {', '.join(missing)} in {settings_path}")
 
 
 def disallow_desk(config: ModuleConfig) -> None:
@@ -136,8 +139,10 @@ def disallow_desk(config: ModuleConfig) -> None:
         return
     settings = json.loads(settings_path.read_text(encoding="utf-8"))
     allowed = settings.get("permissions", {}).get("additionalDirectories", [])
-    if str(desk_path) in allowed:
-        allowed.remove(str(desk_path))
+    added = [path for path in (str(desk_path), str(df.DOTFILES_PATH / "desk")) if path in allowed]
+    for path in added:
+        allowed.remove(path)
+    if added:
         settings_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
     config.unset("allowed_desk")
 
@@ -168,7 +173,7 @@ def has_update(config: ModuleConfig) -> Union[bool, str]:
         or bool(removed_links())
         or bool(dangling_account_links(config))
         or bool(missing_account_links())
-        or not desk_allowed()
+        or bool(missing_desk_dirs())
     )
 
 

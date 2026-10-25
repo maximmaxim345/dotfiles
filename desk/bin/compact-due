@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+"""Print idle threads to compact or settle and old settled threads to archive, each once, as one JSON line."""
+
+from __future__ import annotations
+
+import datetime
+import json
+import sqlite3
+import sys
+from pathlib import Path
+
+DESK = Path.home() / "desk"
+BACKLOG = DESK / "backlog"
+COMPACTED = DESK / "state" / "compacted.json"
+DB = Path.home() / ".t3" / "userdata" / "statev2.sqlite"
+IDLE = datetime.timedelta(minutes=50)
+CACHED = datetime.timedelta(minutes=60)
+RECENT = datetime.timedelta(hours=3)
+SETTLED_FOR = datetime.timedelta(days=7)
+MIN_ITEMS = 40
+COMPACTABLE = ("claudeAgent", "codex")
+ENDED = {"completed", "interrupted", "cancelled", "failed"}
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import write_json
+
+
+def parse_time(value: str | None) -> datetime.datetime | None:
+    return datetime.datetime.fromisoformat(value.replace("Z", "+00:00")) if value else None
+
+
+def main() -> None:
+    try:
+        conn = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+        rows = conn.execute(
+            "SELECT t.thread_id, t.title, t.payload_json, r.run_id, r.status, r.completed_at, r.provider,"
+            " (SELECT COUNT(*) FROM orchestration_v2_projection_turn_items i WHERE i.thread_id = t.thread_id),"
+            " (SELECT COUNT(*) FROM orchestration_v2_projection_runtime_requests q WHERE q.thread_id = t.thread_id AND q.status != 'resolved')"
+            " FROM orchestration_v2_projection_threads t LEFT JOIN orchestration_v2_projection_runs r"
+            " ON r.thread_id = t.thread_id"
+            " AND r.ordinal = (SELECT MAX(ordinal) FROM orchestration_v2_projection_runs WHERE thread_id = t.thread_id)"
+            " WHERE t.archived_at IS NULL AND t.deleted_at IS NULL"
+        ).fetchall()
+    except sqlite3.Error as err:
+        sys.exit(f"could not read {DB}: {err}")
+    conn.close()
+    seen = json.loads(COMPACTED.read_text()) if COMPACTED.exists() else []
+    managed = {item.get("thread") for item in (json.loads(p.read_text()) for p in BACKLOG.glob("*.json"))}
+    now = datetime.datetime.now(datetime.timezone.utc)
+    due: dict[str, list[dict]] = {"compact": [], "settle": [], "archive": []}
+    for thread_id, title, payload, run_id, status, completed_at, provider, items, pending in rows:
+        payload = json.loads(payload)
+        snoozed = parse_time(payload.get("snoozedUntil"))
+        completed = parse_time(completed_at)
+        if (
+            title == "desk" or title.startswith("manager - ")
+            or payload.get("lineage", {}).get("relationshipToParent")
+            or snoozed and snoozed > now
+        ):
+            continue
+        if thread_id not in managed:
+            settled_at = parse_time(payload.get("settledAt"))
+            marker = f"archive:{thread_id}:{payload.get('settledAt')}"
+            if payload.get("settledOverride") == "settled" and settled_at and now - settled_at >= SETTLED_FOR and marker not in seen:
+                due["archive"].append({"thread": thread_id, "title": title})
+                seen.append(marker)
+            continue
+        if (
+            payload.get("settledOverride") == "settled"
+            or status not in ENDED or pending or completed is None
+            or run_id in seen or not IDLE <= now - completed < RECENT
+        ):
+            continue
+        compact = items >= MIN_ITEMS and provider.startswith(COMPACTABLE) and now - completed < CACHED
+        due["compact" if compact else "settle"].append({"thread": thread_id, "title": title})
+        seen.append(run_id)
+    if any(due.values()):
+        write_json(COMPACTED, seen)
+        print(json.dumps({"type": "idle", **due}))
+
+
+if __name__ == "__main__":
+    main()

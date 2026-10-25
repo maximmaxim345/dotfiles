@@ -1,3 +1,4 @@
+exclude: ^desk/
 repos:
   - repo: local
     hooks:

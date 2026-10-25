@@ -12,7 +12,7 @@ from df.osinfo import running_in_termux, system
 ID: str = "desk_board"
 NAME: str = "Desk Board"
 DESCRIPTION: str = "Start the desk board from ~/desk at login"
-DEPENDENCIES: List[str] = []
+DEPENDENCIES: List[str] = ["desk"]
 CONFLICTING: List[str] = []
 
 LABEL = "local.desk-board"
@@ -33,8 +33,6 @@ def is_compatible() -> Union[bool, str]:
             return "Needs systemd"
     elif system() != "Darwin":
         return "Only supported on macOS and Linux"
-    if not SERVER.exists():
-        return f"Needs the desk repo at {SERVER.parent.parent}"
     return True
 
 

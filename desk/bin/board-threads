@@ -1,0 +1,210 @@
+#!/usr/bin/env python3
+"""Rebuild the board's thread lists in ~/desk/state/threads.json from T3's threads and the backlog."""
+
+from __future__ import annotations
+
+import argparse
+import datetime
+import json
+import sqlite3
+import sys
+from pathlib import Path
+
+DESK = Path.home() / "desk"
+BACKLOG = DESK / "backlog"
+EFFORTS = DESK / "efforts"
+THREADS = DESK / "state" / "threads.json"
+T3 = Path.home() / ".t3" / "userdata"
+LIVE_RUNS = {"preparing", "queued", "starting", "running"}
+RUN_STATUSES = LIVE_RUNS | {"idle", "waiting", "completed", "interrupted", "failed", "cancelled", "rolled_back"}
+UNSTARTED = {"new", "open", "next", "requested"}
+CLOSED = {"done", "dropped"}
+COLUMNS = {
+    "orchestration_v2_projection_threads": {"thread_id", "title", "archived_at", "deleted_at", "payload_json"},
+    "orchestration_v2_projection_runs": {"thread_id", "ordinal", "status", "completed_at"},
+}
+PAYLOAD_KEYS = {"lineage", "settledOverride", "snoozedUntil", "snoozedAt"}
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import write_json
+
+
+def schema_changed(detail: str) -> None:
+    sys.exit(f"T3's database no longer looks as expected ({detail}). Run with --stdin and pipe in the t3_thread_list results instead.")
+
+
+def parse_time(value: str | None) -> datetime.datetime | None:
+    return datetime.datetime.fromisoformat(value.replace("Z", "+00:00")) if value else None
+
+
+def from_db(db: Path) -> list[dict]:
+    conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    try:
+        for table, columns in COLUMNS.items():
+            missing = columns - {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+            if missing:
+                schema_changed(f"{table} lacks {', '.join(sorted(missing))}")
+        rows = conn.execute(
+            "SELECT t.thread_id, t.title, t.payload_json, r.status, r.completed_at"
+            " FROM orchestration_v2_projection_threads t LEFT JOIN orchestration_v2_projection_runs r"
+            " ON r.thread_id = t.thread_id"
+            " AND r.ordinal = (SELECT MAX(ordinal) FROM orchestration_v2_projection_runs WHERE thread_id = t.thread_id)"
+            " WHERE t.archived_at IS NULL AND t.deleted_at IS NULL"
+        ).fetchall()
+    finally:
+        conn.close()
+    now = datetime.datetime.now(datetime.timezone.utc)
+    threads = []
+    for thread_id, title, payload, status, completed_at in rows:
+        payload = json.loads(payload)
+        status = status or "idle"
+        if PAYLOAD_KEYS - payload.keys():
+            schema_changed(f"thread {thread_id} lacks {', '.join(sorted(PAYLOAD_KEYS - payload.keys()))}")
+        if status not in RUN_STATUSES:
+            schema_changed(f"unknown run status {status!r}")
+        if payload["settledOverride"] not in (None, "settled", "active"):
+            schema_changed(f"unknown settledOverride {payload['settledOverride']!r}")
+        if payload["lineage"].get("relationshipToParent"):
+            continue
+        until, snoozed_at, completed = (parse_time(v) for v in (payload["snoozedUntil"], payload["snoozedAt"], completed_at))
+        failed_since = status == "failed" and (snoozed_at is None or completed is not None and completed > snoozed_at)
+        threads.append({
+            "id": thread_id,
+            "title": title,
+            "status": status,
+            "settled": payload["settledOverride"] == "settled",
+            "snoozedUntil": until if until and until > now and status != "waiting" and not failed_since else None,
+            "prs": [
+                {"url": pr["url"], "number": pr["number"], "state": (pr.get("snapshot") or {}).get("state")}
+                for pr in payload.get("pullRequests") or []
+            ],
+        })
+    return threads
+
+
+def from_thread_list(data: object) -> list[dict]:
+    """Read threads from t3_thread_list results: one result, a list of results, or a list of their threads."""
+    pages = data if isinstance(data, list) else [data]
+    threads = []
+    for thread in [t for page in pages for t in (page["threads"] if "threads" in page else [page])]:
+        if thread.get("relationshipToParent"):
+            continue
+        threads.append({
+            "id": thread["threadId"],
+            "title": thread["title"],
+            "status": thread["status"],
+            "settled": thread["settled"],
+            "snoozedUntil": parse_time(thread["snoozedUntil"]) if thread["snoozed"] else None,
+            "prs": [{"url": pr["url"], "number": pr["number"], "state": pr.get("state")} for pr in thread.get("pullRequests") or []],
+        })
+    return threads
+
+
+def effort_of(title: str, item: dict | None, efforts: set[str]) -> str | None:
+    if item and item.get("effort"):
+        return item["effort"]
+    if title.startswith("manager - "):
+        return title[len("manager - "):]
+    prefix, sep, _ = title.partition(" - ")
+    return prefix if sep and prefix in efforts else None
+
+
+def describe(state: str, prs: list[dict]) -> str:
+    notes = ", ".join(f"#{pr['number']} {pr['state'] or 'linked'}" for pr in prs)
+    return ", ".join(part for part in (state, notes and ("PR " if len(prs) == 1 else "PRs ") + notes) if part)
+
+
+def build(threads: list[dict], items: list[dict], efforts: set[str], old: dict) -> dict:
+    by_thread: dict[str, dict] = {}
+    for item in sorted(items, key=lambda i: i["created"]):
+        current = by_thread.get(item.get("thread") or "")
+        if item.get("thread") and (current is None or current["status"] in CLOSED or item["status"] not in CLOSED):
+            by_thread[item["thread"]] = item
+    before = {name: {e["thread"]: e for e in old.get(name) or []} for name in ("needsYou", "waiting")}
+    lists: dict[str, list[dict]] = {name: [] for name in ("needsYou", "waiting", "snoozed", "working", "unassigned")}
+    managers = {}
+    for thread in threads:
+        title, status, prs = thread["title"], thread["status"], thread["prs"]
+        if title == "desk":
+            continue
+        item = by_thread.get(thread["id"])
+        effort = effort_of(title, item, efforts)
+        manager = title.startswith("manager - ")
+        if manager:
+            managers[effort] = thread["id"]
+        live = status in LIVE_RUNS
+        active = live or status == "waiting" or thread["id"] in before["needsYou"] and not thread["settled"] or item and item.get("asks")
+        if item and (item["status"] in CLOSED or item["status"] in UNSTARTED and not manager and not active):
+            continue
+        pr = next((p["url"] for p in prs if p["state"] == "open"), prs[0]["url"] if prs else item and item.get("pr"))
+        entry = {"thread": thread["id"], "title": title, "why": "", "pr": pr}
+        if item:
+            entry["item"] = item["id"]
+        if effort:
+            entry["effort"] = effort
+        if thread["snoozedUntil"]:
+            local = thread["snoozedUntil"].astimezone()
+            lists["snoozed"].append({**{k: v for k, v in entry.items() if k != "why"}, "until": f"{local:%Y-%m-%d %H:%M}"})
+            continue
+        if status == "waiting":
+            lists["needsYou"].append({**entry, "why": "waits for your answer in the thread"})
+        elif item and item.get("asks"):
+            lists["needsYou"].append({**entry, "why": item["asks"]["text"]})
+        elif thread["id"] in before["needsYou"] and not live and not thread["settled"]:
+            lists["needsYou"].append({**entry, "why": before["needsYou"][thread["id"]]["why"]})
+        elif not effort and not item:
+            state = "running" if live else "settled" if thread["settled"] else "idle"
+            lists["unassigned"].append({**entry, "why": describe(state, prs)})
+        elif live or manager:
+            lists["working"].append({**entry, "why": describe("running" if live else "manager, idle", prs)})
+        elif thread["settled"]:
+            kept = before["waiting"].get(thread["id"])
+            still_open = all(p["state"] not in ("merged", "closed") for p in prs)
+            lists["waiting"].append({**entry, "why": kept["why"] if kept and still_open else describe("settled", prs)})
+        else:
+            lists["working"].append({**entry, "why": describe(status if status in ("failed", "interrupted") else "idle", prs)})
+    order = [e["thread"] for e in old.get("needsYou") or []]
+    for name, entries in lists.items():
+        entries.sort(key=lambda e: (order.index(e["thread"]) if name == "needsYou" and e["thread"] in order else len(order), e.get("effort") or "", e["title"]))
+    environment = (T3 / "environment-id").read_text().strip() if (T3 / "environment-id").exists() else old.get("environment")
+    return {
+        "updated": f"{datetime.datetime.now():%Y-%m-%d %H:%M}",
+        "environment": environment,
+        "managers": dict(sorted(managers.items())),
+        **lists,
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--stdin", action="store_true", help="read t3_thread_list results as JSON from stdin instead of T3's database")
+    parser.add_argument("--db", type=Path, default=T3 / "statev2.sqlite", help="T3's database, opened read only")
+    args = parser.parse_args()
+
+    if args.stdin:
+        threads = from_thread_list(json.load(sys.stdin))
+    else:
+        try:
+            threads = from_db(args.db)
+        except sqlite3.Error as err:
+            sys.exit(f"could not read {args.db}: {err}. Run with --stdin and pipe in the t3_thread_list results instead.")
+    items = [json.loads(p.read_text()) for p in sorted(BACKLOG.glob("*.json"))]
+    efforts = {p.parent.name for p in EFFORTS.glob("*/status.md")}
+    old = json.loads(THREADS.read_text()) if THREADS.exists() else {}
+    result = build(threads, items, efforts, old)
+    write_json(THREADS, result)
+    names = ("needsYou", "waiting", "snoozed", "working", "unassigned")
+    print(" ".join(f"{name} {len(result[name])}" for name in names))
+    for name in names:
+        before = {e["thread"]: e for e in old.get(name) or []}
+        after = {e["thread"]: e for e in result[name]}
+        for thread, entry in after.items():
+            if thread not in before or entry.get("why") != before[thread].get("why"):
+                print(f"+{name} {thread} {entry['title']}: {entry.get('why') or entry.get('until')}")
+        for thread, entry in before.items():
+            if thread not in after:
+                print(f"-{name} {thread} {entry['title']}")
+
+
+if __name__ == "__main__":
+    main()

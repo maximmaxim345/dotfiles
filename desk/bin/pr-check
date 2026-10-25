@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""Print what changed on PRs since the last run, one line per PR with news.
+
+Usage: bin/pr-check <thread id>=<PR url> ...
+"""
+
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+STATE_FILE = Path.home() / "desk" / "state" / "pr-check.json"
+
+
+def gh(*args: str) -> object:
+    result = subprocess.run(["gh", *args], capture_output=True, text=True)
+    if result.returncode and not result.stdout:
+        raise RuntimeError(result.stderr.strip())
+    return json.loads(result.stdout or "null")
+
+
+def check(url: str, me: str, seen: dict, first: bool) -> list[str]:
+    owner, repo, number = re.match(r"https://github\.com/([^/]+)/([^/]+)/pull/(\d+)", url).groups()
+    base = f"repos/{owner}/{repo}"
+    pr = gh("api", f"{base}/pulls/{number}")
+    if pr["merged_at"]:
+        return [f"merged {pr['merged_at'][:10]}"]
+    if pr["state"] == "closed":
+        return [f"closed {pr['closed_at'][:10]}"]
+
+    news = []
+    people = lambda u: u["login"] != me and u["type"] != "Bot"
+    for kind, path in (("review", f"pulls/{number}/reviews"), ("comment", f"issues/{number}/comments"), ("inline comment", f"pulls/{number}/comments")):
+        for entry in gh("api", "--paginate", f"{base}/{path}"):
+            key = f"{kind}:{entry['id']}"
+            if key in seen["ids"] or not people(entry["user"]):
+                continue
+            seen["ids"].append(key)
+            if first:
+                continue
+            state = f" ({entry['state'].lower().replace('_', ' ')})" if kind == "review" else ""
+            news.append(f"{kind} by {entry['user']['login']}{state}")
+
+    problems = []
+    if pr["mergeable"] is False:
+        problems.append("merge conflict")
+    try:
+        checks = gh("pr", "checks", url, "--json", "name,bucket") or []
+    except RuntimeError:
+        checks = []
+    failed = [c["name"] for c in checks if c["bucket"] == "fail"]
+    if failed:
+        problems.append("checks failed: " + ", ".join(failed))
+    news += [p for p in problems if p not in seen["problems"]]
+    seen["problems"] = problems
+    return news
+
+
+def main() -> None:
+    state = json.loads(STATE_FILE.read_text()) if STATE_FILE.exists() else {}
+    me = gh("api", "user")["login"]
+    for arg in sys.argv[1:]:
+        thread, url = arg.split("=", 1)
+        seen = state.get(url, {"ids": [], "problems": []})
+        updated = {"ids": list(seen["ids"]), "problems": seen["problems"]}
+        try:
+            news = check(url, me, updated, url not in state)
+            state[url] = updated
+        except Exception as err:
+            news = [f"pr-check failed: {err}"]
+        if news:
+            print(f"{thread} {url}: " + "; ".join(news))
+    STATE_FILE.write_text(json.dumps(state, indent=2) + "\n")
+
+
+if __name__ == "__main__":
+    main()

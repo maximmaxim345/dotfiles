@@ -1,0 +1,325 @@
+#!/usr/bin/env python3
+"""Add, list, adopt, move, rename or set the status of desk backlog items, or show a thread's question on the board."""
+
+from __future__ import annotations
+
+import argparse
+import datetime
+import json
+import re
+import sys
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+DESK = Path.home() / "desk"
+BACKLOG = DESK / "backlog"
+EFFORTS = DESK / "efforts"
+KINDS = ["bugfix", "feature", "review", "design", "test", "docs"]
+LABELS = ["user-visible bug", "reachable but rare", "theoretical"]
+BOARD = "http://127.0.0.1:8765"
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import REPOS, apply_status, log_event, write_json
+
+
+def slug_id(day: datetime.date, title: str) -> str:
+    return f"{day:%Y%m%d}-" + re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:60]
+
+
+def free_path(base: str) -> Path:
+    path = BACKLOG / f"{base}.json"
+    n = 2
+    while path.exists():
+        path = BACKLOG / f"{base}-{n}.json"
+        n += 1
+    return path
+
+
+def create(args: argparse.Namespace, brief: str, **extra: object) -> dict:
+    today = datetime.date.today()
+    path = free_path(slug_id(today, args.title))
+    item = {
+        "id": path.stem,
+        "title": args.title,
+        "repo": args.repo,
+        "effort": args.effort,
+        "kind": args.kind,
+        "label": args.label,
+        "summary": args.summary,
+        "brief": brief,
+        "source": args.source,
+        "created": today.isoformat(),
+        "status": "open",
+        "thread": None,
+        "pr": None,
+        "done": None,
+        "comments": [],
+        **extra,
+    }
+    BACKLOG.mkdir(exist_ok=True)
+    write_json(path, item)
+    return item
+
+
+def ensure_effort(slug: str | None) -> Path | None:
+    """Create a new effort's folder with a status.md skeleton and return it, or None when the folder exists."""
+    if not slug or (EFFORTS / slug).exists():
+        return None
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", slug):
+        sys.exit(f"effort {slug!r} is not a short lowercase slug")
+    folder = EFFORTS / slug
+    folder.mkdir(parents=True)
+    sections = ["Resume here", "Tasks", "Defaults", "Open decisions", "Log"]
+    (folder / "status.md").write_text(f"# {slug}\n\n" + "".join(f"## {s}\n\n" for s in sections))
+    return folder
+
+
+def drop_effort(folder: Path | None) -> None:
+    if folder:
+        (folder / "status.md").unlink()
+        folder.rmdir()
+
+
+def post(path: str, body: dict) -> None:
+    request = urllib.request.Request(
+        f"{BOARD}/api/{path}", data=json.dumps(body).encode(), headers={"Content-Type": "application/json"}
+    )
+    urllib.request.urlopen(request, timeout=10)
+
+
+def add(args: argparse.Namespace) -> None:
+    brief = sys.stdin.read().strip() if args.brief == "-" else args.brief
+    print(BACKLOG / f"{create(args, brief)['id']}.json")
+
+
+def move(args: argparse.Namespace) -> None:
+    session = {"session": args.session, "checkout": args.checkout, "branch": args.branch, "manager": args.manager}
+    if not args.manager and not args.checkout:
+        sys.exit("--checkout is required without --manager")
+    args.source = args.session
+    brief = Path(args.brief_file).read_text().strip()
+    new_effort = ensure_effort(args.effort)
+    prs = args.pr or []
+    item = create(args, brief, pr=prs[0] if prs else None, prs=prs, move=session)
+    try:
+        post("status", {"ids": [item["id"]], "status": "requested"})
+    except OSError as err:
+        (BACKLOG / f"{item['id']}.json").unlink()
+        drop_effort(new_effort)
+        sys.exit(f"the board did not take the Start, no item added: {err}")
+    print(item["id"])
+
+
+def adopt(args: argparse.Namespace) -> None:
+    items = [json.loads(path.read_text()) for path in BACKLOG.glob("*.json")]
+    item = next((i for i in items if i["thread"] == args.thread and i["status"] not in ("done", "dropped")), None)
+    new = item is None
+    brief = Path(args.brief_file).read_text().strip()
+    new_effort = ensure_effort(args.effort)
+    if new:
+        args.source = args.thread
+        item = create(args, brief, status="started", thread=args.thread, pr=args.pr)
+    status = "open" if args.blocked_by else args.status
+    try:
+        if new:
+            post("adopt", {"id": item["id"]})
+        if not new and args.effort:
+            post("update", {"ids": [item["id"]], "fields": {"effort": args.effort}})
+        if args.blocked_by:
+            blockers = (item.get("blockedBy") or []) + [b for b in args.blocked_by if b not in (item.get("blockedBy") or [])]
+            post("update", {"ids": [item["id"]], "fields": {"blockedBy": blockers}})
+        if status == "dropped":
+            post("status", {"ids": [item["id"]], "status": "open"})
+        if status:
+            post("status", {"ids": [item["id"]], "status": status})
+        if args.note:
+            post("comment", {"id": item["id"], "text": args.note})
+    except OSError as err:
+        if new:
+            (BACKLOG / f"{item['id']}.json").unlink()
+        drop_effort(new_effort)
+        sys.exit(f"the board did not take the change, {'no item added' if new else 'the item may be half changed'}: {err}")
+    print(item["id"])
+
+
+def ask(args: argparse.Namespace) -> None:
+    try:
+        post("ask", {"thread": args.thread, "text": None if args.clear else args.question})
+    except urllib.error.HTTPError as err:
+        sys.exit(json.loads(err.read() or b"{}").get("error", str(err)))
+    except OSError as err:
+        sys.exit(f"the board did not take the question: {err}")
+
+
+def set_status(args: argparse.Namespace) -> None:
+    path = BACKLOG / f"{args.id}.json"
+    if not path.exists():
+        sys.exit(f"no item {args.id}")
+    item = json.loads(path.read_text())
+    old = item["status"]
+    if args.thread:
+        item["thread"] = args.thread
+    if args.pr:
+        item["pr"] = args.pr
+    if args.status == "started" and not item["thread"]:
+        sys.exit("a started item needs --thread")
+    if old != args.status:
+        apply_status(item, args.status)
+        if args.status == "next":
+            ranks = (json.loads(other.read_text()) for other in BACKLOG.glob("*.json"))
+            item["rank"] = max((i.get("rank") or 0 for i in ranks if i["status"] == "next"), default=0) + 1
+    write_json(path, item)
+    if old == args.status:
+        return
+    log_event({"type": "status", "changes": [{"id": args.id, "from": old, "to": args.status}], "by": args.by})
+
+
+def reslug(args: argparse.Namespace) -> None:
+    old_path = BACKLOG / f"{args.id}.json"
+    if not old_path.exists():
+        sys.exit(f"no item {args.id}")
+    item = json.loads(old_path.read_text())
+    base = slug_id(datetime.date.fromisoformat(item["created"]), item["title"])
+    if re.fullmatch(re.escape(base) + r"(-\d+)?", args.id):
+        print(args.id)
+        return
+    new_path = free_path(base)
+    new_id = new_path.stem
+    pattern = re.compile(r"(?<![a-z0-9-])" + re.escape(args.id) + r"(?![a-z0-9-])")
+
+    def renamed(value: object) -> object:
+        if isinstance(value, str):
+            return pattern.sub(new_id, value)
+        if isinstance(value, list):
+            return [renamed(v) for v in value]
+        if isinstance(value, dict):
+            return {k: renamed(v) for k, v in value.items()}
+        return value
+
+    write_json(new_path, renamed(item))
+    old_path.unlink()
+    for path in sorted(BACKLOG.glob("*.json")):
+        other = json.loads(path.read_text())
+        updated = renamed(other)
+        if updated != other:
+            write_json(path, updated)
+            print(f"updated {path.stem}")
+    for path in sorted(EFFORTS.rglob("*")):
+        notes = path.is_file() and path.suffix in (".md", ".json") and not {"evidence", "work"} & set(path.parts)
+        if notes and args.id in path.read_text(errors="replace"):
+            print(f"still names the old id: {path}")
+    if item["thread"] and item["status"] not in ("done", "dropped"):
+        print(f"thread {item['thread']} may still read backlog/{args.id}.json")
+    print(new_id)
+
+
+def wait_moved(args: argparse.Namespace) -> None:
+    start = time.monotonic()
+    while True:
+        items = [json.loads((BACKLOG / f"{i}.json").read_text()) for i in args.ids]
+        started = [i for i in items if i["thread"] and i["status"] != "requested"]
+        stuck = [i for i in items if i not in started and i.get("needs")]
+        held = [i for i in items if not i["thread"] and i["status"] != "requested"]
+        timed_out = time.monotonic() - start >= args.max
+        if len(started) + len(stuck) + len(held) == len(items) or timed_out:
+            for item in started:
+                print(f"{item['move']['session']} {item['thread']}")
+            for item in stuck:
+                print(f"stuck {item['id']} {item['move']['session']}: {item['needs']}")
+            for item in held:
+                print(f"held {item['id']} {item['move']['session']}: {item['status']}")
+            if timed_out:
+                print("timeout " + " ".join(i["id"] for i in items if i not in started + stuck + held))
+            return
+        time.sleep(10)
+
+
+def list_items(args: argparse.Namespace) -> None:
+    for path in sorted(BACKLOG.glob("*.json")):
+        item = json.loads(path.read_text())
+        if args.all or item["status"] in ("new", "open", "next", "requested", "started"):
+            if args.repo and item["repo"] != args.repo:
+                continue
+            print(f"{item['id']}  [{item['status']}] {item['repo']}: {item['title']}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p_add = sub.add_parser("add", help="add an open item and print its path")
+    p_add.add_argument("--title", required=True)
+    p_add.add_argument("--repo", required=True, choices=REPOS, metavar="REPO", help="short repo name: " + ", ".join(REPOS))
+    p_add.add_argument("--kind", required=True, choices=KINDS)
+    p_add.add_argument("--label", required=True, choices=LABELS)
+    p_add.add_argument("--summary", required=True, help="one or two sentences")
+    p_add.add_argument("--brief", required=True, help="evidence and plan, or - to read stdin")
+    p_add.add_argument("--effort", default=None)
+    p_add.add_argument("--source", default="unknown", help="thread or session id")
+    p_add.set_defaults(func=add)
+
+    p_adopt = sub.add_parser("adopt", help="add a started item for a running T3 thread, or reuse its item")
+    p_adopt.add_argument("--title", required=True)
+    p_adopt.add_argument("--repo", required=True, choices=REPOS, metavar="REPO", help="short repo name: " + ", ".join(REPOS))
+    p_adopt.add_argument("--kind", choices=KINDS)
+    p_adopt.add_argument("--summary", required=True, help="one or two sentences")
+    p_adopt.add_argument("--brief-file", required=True, help="the brief the thread wrote")
+    p_adopt.add_argument("--thread", required=True, help="the T3 thread id")
+    p_adopt.add_argument("--pr", help="the PR URL")
+    p_adopt.add_argument("--blocked-by", action="append", help="pause the item until this happens, repeatable")
+    p_adopt.add_argument("--status", choices=["open", "done", "dropped"], help="pause (open), finish or drop the item")
+    p_adopt.add_argument("--note", help="my words for the desk, added to the item as my comment")
+    p_adopt.add_argument("--effort", default=None, help="an effort slug, created when it's new")
+    p_adopt.set_defaults(func=adopt, label=None)
+
+    p_move = sub.add_parser("move", help="add an item for a Claude desktop session and press Start for it")
+    p_move.add_argument("--title", required=True)
+    p_move.add_argument("--repo", required=True, choices=REPOS, metavar="REPO", help="short repo name: " + ", ".join(REPOS))
+    p_move.add_argument("--kind", choices=KINDS)
+    p_move.add_argument("--summary", required=True, help="one or two sentences")
+    p_move.add_argument("--brief-file", required=True, help="the brief the session wrote")
+    p_move.add_argument("--session", required=True, help="the desktop session id, local_...")
+    p_move.add_argument("--checkout", help="the repo's main checkout, not needed with --manager")
+    p_move.add_argument("--branch", help="the branch to continue on")
+    p_move.add_argument("--pr", action="append", help="a PR URL, repeatable, the main PR first")
+    p_move.add_argument("--manager", action="store_true", help="the session is the effort's coordinator")
+    p_move.add_argument("--effort", default=None, help="an effort slug, created when it's new")
+    p_move.set_defaults(func=move, label=None)
+
+    p_ask = sub.add_parser("ask", help="show a question on the board under the thread's item, or clear it")
+    p_ask.add_argument("--thread", required=True, help="the T3 thread id")
+    p_ask_text = p_ask.add_mutually_exclusive_group(required=True)
+    p_ask_text.add_argument("question", nargs="?", help="the question in one line")
+    p_ask_text.add_argument("--clear", action="store_true", help="remove the question once I answered")
+    p_ask.set_defaults(func=ask)
+
+    p_status = sub.add_parser("status", help="set an item's status and log it for the desk like a board change")
+    p_status.add_argument("id")
+    p_status.add_argument("status", choices=["open", "next", "started", "done", "dropped"])
+    p_status.add_argument("--thread", help="the T3 thread id, required to start an item without one")
+    p_status.add_argument("--pr", help="the PR URL")
+    p_status.add_argument("--by", required=True, choices=["desk", "manager"], help="who makes the change, so the desk is not woken for its own")
+    p_status.set_defaults(func=set_status)
+
+    p_reslug = sub.add_parser("reslug", help="rename an item's id and file after its title and update references to it")
+    p_reslug.add_argument("id")
+    p_reslug.set_defaults(func=reslug)
+
+    p_wait = sub.add_parser("wait-moved", help="wait until each item started, needs me, or I took it back before it started")
+    p_wait.add_argument("ids", nargs="+")
+    p_wait.add_argument("--max", type=int, default=6600, help="give up after this many seconds")
+    p_wait.set_defaults(func=wait_moved)
+
+    p_list = sub.add_parser("list", help="list items that are not done or dropped")
+    p_list.add_argument("--repo")
+    p_list.add_argument("--all", action="store_true", help="include done and dropped")
+    p_list.set_defaults(func=list_items)
+
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

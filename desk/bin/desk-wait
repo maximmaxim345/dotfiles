@@ -1,0 +1,141 @@
+#!/usr/bin/env python3
+"""Wait for board events the desk acts on, print them and exit."""
+
+import argparse
+import datetime
+import json
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+STATE = Path.home() / "desk" / "state"
+EVENTS = STATE / "events.jsonl"
+OFFSET = STATE / "events.offset"
+LISTENER = STATE / "listener.pid"
+REFRESHED = STATE / "refreshed.at"
+PRS_CHECKED = STATE / "prs-checked.at"
+IDLE_ERROR = STATE / "compact-due.error"
+COMPACT_DUE = Path(__file__).resolve().parent / "compact-due"
+REFRESH_EVERY = 45 * 60
+PRS_EVERY = 3 * 60 * 60
+IDLE_EVERY = 60
+
+
+def size() -> int:
+    return EVENTS.stat().st_size if EVENTS.exists() else 0
+
+
+def listening() -> bool:
+    try:
+        os.kill(int(LISTENER.read_text()), 0)
+    except (OSError, ValueError):
+        return False
+    return True
+
+
+def refresh_due() -> bool:
+    now = datetime.datetime.now()
+    if now.weekday() >= 5 or not 8 <= now.hour < 20:
+        return False
+    last = float(REFRESHED.read_text()) if REFRESHED.exists() else 0
+    return time.time() - last >= REFRESH_EVERY
+
+
+def idle_threads() -> str:
+    result = subprocess.run([str(COMPACT_DUE)], capture_output=True, text=True)
+    if result.returncode == 0:
+        IDLE_ERROR.unlink(missing_ok=True)
+        return result.stdout.strip()
+    error = (result.stderr.strip() or f"exit {result.returncode}").splitlines()[-1]
+    if IDLE_ERROR.exists() and IDLE_ERROR.read_text() == error:
+        return ""
+    IDLE_ERROR.write_text(error)
+    return json.dumps({"type": "idle-error", "error": error})
+
+
+def prs_due() -> bool:
+    last = float(PRS_CHECKED.read_text()) if PRS_CHECKED.exists() else 0
+    return time.time() - last >= PRS_EVERY
+
+
+def mark_refreshed() -> None:
+    STATE.mkdir(exist_ok=True)
+    REFRESHED.write_text(str(time.time()))
+    PRS_CHECKED.write_text(str(time.time()))
+
+
+def actionable(event: dict) -> bool:
+    if event.get("by") == "desk":
+        return False
+    if event["type"] in ("capture", "comment", "archive", "adopt"):
+        return True
+    if event["type"] == "status":
+        return any(c["to"] in ("requested", "done", "dropped") or c["from"] == "started" for c in event["changes"])
+    return False
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--quiet", type=int, default=20, help="seconds without new events before printing")
+    parser.add_argument("--max", type=int, default=6600, help="give up after this many seconds")
+    parser.add_argument("--check", action="store_true", help="exit 0 if a listener runs, 1 if not")
+    parser.add_argument("--refreshed", action="store_true", help="record that the threads were just refreshed")
+    args = parser.parse_args()
+
+    if args.check:
+        sys.exit(0 if listening() else 1)
+    if args.refreshed:
+        mark_refreshed()
+        return
+    if listening():
+        print("already listening")
+        return
+    STATE.mkdir(exist_ok=True)
+    LISTENER.write_text(str(os.getpid()))
+    offset = int(OFFSET.read_text()) if OFFSET.exists() else 0
+    start = time.time()
+    idle_checked = 0.0
+    try:
+        while True:
+            if size() > offset:
+                last, seen = time.monotonic(), size()
+                while time.monotonic() - last < args.quiet:
+                    time.sleep(1)
+                    if size() != seen:
+                        last, seen = time.monotonic(), size()
+                with EVENTS.open() as f:
+                    f.seek(offset)
+                    events = [json.loads(line) for line in f.read(seen - offset).splitlines() if line]
+                offset = seen
+                OFFSET.write_text(str(offset))
+                wanted = [e for e in events if actionable(e)]
+                if wanted:
+                    for event in wanted:
+                        print(json.dumps(event))
+                    return
+            elif time.time() - idle_checked >= IDLE_EVERY:
+                idle_checked = time.time()
+                idle = idle_threads()
+                if idle:
+                    print(idle)
+                    return
+            elif refresh_due():
+                mark_refreshed()
+                print("refresh")
+                return
+            elif prs_due():
+                PRS_CHECKED.write_text(str(time.time()))
+                print("prs")
+                return
+            if time.time() - start > args.max:
+                print("timeout")
+                return
+            time.sleep(1)
+    finally:
+        LISTENER.unlink(missing_ok=True)
+
+
+if __name__ == "__main__":
+    main()

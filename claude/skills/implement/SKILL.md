@@ -45,13 +45,13 @@ Commit as you go. A pure refactor gets its own commit before the behavior change
 ## 4. Review with fresh context
 
 Launch these in parallel, passing the diff (`git diff <base>...HEAD`), the changed paths, and the approved plan, but not your own reasoning:
-- A review subagent that checks correctness and audits the diff as "Before handing over" in my CLAUDE.md says, and against the project rules.
+- A review subagent that checks correctness, audits the diff as "Before handing over" in my CLAUDE.md says and against the project rules, and reads it as the `review-brief` skill's "Critical pass" says.
 - ohf-sage, for the projects listed in step 2.
 
-Label each finding as a user-visible bug, reachable but rare, or theoretical. Fix bugs and rule violations in separate commits and skip theoretical ones.
+Label each finding as a user-visible bug, reachable but rare, or theoretical. Fix bugs and rule violations, each in a `git commit --fixup` of the commit it fixes, and skip theoretical ones. Note what you fixed and what you kept on purpose, with the reason, for the brief.
 
 ## 5. Hand over
 
-Run the `review-brief` skill. In its "Before I read" part, also say what you verified and how, and what I should test by hand.
+Run the `review-brief` skill. In its "Before I read" part, also say what you verified and how, and what I should test by hand. Its "Critical pass" starts from what step 4 fixed and kept.
 
-Then stop and wait for my review. When I say to ship it, run `/open-pr`.
+Then, in the same reply, draft the PR as `/open-pr` steps 1 to 6 say, without pushing. Stop and wait for my review. Make fixes from my review as `--fixup` commits too, and post the updated PR draft with them. When I say to push or ship it, run `/open-pr`.

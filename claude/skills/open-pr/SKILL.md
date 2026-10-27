@@ -25,14 +25,14 @@ Running this command is not a go-ahead to push. Nothing leaves this machine unti
    - On a branch without an upstream that `git ls-remote --heads origin <branch>` doesn't list, with an auto-generated name or one that no longer matches the change: propose a `<type>/<slug>` name.
    - Never rename a branch that exists on the remote, since the old one would stay on GitHub.
 6. Post in chat, then stop:
-   - the subject and body of each commit on the branch
+   - the subject and body of each commit on the branch, as they will be after step 7 folds the `fixup!` commits
    - the PR title
    - the PR description in a fenced block
    - the target repo, base branch, and mode
    - the current branch name, and the proposed one if step 5 proposed one
    - that you'll request a Copilot review once the PR exists, so my go-ahead covers it
-   Revise and post again when I ask for changes. Continue only when my latest message is an explicit go-ahead. The go-ahead can switch the mode.
-7. Build the final body: start from the template (if found), fill in the sections using the approved title/description, leave HTML comments intact, and tick any checklist boxes that apply. Write it to a temp file and pass it with `--body-file`. If I approved a new branch name, run `git switch -c <name>` on the default branch or `git branch -m <name>` otherwise, and use the new name as `<branch>` from here on. Push with `git push -u origin HEAD`, then:
+   Revise and post again when I ask for changes. Continue only when my latest message is an explicit go-ahead. The go-ahead can switch the mode. When this session already posted all of this, my latest message is a go-ahead to it, and the branch has no new commits or uncommitted changes since, skip steps 2 to 6.
+7. Build the final body: start from the template (if found), fill in the sections using the approved title/description, leave HTML comments intact, and tick any checklist boxes that apply. Write it to a temp file and pass it with `--body-file`. Fold the `fixup!` commits that aren't pushed into the commits they fix, with `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash <start>`. `<start>` is `origin/<branch>` after `git fetch origin <branch>` when `git ls-remote --heads origin <branch>` lists the branch, and `$(git merge-base <base> HEAD)` otherwise. When the rebase stops on a conflict, run `git rebase --abort` and ask me. Give a fixup whose target is already pushed a proper message instead. If I approved a new branch name, run `git switch -c <name>` on the default branch or `git branch -m <name>` otherwise, and use the new name as `<branch>` from here on. Push with `git push -u origin HEAD`, then:
    - `web`: needs a working `gh` and a local browser, so not when `CLAUDE_CODE_REMOTE` is `true`. Note the time with `date -u +%Y-%m-%dT%H:%M:%SZ`, then run `gh pr create -w`. The PR not existing afterward is expected, since `-w` only opens the prefilled form. Don't retry without `-w` and don't publish it yourself. Tell me the form is open, that I can pick draft in it, and that this thread picks the PR up on its own once I submit it. Then watch for it as step 8 says.
    - `draft`: run `gh pr create --draft`, give me the PR URL and request a Copilot review.
    - `ready`: run `gh pr create`, give me the PR URL and request a Copilot review.

@@ -38,7 +38,7 @@ Cover every changed file in one answer, in reading order: entry points and data 
 
 ## 4. Critical pass
 
-Read the diff again as a skeptical reviewer, not its author. List only real, specific findings, each labeled as a user-visible bug or reachable but rare. Leave out theoretical ones. Look for:
+When the session already reviewed the diff and fixed what it found (as `implement` step 4 does), start with what was fixed, each with its label, and what was kept on purpose, with the reason. Read the diff again as a skeptical reviewer, not its author, for anything that review missed. List only real, specific findings, each labeled as a user-visible bug or reachable but rare. Leave out theoretical ones. Look for:
 
 - edge cases the change adds or misses, such as empty or missing input, ordering, concurrency, and old peers or old data
 - tests that only retest existing behavior or would pass without the change
@@ -49,4 +49,4 @@ Sort the findings into two lists, each finding with the reason in a few words:
 - Worth fixing: what to change and why it matters.
 - Not worth fixing: why it can stay as it is.
 
-Don't fix anything. Say whether the branch should ship as one PR or be split, and which commits go where. Close with your recommendation, like "I'd fix 1 and 3. Say go, or tell me what to change.", or "Nothing is worth fixing." when that's the case.
+Don't fix anything. Say whether the branch should ship as one PR or be split, and which commits go where. Close with your recommendation, like "I'd fix 1 and 3. Say go, or tell me what to change.", or "Nothing is worth fixing." when that's the case. When a PR draft follows in the same reply, ask me to say which to fix or to say push, instead of "go".

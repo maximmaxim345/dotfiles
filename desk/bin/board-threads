@@ -147,7 +147,8 @@ def sync_items(threads: list[dict], items: list[dict]) -> list[str]:
         own = [pr for pr in thread["prs"] if not (pr["merged"] and pr["linked"] and pr["merged"] <= pr["linked"])]
         done = (
             item["status"] == "started"
-            and thread["status"] not in LIVE_RUNS
+            and thread["status"] not in LIVE_RUNS | {"waiting"}
+            and not item.get("asks")
             and own
             and all(pr["state"] == "merged" for pr in own)
         )

@@ -15,7 +15,7 @@ This session coordinates. It plans, starts and tracks task sessions and checks t
 
 - Rename this session to `manager - <repos> - <effort>` with `set_session_title`, using the repo names from section 3.
 - If `~/desk/efforts/` has a folder for this effort, resume it: read its `status.md`, check it against `list_sessions` (archived ones too), git and gh, and tell me where things stand. Skip the rest of this section.
-- Create `~/desk/efforts/<effort-slug>/` with `status.md`.
+- Create `~/desk/efforts/<effort-slug>/` with `status.md`, whose first line under the title is "Run from the Claude Code desktop app.", so the T3 desk leaves its format alone.
 - When this session already worked on the effort, record its branch, commits, findings and open questions in `status.md`.
 
 ## 2. Plan

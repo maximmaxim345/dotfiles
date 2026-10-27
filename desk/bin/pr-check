@@ -10,11 +10,15 @@ import datetime
 import json
 import re
 import subprocess
+import sys
 import time
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import write_json  # noqa: E402
+
 STATE_FILE = Path.home() / "desk" / "state" / "pr-check.json"
-WAIT_FILE = Path.home() / "desk" / "state" / "pr-wait.json"
+WAIT_DIR = Path.home() / "desk" / "state" / "pr-wait"
 WAIT_EVERY = 5 * 60
 
 
@@ -30,6 +34,7 @@ def check(url: str, me: str, seen: dict, first: bool, copilot: bool = False) -> 
     base = f"repos/{owner}/{repo}"
     pr = gh("api", f"{base}/pulls/{number}")
     seen["state"] = "merged" if pr["merged_at"] else pr["state"]
+    seen["merged"] = pr["merged_at"]
     seen["checked"] = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
     if pr["merged_at"]:
         return [f"merged {pr['merged_at'][:10]}"]
@@ -87,7 +92,8 @@ def check_all(pairs: list[str], state_file: Path, per_thread: bool) -> list[str]
             news = [f"pr-check failed: {err}"]
         if news:
             lines.append(f"{thread} {url}: " + "; ".join(news))
-    state_file.write_text(json.dumps(state, indent=2) + "\n")
+    state_file.parent.mkdir(exist_ok=True)
+    write_json(state_file, state)
     return lines
 
 
@@ -103,7 +109,7 @@ def main() -> None:
         return
     start = time.monotonic()
     while True:
-        lines = check_all(args.pairs, WAIT_FILE, True)
+        lines = check_all(args.pairs, WAIT_DIR / f"{args.pairs[0].split('=', 1)[0]}.json", True)
         if lines:
             print("\n".join(lines))
             return

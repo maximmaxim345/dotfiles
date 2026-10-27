@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild the board's thread lists in ~/desk/state/threads.json from T3's threads and the backlog.
-
-Also copies the PRs a thread linked into its backlog item and marks a started item done once all its PRs merged.
-"""
+"""Rebuild the board's thread lists in ~/desk/state/threads.json from T3's threads and the backlog, and sync items' PRs."""
 
 from __future__ import annotations
 
@@ -26,6 +23,7 @@ CLOSED = {"done", "dropped"}
 COLUMNS = {
     "orchestration_v2_projection_threads": {"thread_id", "title", "archived_at", "deleted_at", "payload_json"},
     "orchestration_v2_projection_runs": {"thread_id", "ordinal", "status", "completed_at"},
+    "orchestration_v2_projection_messages": {"thread_id", "role", "created_at", "payload_json"},
 }
 PAYLOAD_KEYS = {"lineage", "settledOverride", "snoozedUntil", "snoozedAt"}
 
@@ -51,7 +49,9 @@ def from_db(db: Path) -> list[dict]:
             if missing:
                 schema_changed(f"{table} lacks {', '.join(sorted(missing))}")
         rows = conn.execute(
-            "SELECT t.thread_id, t.title, t.payload_json, r.status, r.completed_at"
+            "SELECT t.thread_id, t.title, t.payload_json, r.status, r.completed_at,"
+            " (SELECT MAX(m.created_at) FROM orchestration_v2_projection_messages m WHERE m.thread_id = t.thread_id"
+            " AND m.role = 'user' AND json_extract(m.payload_json, '$.createdBy') = 'user')"
             " FROM orchestration_v2_projection_threads t LEFT JOIN orchestration_v2_projection_runs r"
             " ON r.thread_id = t.thread_id"
             " AND r.ordinal = (SELECT MAX(ordinal) FROM orchestration_v2_projection_runs WHERE thread_id = t.thread_id)"
@@ -61,7 +61,7 @@ def from_db(db: Path) -> list[dict]:
         conn.close()
     now = datetime.datetime.now(datetime.timezone.utc)
     threads = []
-    for thread_id, title, payload, status, completed_at in rows:
+    for thread_id, title, payload, status, completed_at, last_user in rows:
         payload = json.loads(payload)
         status = status or "idle"
         if PAYLOAD_KEYS - payload.keys():
@@ -81,13 +81,15 @@ def from_db(db: Path) -> list[dict]:
                 "status": status,
                 "settled": payload["settledOverride"] == "settled",
                 "snoozedUntil": until if until and until > now and status != "waiting" and not failed_since else None,
-                "lastRun": completed,
+                "lastUser": parse_time(last_user),
                 "prs": [
                     {
                         "url": pr["url"],
                         "number": pr["number"],
                         "state": (pr.get("snapshot") or {}).get("state"),
                         "synced": parse_time((pr.get("snapshot") or {}).get("syncedAt")),
+                        "linked": parse_time(pr.get("linkedAt")),
+                        "merged": parse_time((pr.get("snapshot") or {}).get("mergedAt")),
                     }
                     for pr in payload.get("pullRequests") or []
                 ],
@@ -110,9 +112,10 @@ def from_thread_list(data: object) -> list[dict]:
                 "status": thread["status"],
                 "settled": thread["settled"],
                 "snoozedUntil": parse_time(thread["snoozedUntil"]) if thread["snoozed"] else None,
-                "lastRun": None,
+                "lastUser": None,
                 "prs": [
-                    {"url": pr["url"], "number": pr["number"], "state": pr.get("state"), "synced": None}
+                    {"url": pr["url"], "number": pr["number"], "state": pr.get("state")}
+                    | dict.fromkeys(("synced", "linked", "merged"))
                     for pr in thread.get("pullRequests") or []
                 ],
             }
@@ -127,32 +130,41 @@ def apply_pr_check(threads: list[dict], checked: dict) -> None:
         at = parse_time(seen.get("checked"))
         if seen.get("state") and at and (pr["synced"] is None or at > pr["synced"]):
             pr["state"] = seen["state"]
+            pr["merged"] = parse_time(seen.get("merged"))
 
 
-def sync_items(threads: list[dict], items: list[dict], checked: dict) -> list[str]:
-    """Add the PRs each thread linked to its item and mark started items done once all their PRs merged."""
-    states = {pr["url"]: pr["state"] for thread in threads for pr in thread["prs"]}
-    states.update({url: seen["state"] for url, seen in checked.items() if seen.get("state") and url not in states})
-    linked = {thread["id"]: [pr["url"] for pr in thread["prs"]] for thread in threads}
-    managers = {thread["id"] for thread in threads if thread["title"].startswith("manager - ")}
+def sync_items(threads: list[dict], items: list[dict]) -> list[str]:
+    """Add the PRs each thread linked to its item and mark a started item done once its thread is idle and its PRs merged."""
+    by_id = {thread["id"]: thread for thread in threads if not thread["title"].startswith("manager - ")}
     notes = []
     for item in items:
-        if item["status"] in CLOSED or not item.get("thread") or item["thread"] in managers:
+        thread = by_id.get(item.get("thread") or "")
+        if item["status"] in CLOSED or thread is None:
             continue
         urls = [u for u in [item.get("pr"), *(item.get("prs") or [])] if u]
-        added = [u for u in linked.get(item["thread"], []) if u not in urls]
+        added = [pr["url"] for pr in thread["prs"] if pr["url"] not in urls]
+        # A PR that had merged before the thread linked it, like a predecessor, isn't the item's own work.
+        own = [pr for pr in thread["prs"] if not (pr["merged"] and pr["linked"] and pr["merged"] <= pr["linked"])]
+        done = (
+            item["status"] == "started"
+            and thread["status"] not in LIVE_RUNS
+            and own
+            and all(pr["state"] == "merged" for pr in own)
+        )
+        if not added and not done:
+            continue
+        path = BACKLOG / f"{item['id']}.json"
+        fresh = json.loads(path.read_text())
         if added:
-            urls += added
-            item["pr"] = urls[0]
-            item["prs"] = urls
+            fresh["prs"] = [*urls, *added]
+            fresh["pr"] = fresh["prs"][0]
             notes.append(f"+pr {item['id']}: {', '.join(added)}")
-        merged = urls and all(states.get(u) == "merged" for u in urls)
-        if item["status"] == "started" and merged:
-            apply_status(item, "done")
+        if done and fresh["status"] == "started":
+            apply_status(fresh, "done")
             log_event({"type": "status", "changes": [{"id": item["id"], "from": "started", "to": "done"}], "by": "desk"})
-            notes.append(f"done {item['id']}: all PRs merged, thread {item['thread']}")
-        if added or item["status"] == "done":
-            write_json(BACKLOG / f"{item['id']}.json", item)
+            notes.append(f"done {item['id']}: its PRs merged, thread {item['thread']}")
+        write_json(path, fresh)
+        item.update(fresh)
     return notes
 
 
@@ -171,9 +183,9 @@ def describe(state: str, prs: list[dict]) -> str:
 
 
 def answered(thread: dict, before: dict) -> bool:
-    """Whether the thread ran again after its needsYou entry was written, so the desk's why may be stale."""
+    """Whether I wrote in the thread after its needsYou entry appeared, so the desk's why may be stale."""
     since = parse_time(before["needsYou"][thread["id"]].get("since"))
-    return bool(since and thread["lastRun"] and thread["lastRun"] > since)
+    return bool(since and thread["lastUser"] and thread["lastUser"] > since)
 
 
 def build(threads: list[dict], items: list[dict], efforts: set[str], old: dict) -> dict:
@@ -271,7 +283,7 @@ def main() -> None:
     items = [json.loads(p.read_text()) for p in sorted(BACKLOG.glob("*.json"))]
     checked = json.loads(PR_CHECK.read_text()) if PR_CHECK.exists() else {}
     apply_pr_check(threads, checked)
-    notes = sync_items(threads, items, checked)
+    notes = sync_items(threads, items)
     efforts = {p.parent.name for p in EFFORTS.glob("*/status.md")}
     old = json.loads(THREADS.read_text()) if THREADS.exists() else {}
     result = build(threads, items, efforts, old)

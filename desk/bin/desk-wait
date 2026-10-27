@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import fcntl
 import json
 import os
 import sqlite3
@@ -22,6 +23,7 @@ PRS_CHECKED = STATE / "prs-checked.at"
 IDLE_ERROR = STATE / "compact-due.error"
 WAKE = STATE / "wake.jsonl"
 WAKE_SENT = STATE / "wake.sent"
+WAKE_LOCK = STATE / "wake.lock"
 T3 = Path.home() / ".t3"
 WAKE_MESSAGE = 'Desk wake-up: run `bin/desk-wait --take` and handle what it prints, as AGENTS.md "Listening" says.'
 COMPACT_DUE = Path(__file__).resolve().parent / "compact-due"
@@ -164,17 +166,21 @@ def serve(quiet: int) -> None:
     try:
         while True:
             lines, offset = next_wake(offset, quiet)
-            with WAKE.open("a") as f:
-                f.write("".join(line + "\n" for line in lines))
+            with WAKE_LOCK.open("w") as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX)
+                with WAKE.open("a") as f:
+                    f.write("".join(line + "\n" for line in lines))
             wake_desk()
     finally:
         LISTENER.unlink(missing_ok=True)
 
 
 def take() -> None:
-    lines = WAKE.read_text() if WAKE.exists() else ""
-    WAKE.unlink(missing_ok=True)
-    WAKE_SENT.unlink(missing_ok=True)
+    with WAKE_LOCK.open("w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        lines = WAKE.read_text() if WAKE.exists() else ""
+        WAKE.unlink(missing_ok=True)
+        WAKE_SENT.unlink(missing_ok=True)
     print(lines, end="")
 
 

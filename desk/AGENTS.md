@@ -129,7 +129,7 @@ Settled threads don't watch their PRs, so the desk passes on their PR news.
 
 Run `bin/watch`. It records news since its last run in `state/incoming.json`, one entry per issue, PR, discussion, board card or run, and prints each as a `watch` line. A new source's first run only records what exists. A `watch-error` line goes in your reply. The board shows entries with status new, needs-you or waiting under Incoming, grouped by effort.
 
-Route each new entry to the effort whose `status.md` Scope line covers it with `bin/incoming set <url> --effort <slug>`, and leave it without an effort otherwise. When that effort has a manager, tell it once per wake-up which entries are new for it, and it sorts them. Sort the rest yourself.
+Route each new entry to the effort whose `status.md` Scope line covers it with `bin/incoming set <url> --effort <slug>`, and leave it without an effort otherwise. When several Scope lines cover an entry, route it to the most specific one. A broad scope gets what no narrower scope covers. When that effort has a manager, tell it once per wake-up which entries are new for it, and it sorts them. Sort the rest yourself.
 
 Sorting reads the entry and its news, follows my notes in `watch.json`, and checks the code on the default branch when the entry reports a bug or asks how something works. End it with `bin/incoming set <url>` and one of:
 - `--status noise`: nothing for me, like bot updates or news I caused. Later news on it stays noise.

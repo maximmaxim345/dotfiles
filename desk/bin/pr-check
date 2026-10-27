@@ -4,6 +4,7 @@
 Usage: bin/pr-check <thread id>=<PR url> ...
 """
 
+import datetime
 import json
 import re
 import subprocess
@@ -24,6 +25,8 @@ def check(url: str, me: str, seen: dict, first: bool) -> list[str]:
     owner, repo, number = re.match(r"https://github\.com/([^/]+)/([^/]+)/pull/(\d+)", url).groups()
     base = f"repos/{owner}/{repo}"
     pr = gh("api", f"{base}/pulls/{number}")
+    seen["state"] = "merged" if pr["merged_at"] else pr["state"]
+    seen["checked"] = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
     if pr["merged_at"]:
         return [f"merged {pr['merged_at'][:10]}"]
     if pr["state"] == "closed":
@@ -70,7 +73,7 @@ def main() -> None:
     for arg in sys.argv[1:]:
         thread, url = arg.split("=", 1)
         seen = state.get(url, {"ids": [], "problems": []})
-        updated = {"ids": list(seen["ids"]), "problems": seen["problems"]}
+        updated = {**seen, "ids": list(seen["ids"])}
         try:
             news = check(url, me, updated, url not in state)
             state[url] = updated

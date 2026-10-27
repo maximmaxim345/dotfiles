@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Rebuild the board's thread lists in ~/desk/state/threads.json from T3's threads and the backlog."""
+"""Rebuild the board's thread lists in ~/desk/state/threads.json from T3's threads and the backlog.
+
+Also copies the PRs a thread linked into its backlog item and marks a started item done once all its PRs merged.
+"""
 
 from __future__ import annotations
 
@@ -14,6 +17,7 @@ DESK = Path.home() / "desk"
 BACKLOG = DESK / "backlog"
 EFFORTS = DESK / "efforts"
 THREADS = DESK / "state" / "threads.json"
+PR_CHECK = DESK / "state" / "pr-check.json"
 T3 = Path.home() / ".t3" / "userdata"
 LIVE_RUNS = {"preparing", "queued", "starting", "running"}
 RUN_STATUSES = LIVE_RUNS | {"idle", "waiting", "completed", "interrupted", "failed", "cancelled", "rolled_back"}
@@ -26,7 +30,7 @@ COLUMNS = {
 PAYLOAD_KEYS = {"lineage", "settledOverride", "snoozedUntil", "snoozedAt"}
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import write_json  # noqa: E402
+from server import apply_status, log_event, write_json  # noqa: E402
 
 
 def schema_changed(detail: str) -> None:
@@ -77,8 +81,14 @@ def from_db(db: Path) -> list[dict]:
                 "status": status,
                 "settled": payload["settledOverride"] == "settled",
                 "snoozedUntil": until if until and until > now and status != "waiting" and not failed_since else None,
+                "lastRun": completed,
                 "prs": [
-                    {"url": pr["url"], "number": pr["number"], "state": (pr.get("snapshot") or {}).get("state")}
+                    {
+                        "url": pr["url"],
+                        "number": pr["number"],
+                        "state": (pr.get("snapshot") or {}).get("state"),
+                        "synced": parse_time((pr.get("snapshot") or {}).get("syncedAt")),
+                    }
                     for pr in payload.get("pullRequests") or []
                 ],
             }
@@ -100,13 +110,50 @@ def from_thread_list(data: object) -> list[dict]:
                 "status": thread["status"],
                 "settled": thread["settled"],
                 "snoozedUntil": parse_time(thread["snoozedUntil"]) if thread["snoozed"] else None,
+                "lastRun": None,
                 "prs": [
-                    {"url": pr["url"], "number": pr["number"], "state": pr.get("state")}
+                    {"url": pr["url"], "number": pr["number"], "state": pr.get("state"), "synced": None}
                     for pr in thread.get("pullRequests") or []
                 ],
             }
         )
     return threads
+
+
+def apply_pr_check(threads: list[dict], checked: dict) -> None:
+    """Use pr-check's PR state where it is newer than T3's, whose snapshot stops updating once a thread is settled."""
+    for pr in (pr for thread in threads for pr in thread["prs"]):
+        seen = checked.get(pr["url"]) or {}
+        at = parse_time(seen.get("checked"))
+        if seen.get("state") and at and (pr["synced"] is None or at > pr["synced"]):
+            pr["state"] = seen["state"]
+
+
+def sync_items(threads: list[dict], items: list[dict], checked: dict) -> list[str]:
+    """Add the PRs each thread linked to its item and mark started items done once all their PRs merged."""
+    states = {pr["url"]: pr["state"] for thread in threads for pr in thread["prs"]}
+    states.update({url: seen["state"] for url, seen in checked.items() if seen.get("state") and url not in states})
+    linked = {thread["id"]: [pr["url"] for pr in thread["prs"]] for thread in threads}
+    managers = {thread["id"] for thread in threads if thread["title"].startswith("manager - ")}
+    notes = []
+    for item in items:
+        if item["status"] in CLOSED or not item.get("thread") or item["thread"] in managers:
+            continue
+        urls = [u for u in [item.get("pr"), *(item.get("prs") or [])] if u]
+        added = [u for u in linked.get(item["thread"], []) if u not in urls]
+        if added:
+            urls += added
+            item["pr"] = urls[0]
+            item["prs"] = urls
+            notes.append(f"+pr {item['id']}: {', '.join(added)}")
+        merged = urls and all(states.get(u) == "merged" for u in urls)
+        if item["status"] == "started" and merged:
+            apply_status(item, "done")
+            log_event({"type": "status", "changes": [{"id": item["id"], "from": "started", "to": "done"}], "by": "desk"})
+            notes.append(f"done {item['id']}: all PRs merged, thread {item['thread']}")
+        if added or item["status"] == "done":
+            write_json(BACKLOG / f"{item['id']}.json", item)
+    return notes
 
 
 def effort_of(title: str, item: dict | None, efforts: set[str]) -> str | None:
@@ -121,6 +168,12 @@ def effort_of(title: str, item: dict | None, efforts: set[str]) -> str | None:
 def describe(state: str, prs: list[dict]) -> str:
     notes = ", ".join(f"#{pr['number']} {pr['state'] or 'linked'}" for pr in prs)
     return ", ".join(part for part in (state, notes and ("PR " if len(prs) == 1 else "PRs ") + notes) if part)
+
+
+def answered(thread: dict, before: dict) -> bool:
+    """Whether the thread ran again after its needsYou entry was written, so the desk's why may be stale."""
+    since = parse_time(before["needsYou"][thread["id"]].get("since"))
+    return bool(since and thread["lastRun"] and thread["lastRun"] > since)
 
 
 def build(threads: list[dict], items: list[dict], efforts: set[str], old: dict) -> dict:
@@ -166,7 +219,7 @@ def build(threads: list[dict], items: list[dict], efforts: set[str], old: dict) 
             lists["needsYou"].append({**entry, "why": "waits for your answer in the thread"})
         elif item and item.get("asks"):
             lists["needsYou"].append({**entry, "why": item["asks"]["text"]})
-        elif thread["id"] in before["needsYou"] and not live and not thread["settled"]:
+        elif thread["id"] in before["needsYou"] and not live and not thread["settled"] and not answered(thread, before):
             lists["needsYou"].append({**entry, "why": before["needsYou"][thread["id"]]["why"]})
         elif not effort and not item:
             state = "running" if live else "settled" if thread["settled"] else "idle"
@@ -179,6 +232,9 @@ def build(threads: list[dict], items: list[dict], efforts: set[str], old: dict) 
             lists["waiting"].append({**entry, "why": kept["why"] if kept and still_open else describe("settled", prs)})
         else:
             lists["working"].append({**entry, "why": describe(status if status in ("failed", "interrupted") else "idle", prs)})
+    stamp = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+    for entry in lists["needsYou"]:
+        entry["since"] = (before["needsYou"].get(entry["thread"]) or {}).get("since") or stamp
     order = [e["thread"] for e in old.get("needsYou") or []]
     for name, entries in lists.items():
         entries.sort(
@@ -213,12 +269,17 @@ def main() -> None:
         except sqlite3.Error as err:
             sys.exit(f"could not read {args.db}: {err}. Run with --stdin and pipe in the t3_thread_list results instead.")
     items = [json.loads(p.read_text()) for p in sorted(BACKLOG.glob("*.json"))]
+    checked = json.loads(PR_CHECK.read_text()) if PR_CHECK.exists() else {}
+    apply_pr_check(threads, checked)
+    notes = sync_items(threads, items, checked)
     efforts = {p.parent.name for p in EFFORTS.glob("*/status.md")}
     old = json.loads(THREADS.read_text()) if THREADS.exists() else {}
     result = build(threads, items, efforts, old)
     write_json(THREADS, result)
     names = ("needsYou", "waiting", "snoozed", "working", "unassigned")
     print(" ".join(f"{name} {len(result[name])}" for name in names))
+    for note in notes:
+        print(note)
     for name in names:
         before = {e["thread"]: e for e in old.get(name) or []}
         after = {e["thread"]: e for e in result[name]}

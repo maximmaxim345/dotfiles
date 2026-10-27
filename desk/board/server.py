@@ -27,6 +27,10 @@ EXTRA_REPOS = DESK / "repos.json"
 THREADS = STATE / "threads.json"
 EVENTS = STATE / "events.jsonl"
 LISTENER = STATE / "listener.pid"
+INCOMING = STATE / "incoming.json"
+PROPOSALS = STATE / "proposals.json"
+SHOWN_INCOMING = {"new", "needs-you", "waiting"}
+SHOWN_PROPOSALS = {"open", "approved", "failed"}
 SETTABLE_STATUSES = {"open", "next", "requested", "done", "dropped"}
 CLOSED_STATUSES = {"done", "dropped"}
 
@@ -109,7 +113,17 @@ def all_items() -> dict[str, dict]:
 def load_state() -> dict:
     items = list(all_items().values())
     threads = json.loads(THREADS.read_text()) if THREADS.exists() else None
-    return {"items": items, "threads": threads, "efforts": efforts(), "repos": repos(), "listening": listening()}
+    incoming = json.loads(INCOMING.read_text()) if INCOMING.exists() else {}
+    proposals = json.loads(PROPOSALS.read_text()) if PROPOSALS.exists() else []
+    return {
+        "items": items,
+        "threads": threads,
+        "efforts": efforts(),
+        "repos": repos(),
+        "listening": listening(),
+        "incoming": [e for e in incoming.values() if e["status"] in SHOWN_INCOMING],
+        "proposals": [p for p in proposals if p["state"] in SHOWN_PROPOSALS],
+    }
 
 
 def apply_status(item: dict, status: str) -> None:
@@ -274,6 +288,23 @@ class Handler(BaseHTTPRequestHandler):
                     if item["status"] == "next":
                         item["rank"] = rank
                         write_json(path, item)
+            elif self.path == "/api/incoming/dismiss":
+                with locked(INCOMING):
+                    incoming = json.loads(INCOMING.read_text())
+                    incoming[body["url"]]["status"] = "dismissed"
+                    write_json(INCOMING, incoming)
+            elif self.path == "/api/proposals":
+                if body["decision"] not in ("approve", "dismiss"):
+                    raise ValueError(body["decision"])
+                with locked(PROPOSALS):
+                    proposals = json.loads(PROPOSALS.read_text())
+                    chosen = [p for p in proposals if p["id"] in body["ids"] and p["state"] in SHOWN_PROPOSALS]
+                    for p in chosen:
+                        p["state"] = "approved" if body["decision"] == "approve" else "dismissed"
+                        p.pop("error", None)
+                    write_json(PROPOSALS, proposals)
+                if chosen and body["decision"] == "approve":
+                    log_event({"type": "apply", "ids": [p["id"] for p in chosen]})
             elif self.path == "/api/update":
                 known = {e["slug"] for e in efforts()}
                 fields = {k: (v or None) for k, v in body["fields"].items() if k in ("effort", "repo")}

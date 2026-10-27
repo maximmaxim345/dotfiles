@@ -66,6 +66,9 @@
   .nrow .w { grid-area: w; color: var(--ink-2); }
   .nrow .m { grid-area: m; display: flex; justify-content: flex-end; gap: 10px; font-size: 12px; white-space: nowrap; }
   .nrow .m a { color: var(--accent); font-family: var(--font); }
+  .nrow .draft { margin-top: 4px; }
+  .nrow .draft pre { white-space: pre-wrap; font-family: var(--font); font-size: 12px; background: var(--sunk); border-radius: 6px; padding: 6px 8px; margin: 4px 0; }
+  .nrow .act { color: var(--ink); font-weight: 600; }
   .empty-note { color: var(--muted); font-size: 13px; padding: 10px 0 18px; }
 
   #board { overflow-x: auto; }
@@ -215,6 +218,7 @@
 </header>
 <main>
   <div id="needsWrap"></div>
+  <div id="incomingWrap"></div>
   <div id="board"></div>
 </main>
 <div id="bulk" class="bulk" hidden></div>
@@ -240,7 +244,7 @@ const COMMENT_ICON = () => { const s = document.createElementNS("http://www.w3.o
 const store = JSON.parse(localStorage.getItem("desk-board") || "{}");
 const ui = {
   groupBy: store.groupBy || "effort", laneSort: store.laneSort || "activity", collapsed: new Set(store.collapsed || []), doneDays: store.doneDays || 7,
-  q: "", effort: new URLSearchParams(location.search).get("effort") || "", repo: "", label: "", selected: new Set(), openId: null, expanded: new Set(), drag: null,
+  skipped: new Set(), q: "", effort: new URLSearchParams(location.search).get("effort") || "", repo: "", label: "", selected: new Set(), openId: null, expanded: new Set(), drag: null,
 };
 let state = { items: [], threads: null, efforts: [], repos: [] };
 let lastJson = "";
@@ -361,7 +365,7 @@ function renderStats() {
   const stat = (n, label, hot) => el("span", { class: `stat${hot && n ? " hot" : ""}` }, el("b", {}, String(n)), ` ${label}`);
   const listen = el("span", { class: "stat", title: state.listening ? "The desk reacts to Start, captures, comments and pauses within a minute." : "Run ./dotfiles.py install desk_listener in ~/dotfiles. Until then the desk only acts when you ask it." },
     el("span", { class: "dot", style: { background: state.listening ? "var(--green)" : "var(--gray)" } }), state.listening ? "desk listening" : "desk not listening");
-  $("stats").replaceChildren(stat(needs, "need you", true), stat(count(["new"]), "inbox"), stat(count(["next"]), "next"), stat(count(["requested"]), "starting", true), stat(state.items.filter(i => i.status === "started" && columnOf(i) === "started").length, "in progress"), stat(state.items.filter(i => columnOf(i) === "review").length, "in review"), listen);
+  $("stats").replaceChildren(stat(needs, "need you", true), stat((state.incoming || []).filter(e => e.status !== "waiting").length, "incoming", true), stat(count(["new"]), "inbox"), stat(count(["next"]), "next"), stat(count(["requested"]), "starting", true), stat(state.items.filter(i => i.status === "started" && columnOf(i) === "started").length, "in progress"), stat(state.items.filter(i => columnOf(i) === "review").length, "in review"), listen);
 }
 
 function renderFilters() {
@@ -402,6 +406,50 @@ function renderNeeds() {
     parts.push(det);
   }
   wrap.replaceChildren(...parts);
+}
+
+const INCOMING_BADGE = { "needs-you": ["hot", "needs you"], waiting: ["", "waiting for user"], new: ["new", "new"] };
+function incomingRow(e) {
+  const [cls, label] = INCOMING_BADGE[e.status];
+  const copy = el("button", { class: "btn ghost", onclick: async () => { await navigator.clipboard.writeText(e.draft); toast("Reply copied"); } }, "Copy");
+  return el("div", { class: `nrow${e.status === "needs-you" ? "" : " waiting"}` },
+    el("div", { class: "t", title: e.title }, el("span", { class: `chip ${cls}`, style: { marginRight: "6px" } }, label), e.title),
+    el("div", { class: "w" },
+      e.status === "needs-you" && e.action ? el("div", { class: "act" }, e.action) : el("div", {}, (e.news || []).join(", ")),
+      e.draft && el("details", { class: "draft" }, el("summary", {}, "Draft reply"), el("pre", {}, e.draft), copy)),
+    el("div", { class: "m" }, el("a", { href: e.url, target: "_blank" }, e.kind), e.link && el("a", { href: e.link, target: "_blank" }, "related"),
+      el("a", { href: "#", title: "Hide it until it gets news", onclick: ev => { ev.preventDefault(); post("/api/incoming/dismiss", { url: e.url }, "Hidden"); } }, "hide")));
+}
+function proposalRow(p) {
+  const box = el("input", { type: "checkbox", checked: !ui.skipped.has(p.id), disabled: p.state === "approved", onchange: ev => { ev.target.checked ? ui.skipped.delete(p.id) : ui.skipped.add(p.id); } });
+  const what = p.action === "add" ? `add as ${p.to}` : `${p.from || "no status"} → ${p.to}`;
+  return el("div", { class: "nrow waiting" },
+    el("label", { class: "t", title: p.title }, box, " ", p.title),
+    el("div", { class: "w" }, `${p.board}: ${what}, ${p.why}`, p.state === "approved" && " (applying)", p.error && el("div", { style: { color: "var(--red)" } }, p.error)),
+    el("div", { class: "m" }, el("a", { href: p.url, target: "_blank" }, "open")));
+}
+function renderIncoming() {
+  const order = ["needs-you", "new", "waiting"];
+  const entries = (state.incoming || []).filter(e => !ui.effort || (e.effort || "") === (ui.effort === "-" ? "" : ui.effort))
+    .sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status) || b.updated.localeCompare(a.updated));
+  const parts = [];
+  if (entries.length) {
+    parts.push(el("div", { class: "section-title" }, "Incoming", el("span", { style: { fontWeight: 400, textTransform: "none", letterSpacing: 0 } }, "· from GitHub, nothing gets posted")));
+    const groups = [...new Set(entries.map(e => e.effort || ""))];
+    for (const g of groups) {
+      parts.push(el("div", { class: "needs" }, groups.length > 1 && el("div", { class: "nrow waiting", style: { fontWeight: 600 } }, g ? effortTitle(g) : "Desk"),
+        entries.filter(e => (e.effort || "") === g).map(incomingRow)));
+    }
+  }
+  const proposals = state.proposals || [];
+  if (proposals.length) {
+    const chosen = () => proposals.filter(p => p.state !== "approved" && !ui.skipped.has(p.id)).map(p => p.id);
+    const decide = decision => async () => { const ids = chosen(); if (!ids.length) return; await post("/api/proposals", { ids, decision }, decision === "approve" ? "Approved. The desk applies them in a moment." : "Dismissed"); };
+    parts.push(el("div", { class: "section-title" }, "Project board changes", el("span", { class: "grow" }),
+      el("button", { class: "btn primary", onclick: guard(decide("approve")) }, "Apply checked"), el("button", { class: "btn ghost", onclick: guard(decide("dismiss")) }, "Dismiss checked")));
+    parts.push(el("div", { class: "needs" }, proposals.map(proposalRow)));
+  }
+  $("incomingWrap").replaceChildren(...parts);
 }
 
 function card(item) {
@@ -658,7 +706,7 @@ function captureModal() {
 
 function render() {
   const y = scrollY;
-  renderStats(); renderFilters(); renderNeeds(); renderBoard(); renderBulk(); renderDrawer();
+  renderStats(); renderFilters(); renderNeeds(); renderIncoming(); renderBoard(); renderBulk(); renderDrawer();
   scrollTo(0, y);
 }
 

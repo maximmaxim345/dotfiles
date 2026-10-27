@@ -244,7 +244,7 @@ const COMMENT_ICON = () => { const s = document.createElementNS("http://www.w3.o
 const store = JSON.parse(localStorage.getItem("desk-board") || "{}");
 const ui = {
   groupBy: store.groupBy || "effort", laneSort: store.laneSort || "activity", collapsed: new Set(store.collapsed || []), doneDays: store.doneDays || 7,
-  skipped: new Set(), q: "", effort: new URLSearchParams(location.search).get("effort") || "", repo: "", label: "", selected: new Set(), openId: null, expanded: new Set(), drag: null,
+  picked: new Set(), q: "", effort: new URLSearchParams(location.search).get("effort") || "", repo: "", label: "", selected: new Set(), openId: null, expanded: new Set(), drag: null,
 };
 let state = { items: [], threads: null, efforts: [], repos: [] };
 let lastJson = "";
@@ -421,7 +421,7 @@ function incomingRow(e) {
       el("a", { href: "#", title: "Hide it until it gets news", onclick: ev => { ev.preventDefault(); post("/api/incoming/dismiss", { url: e.url }, "Hidden"); } }, "hide")));
 }
 function proposalRow(p) {
-  const box = el("input", { type: "checkbox", checked: !ui.skipped.has(p.id), disabled: p.state === "approved", onchange: ev => { ev.target.checked ? ui.skipped.delete(p.id) : ui.skipped.add(p.id); } });
+  const box = el("input", { type: "checkbox", checked: ui.picked.has(p.id), disabled: p.state === "approved", onchange: ev => { ev.target.checked ? ui.picked.add(p.id) : ui.picked.delete(p.id); } });
   const what = p.action === "add" ? `add as ${p.to}` : `${p.from || "no status"} → ${p.to}`;
   return el("div", { class: "nrow waiting" },
     el("label", { class: "t", title: p.title }, box, " ", p.title),
@@ -443,7 +443,7 @@ function renderIncoming() {
   }
   const proposals = state.proposals || [];
   if (proposals.length) {
-    const chosen = () => proposals.filter(p => p.state !== "approved" && !ui.skipped.has(p.id)).map(p => p.id);
+    const chosen = () => proposals.filter(p => p.state !== "approved" && ui.picked.has(p.id)).map(p => p.id);
     const decide = decision => async () => { const ids = chosen(); if (!ids.length) return; await post("/api/proposals", { ids, decision }, decision === "approve" ? "Approved. The desk applies them in a moment." : "Dismissed"); };
     parts.push(el("div", { class: "section-title" }, "Project board changes", el("span", { class: "grow" }),
       el("button", { class: "btn primary", onclick: guard(decide("approve")) }, "Apply checked"), el("button", { class: "btn ghost", onclick: guard(decide("dismiss")) }, "Dismiss checked")));

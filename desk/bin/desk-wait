@@ -75,7 +75,7 @@ def mark_refreshed() -> None:
 
 
 def actionable(event: dict) -> bool:
-    if event.get("by") == "desk":
+    if event.get("by") == "desk" or event["type"] == "comment" and event.get("by") == "manager":
         return False
     if event["type"] in ("capture", "comment", "archive", "adopt"):
         return True

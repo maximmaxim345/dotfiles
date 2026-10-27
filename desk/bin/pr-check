@@ -2,16 +2,20 @@
 """Print what changed on PRs since the last run, one line per PR with news.
 
 Usage: bin/pr-check <thread id>=<PR url> ...
+With --wait, a task thread waits for news on its own PRs, Copilot reviews included, and exits once there is some.
 """
 
+import argparse
 import datetime
 import json
 import re
 import subprocess
-import sys
+import time
 from pathlib import Path
 
 STATE_FILE = Path.home() / "desk" / "state" / "pr-check.json"
+WAIT_FILE = Path.home() / "desk" / "state" / "pr-wait.json"
+WAIT_EVERY = 5 * 60
 
 
 def gh(*args: str) -> object:
@@ -21,7 +25,7 @@ def gh(*args: str) -> object:
     return json.loads(result.stdout or "null")
 
 
-def check(url: str, me: str, seen: dict, first: bool) -> list[str]:
+def check(url: str, me: str, seen: dict, first: bool, copilot: bool = False) -> list[str]:
     owner, repo, number = re.match(r"https://github\.com/([^/]+)/([^/]+)/pull/(\d+)", url).groups()
     base = f"repos/{owner}/{repo}"
     pr = gh("api", f"{base}/pulls/{number}")
@@ -35,7 +39,7 @@ def check(url: str, me: str, seen: dict, first: bool) -> list[str]:
     news = []
 
     def people(u: dict) -> bool:
-        return u["login"] != me and u["type"] != "Bot"
+        return u["login"] != me and (u["type"] != "Bot" or copilot and u["login"].lower().startswith("copilot"))
 
     for kind, path in (
         ("review", f"pulls/{number}/reviews"),
@@ -67,21 +71,46 @@ def check(url: str, me: str, seen: dict, first: bool) -> list[str]:
     return news
 
 
-def main() -> None:
-    state = json.loads(STATE_FILE.read_text()) if STATE_FILE.exists() else {}
+def check_all(pairs: list[str], state_file: Path, per_thread: bool) -> list[str]:
+    state = json.loads(state_file.read_text()) if state_file.exists() else {}
     me = gh("api", "user")["login"]
-    for arg in sys.argv[1:]:
+    lines = []
+    for arg in pairs:
         thread, url = arg.split("=", 1)
-        seen = state.get(url, {"ids": [], "problems": []})
+        name = arg if per_thread else url
+        seen = state.get(name, {"ids": [], "problems": []})
         updated = {**seen, "ids": list(seen["ids"])}
         try:
-            news = check(url, me, updated, url not in state)
-            state[url] = updated
+            news = check(url, me, updated, name not in state, copilot=per_thread)
+            state[name] = updated
         except Exception as err:
             news = [f"pr-check failed: {err}"]
         if news:
-            print(f"{thread} {url}: " + "; ".join(news))
-    STATE_FILE.write_text(json.dumps(state, indent=2) + "\n")
+            lines.append(f"{thread} {url}: " + "; ".join(news))
+    state_file.write_text(json.dumps(state, indent=2) + "\n")
+    return lines
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("pairs", nargs="*", metavar="THREAD=URL")
+    parser.add_argument("--wait", action="store_true", help="check every 5 minutes until there is news, then print it")
+    parser.add_argument("--max", type=int, default=6900, help="with --wait, print 'timeout' after this many seconds")
+    args = parser.parse_args()
+    if not args.wait:
+        for line in check_all(args.pairs, STATE_FILE, False):
+            print(line)
+        return
+    start = time.monotonic()
+    while True:
+        lines = check_all(args.pairs, WAIT_FILE, True)
+        if lines:
+            print("\n".join(lines))
+            return
+        if time.monotonic() - start + WAIT_EVERY > args.max:
+            print("timeout")
+            return
+        time.sleep(WAIT_EVERY)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+"""Propose changes to the GitHub project boards in ~/desk/watch.json and apply the ones I approved on the desk board."""
+
+from __future__ import annotations
+
+import argparse
+import datetime
+import hashlib
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+DESK = Path.home() / "desk"
+CONFIG = DESK / "watch.json"
+BACKLOG = DESK / "backlog"
+PROPOSALS = DESK / "state" / "proposals.json"
+EARLY = {"triage", "later", "next"}
+STALE_DAYS = 14
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import locked, write_json  # noqa: E402
+
+
+def gh(*args: str) -> object:
+    result = subprocess.run(["gh", *args], capture_output=True, text=True)
+    if result.returncode:
+        raise RuntimeError(result.stderr.strip() or f"gh exit {result.returncode}")
+    return json.loads(result.stdout or "null")
+
+
+def boards() -> list[str]:
+    config = json.loads(CONFIG.read_text()) if CONFIG.exists() else {}
+    return [f"{b['owner']}/{b['number']}" for b in config.get("projects", [])]
+
+
+def fields(board: str) -> dict[str, dict]:
+    owner, number = board.split("/")
+    return {f["name"].lower(): f for f in gh("project", "field-list", number, "--owner", owner, "--format", "json")["fields"]}
+
+
+def option(field: dict, name: str) -> dict:
+    found = next((o for o in field.get("options", []) if o["name"].lower() == name.lower()), None)
+    if found is None:
+        raise ValueError(f"{field['name']} has no option {name}")
+    return found
+
+
+def proposal(board: str, action: str, url: str, title: str, to: str, why: str, **extra: object) -> dict:
+    key = hashlib.sha1(f"{board} {action} {url} {to}".encode()).hexdigest()[:10]
+    return {
+        "id": key,
+        "board": board,
+        "action": action,
+        "url": url,
+        "title": title,
+        "to": to,
+        "why": why,
+        "state": "open",
+        **extra,
+    }
+
+
+def content_state(url: str, cache: dict) -> dict:
+    if url not in cache:
+        owner, repo, number = re.match(r"https://github\.com/([^/]+)/([^/]+)/(?:issues|pull)/(\d+)", url).groups()
+        cache[url] = gh("api", f"repos/{owner}/{repo}/issues/{number}")
+    return cache[url]
+
+
+def active_urls() -> set[str]:
+    urls = set()
+    for path in BACKLOG.glob("*.json"):
+        item = json.loads(path.read_text())
+        if item["status"] == "started":
+            urls.update(u for u in [item.get("pr"), *(item.get("prs") or [])] if u)
+    return urls
+
+
+def propose_board(board: str, me: str, active: set[str]) -> tuple[list[dict], list[str]]:
+    owner, number = board.split("/")
+    status_field = fields(board)["status"]
+    names = {o["name"].lower(): o["name"] for o in status_field["options"]}
+    items = gh("project", "item-list", number, "--owner", owner, "--format", "json", "--limit", "500")["items"]
+    found, cache, on_board = [], {}, set()
+    now = datetime.datetime.now(datetime.timezone.utc)
+    for item in items:
+        content = item.get("content") or {}
+        url, status = content.get("url"), (item.get("status") or "").lower()
+        if not url or "/pull/" not in url and "/issues/" not in url:
+            continue
+        on_board.add(url)
+        if status == "done":
+            continue
+        issue = content_state(url, cache)
+        merged = (issue.get("pull_request") or {}).get("merged_at")
+        common = {"item": item["id"], "from": item.get("status")}
+        if issue["state"] == "closed":
+            why = "its PR merged" if merged else "its issue is closed"
+            found.append(proposal(board, "move", url, item["title"], names["done"], why, **common))
+        elif status in EARLY and url in active:
+            found.append(proposal(board, "move", url, item["title"], names["in progress"], "a desk task works on it", **common))
+        elif status == "in progress" and me in (item.get("assignees") or []):
+            idle = (now - datetime.datetime.fromisoformat(issue["updated_at"].replace("Z", "+00:00"))).days
+            if idle >= STALE_DAYS:
+                found.append(
+                    proposal(board, "move", url, item["title"], names["later"], f"no activity for {idle} days", **common)
+                )
+    mine = gh("search", "prs", "--author", "@me", "--state", "open", "--owner", owner, "--json", "url", "--limit", "100")
+    candidates = sorted(({p["url"] for p in mine} | {u for u in active if f"github.com/{owner}/" in u}) - on_board)
+    return found, candidates
+
+
+def propose(args: argparse.Namespace) -> None:
+    me = gh("api", "user")["login"]
+    active = active_urls()
+    fresh, candidates = [], {}
+    for board in boards():
+        try:
+            found, candidates[board] = propose_board(board, me, active)
+        except (RuntimeError, KeyError) as err:
+            print(f"error {board}: {err}")
+            continue
+        fresh += found
+    with locked(PROPOSALS):
+        old = {p["id"]: p for p in json.loads(PROPOSALS.read_text())} if PROPOSALS.exists() else {}
+        kept = [p for p in old.values() if p["state"] != "open" or p["action"] == "add"]
+        kept += [p for p in fresh if p["id"] not in old or old[p["id"]]["state"] == "open"]
+        write_json(PROPOSALS, kept)
+    for p in kept:
+        if p["state"] in ("open", "approved", "failed"):
+            print(f"{p['state']} {p['id']} {p['board']} {p['action']} {p['url']} to {p['to']}: {p['why']}")
+    for board, urls in candidates.items():
+        for url in urls:
+            print(f"candidate {board} {url}")
+
+
+def suggest(args: argparse.Namespace) -> None:
+    if args.board not in boards():
+        sys.exit(f"unknown board {args.board}, use one of: {', '.join(boards())}")
+    board_fields = fields(args.board)
+    extra = dict(f.split("=", 1) for f in args.field or [])
+    try:
+        for name, value in {"status": args.status, **extra}.items():
+            option(board_fields[name.lower()], value)
+    except (KeyError, ValueError) as err:
+        sys.exit(f"not a field or option of {args.board}: {err}")
+    issue = content_state(args.url, {})
+    new = proposal(args.board, "add", args.url, issue["title"], args.status, args.why, fields=extra)
+    with locked(PROPOSALS):
+        old = json.loads(PROPOSALS.read_text()) if PROPOSALS.exists() else []
+        if all(p["id"] != new["id"] for p in old):
+            write_json(PROPOSALS, [*old, new])
+    print(new["id"])
+
+
+def set_field(project_id: str, item: str, field: dict, value: str) -> None:
+    option_id = option(field, value)["id"]
+    gh(
+        "project",
+        "item-edit",
+        "--id",
+        item,
+        "--project-id",
+        project_id,
+        "--field-id",
+        field["id"],
+        "--single-select-option-id",
+        option_id,
+    )
+
+
+def apply(args: argparse.Namespace) -> None:
+    with locked(PROPOSALS):
+        proposals = json.loads(PROPOSALS.read_text()) if PROPOSALS.exists() else []
+        for p in (p for p in proposals if p["state"] == "approved"):
+            owner, number = p["board"].split("/")
+            try:
+                project_id = gh("project", "view", number, "--owner", owner, "--format", "json")["id"]
+                board_fields = fields(p["board"])
+                item = p.get("item")
+                if p["action"] == "add":
+                    item = gh("project", "item-add", number, "--owner", owner, "--url", p["url"], "--format", "json")["id"]
+                set_field(project_id, item, board_fields["status"], p["to"])
+                for name, value in (p.get("fields") or {}).items():
+                    set_field(project_id, item, board_fields[name.lower()], value)
+                p["state"] = "applied"
+                print(f"applied {p['id']} {p['board']} {p['action']} {p['url']} to {p['to']}")
+            except (RuntimeError, ValueError, KeyError) as err:
+                p["state"], p["error"] = "failed", str(err)
+                print(f"failed {p['id']} {p['url']}: {p['error']}")
+        write_json(PROPOSALS, proposals)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("propose", help="refresh the proposed moves and print them with candidates to add").set_defaults(func=propose)
+    p_suggest = sub.add_parser("suggest", help="propose adding an issue or PR to a board")
+    p_suggest.add_argument("--board", required=True, help="owner/number, as in watch.json")
+    p_suggest.add_argument("--url", required=True)
+    p_suggest.add_argument("--status", required=True)
+    p_suggest.add_argument("--field", action="append", help="another single-select field as Name=Value, repeatable")
+    p_suggest.add_argument("--why", required=True, help="one line")
+    p_suggest.set_defaults(func=suggest)
+    sub.add_parser("apply", help="apply the proposals I approved").set_defaults(func=apply)
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

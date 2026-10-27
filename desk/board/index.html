@@ -359,7 +359,7 @@ function renderStats() {
   const count = s => state.items.filter(i => s.includes(i.status)).length;
   const needs = needsList().length;
   const stat = (n, label, hot) => el("span", { class: `stat${hot && n ? " hot" : ""}` }, el("b", {}, String(n)), ` ${label}`);
-  const listen = el("span", { class: "stat", title: state.listening ? "The desk reacts to Start, captures, comments and pauses within a minute." : "Say \"listen\" in the desk thread. Until then it only acts when you ask it." },
+  const listen = el("span", { class: "stat", title: state.listening ? "The desk reacts to Start, captures, comments and pauses within a minute." : "Run ./dotfiles.py install desk_listener in ~/dotfiles. Until then the desk only acts when you ask it." },
     el("span", { class: "dot", style: { background: state.listening ? "var(--green)" : "var(--gray)" } }), state.listening ? "desk listening" : "desk not listening");
   $("stats").replaceChildren(stat(needs, "need you", true), stat(count(["new"]), "inbox"), stat(count(["next"]), "next"), stat(count(["requested"]), "starting", true), stat(state.items.filter(i => i.status === "started" && columnOf(i) === "started").length, "in progress"), stat(state.items.filter(i => columnOf(i) === "review").length, "in review"), listen);
 }

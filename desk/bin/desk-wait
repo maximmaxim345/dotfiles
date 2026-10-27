@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Wait for board events the desk acts on, print them and exit."""
+"""Watch for board events and due checks, queue them for the desk and wake its thread through the t3 command."""
+
+from __future__ import annotations
 
 import argparse
 import datetime
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 import time
@@ -17,10 +20,15 @@ LISTENER = STATE / "listener.pid"
 REFRESHED = STATE / "refreshed.at"
 PRS_CHECKED = STATE / "prs-checked.at"
 IDLE_ERROR = STATE / "compact-due.error"
+WAKE = STATE / "wake.jsonl"
+WAKE_SENT = STATE / "wake.sent"
+T3 = Path.home() / ".t3"
+WAKE_MESSAGE = 'Desk wake-up: run `bin/desk-wait --take` and handle what it prints, as AGENTS.md "Listening" says.'
 COMPACT_DUE = Path(__file__).resolve().parent / "compact-due"
 REFRESH_EVERY = 45 * 60
 PRS_EVERY = 3 * 60 * 60
 IDLE_EVERY = 60
+RESEND_AFTER = 30 * 60
 
 
 def size() -> int:
@@ -76,65 +84,118 @@ def actionable(event: dict) -> bool:
     return False
 
 
+def next_wake(offset: int, quiet: int) -> tuple[list[str], int]:
+    """Block until there is something for the desk and return its lines with the new events offset."""
+    idle_checked = 0.0
+    while True:
+        if size() > offset:
+            last, seen = time.monotonic(), size()
+            while time.monotonic() - last < quiet:
+                time.sleep(1)
+                if size() != seen:
+                    last, seen = time.monotonic(), size()
+            with EVENTS.open() as f:
+                f.seek(offset)
+                events = [json.loads(line) for line in f.read(seen - offset).splitlines() if line]
+            offset = seen
+            OFFSET.write_text(str(offset))
+            wanted = [json.dumps(e) for e in events if actionable(e)]
+            if wanted:
+                return wanted, offset
+        elif time.time() - idle_checked >= IDLE_EVERY:
+            idle_checked = time.time()
+            wake_desk()
+            idle = idle_threads()
+            if idle:
+                return idle.splitlines(), offset
+        elif refresh_due():
+            mark_refreshed()
+            return ["refresh"], offset
+        elif prs_due():
+            PRS_CHECKED.write_text(str(time.time()))
+            return ["prs"], offset
+        time.sleep(1)
+
+
+def desk_thread() -> str | None:
+    conn = sqlite3.connect(f"file:{T3 / 'userdata' / 'statev2.sqlite'}?mode=ro", uri=True)
+    try:
+        roots = conn.execute("SELECT project_id, workspace_root FROM projection_projects WHERE deleted_at IS NULL").fetchall()
+        project = next((pid for pid, root in roots if Path(root).resolve() == STATE.parent.resolve()), None)
+        row = conn.execute(
+            "SELECT thread_id FROM orchestration_v2_projection_threads"
+            " WHERE project_id = ? AND title = 'desk' AND archived_at IS NULL AND deleted_at IS NULL",
+            (project,),
+        ).fetchone()
+    finally:
+        conn.close()
+    return row[0] if row else None
+
+
+def wake_desk() -> None:
+    """Message the desk thread when queued lines wait and it wasn't told yet, or was told long ago."""
+    if not WAKE.exists() or not WAKE.read_text().strip():
+        return
+    if WAKE_SENT.exists() and time.time() - float(WAKE_SENT.read_text()) < RESEND_AFTER:
+        return
+    try:
+        thread = desk_thread()
+        if thread is None:
+            print("no desk thread found", file=sys.stderr)
+            return
+        result = subprocess.run(
+            [str(T3 / "bin" / "t3"), "thread", "send", thread, WAKE_MESSAGE], capture_output=True, text=True, timeout=60
+        )
+    except (sqlite3.Error, OSError, subprocess.TimeoutExpired) as err:
+        print(f"could not wake the desk: {err}", file=sys.stderr)
+        return
+    if result.returncode:
+        print(f"could not wake the desk: {result.stderr.strip()}", file=sys.stderr)
+        return
+    WAKE_SENT.write_text(str(time.time()))
+
+
+def serve(quiet: int) -> None:
+    if listening():
+        sys.exit("already listening")
+    STATE.mkdir(exist_ok=True)
+    LISTENER.write_text(str(os.getpid()))
+    offset = int(OFFSET.read_text()) if OFFSET.exists() else 0
+    try:
+        while True:
+            lines, offset = next_wake(offset, quiet)
+            with WAKE.open("a") as f:
+                f.write("".join(line + "\n" for line in lines))
+            wake_desk()
+    finally:
+        LISTENER.unlink(missing_ok=True)
+
+
+def take() -> None:
+    lines = WAKE.read_text() if WAKE.exists() else ""
+    WAKE.unlink(missing_ok=True)
+    WAKE_SENT.unlink(missing_ok=True)
+    print(lines, end="")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--quiet", type=int, default=20, help="seconds without new events before printing")
-    parser.add_argument("--max", type=int, default=6600, help="give up after this many seconds")
-    parser.add_argument("--check", action="store_true", help="exit 0 if a listener runs, 1 if not")
-    parser.add_argument("--refreshed", action="store_true", help="record that the threads were just refreshed")
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--serve", action="store_true", help="run the listener, as the local.desk-listener service does")
+    mode.add_argument("--take", action="store_true", help="print the queued lines for the desk and clear them")
+    mode.add_argument("--check", action="store_true", help="exit 0 if a listener runs, 1 if not")
+    mode.add_argument("--refreshed", action="store_true", help="record that the threads were just refreshed")
+    parser.add_argument("--quiet", type=int, default=20, help="seconds without new events before queueing them")
     args = parser.parse_args()
 
     if args.check:
         sys.exit(0 if listening() else 1)
     if args.refreshed:
         mark_refreshed()
-        return
-    if listening():
-        print("already listening")
-        return
-    STATE.mkdir(exist_ok=True)
-    LISTENER.write_text(str(os.getpid()))
-    offset = int(OFFSET.read_text()) if OFFSET.exists() else 0
-    start = time.time()
-    idle_checked = 0.0
-    try:
-        while True:
-            if size() > offset:
-                last, seen = time.monotonic(), size()
-                while time.monotonic() - last < args.quiet:
-                    time.sleep(1)
-                    if size() != seen:
-                        last, seen = time.monotonic(), size()
-                with EVENTS.open() as f:
-                    f.seek(offset)
-                    events = [json.loads(line) for line in f.read(seen - offset).splitlines() if line]
-                offset = seen
-                OFFSET.write_text(str(offset))
-                wanted = [e for e in events if actionable(e)]
-                if wanted:
-                    for event in wanted:
-                        print(json.dumps(event))
-                    return
-            elif time.time() - idle_checked >= IDLE_EVERY:
-                idle_checked = time.time()
-                idle = idle_threads()
-                if idle:
-                    print(idle)
-                    return
-            elif refresh_due():
-                mark_refreshed()
-                print("refresh")
-                return
-            elif prs_due():
-                PRS_CHECKED.write_text(str(time.time()))
-                print("prs")
-                return
-            if time.time() - start > args.max:
-                print("timeout")
-                return
-            time.sleep(1)
-    finally:
-        LISTENER.unlink(missing_ok=True)
+    elif args.take:
+        take()
+    else:
+        serve(args.quiet)
 
 
 if __name__ == "__main__":

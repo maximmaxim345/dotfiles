@@ -19,9 +19,9 @@ An effort is a body of work with one goal, spread over several tasks and often s
 
 ## Roles
 
-- Desk: one pinned thread. Sweeps, refreshes (see "Refresh"), triages the backlog, keeps the board current and reacts to the board (see "Listening"). It does little coding itself. Never settle it, since that stops its listener.
+- Desk: one pinned thread. Sweeps, refreshes (see "Refresh"), triages the backlog, keeps the board current and reacts to the board (see "Listening"). It does little coding itself. Never settle it.
 - Effort manager: a `manager - <effort>` thread for a large effort. Plans, writes briefs, starts task threads and keeps the effort's `status.md`. It starts a task when I ask. When one of its tasks sends follow-up work with my approval in my words, or another manager sends work with my approval quoted, it first adds to the item's `brief` anything sent along with it, then starts it. When the work should wait (it builds on unmerged work, or overlaps a running task), it leaves the item unstarted with a comment saying why, and with `blockedBy` when it waits on another item, and I start it later from the board. Work another manager sends without my approval becomes a backlog item in its effort. Each task thread it starts gets a backlog item that holds its brief: add one with `bin/backlog add` before the launch when the task has none, launch with the message from "Starting threads", then set the item `started` with the thread id. A running task thread of its effort without an item gets one with `bin/backlog adopt`. The desk tells it about my actions on its effort's items (see "Listening"), and on each turn it also adds threads the desk started for its effort (backlog items with a `thread` missing from its task table) to that table. It keeps http://127.0.0.1:8765/?effort=<effort> open in its browser panel: at the end of every turn, when `preview_status` lists no tab of its own on that page, it opens one with `preview_open`. When a turn ends with a question for me, it pins itself with `t3_thread_organize`, and the desk unpins and settles it once it's idle again (sweep step 5). It turns follow-ups and open decisions that are work into backlog items, since only items reach my board, and marks its effort's next startable items as desk picks (`suggested`, with a one-line reason) in plan order. Small efforts have no manager and the desk covers them. `bin/backlog adopt` and `bin/backlog move` create a new effort's folder and a `status.md` with empty sections when they name an effort that doesn't exist yet. Whoever covers the effort fills it in on the next turn or sweep.
-- Morning routine: weekdays at 9:00, a scheduled run inside the desk thread that does the sweep. It also restarts the listener when it died. When the desk starts its listener, it also checks `list_scheduled_tasks` for this project. When no task does the sweep, it creates one with `schedule_task`, bound to its own thread, with the prompt "Morning sweep: read ~/desk/AGENTS.md again in full, since it may have changed, then run the sweep from it and reply with what needs me.", and tells me in one line.
+- Morning routine: weekdays at 9:00, a scheduled run inside the desk thread that does the sweep. When `bin/desk-wait --check` fails, it tells me in one line to run `./dotfiles.py install desk_listener` in `~/dotfiles`. In each sweep it also checks `list_scheduled_tasks` for this project. When no task does the sweep, it creates one with `schedule_task`, bound to its own thread, with the prompt "Morning sweep: read ~/desk/AGENTS.md again in full, since it may have changed, then run the sweep from it and reply with what needs me.", and tells me in one line.
 
 ## Thread titles
 
@@ -67,7 +67,7 @@ Base every state on threads, git and `gh`, never on memory, and fix `status.md` 
 
 ## Refresh
 
-On weekdays from 8:00 to 20:00, the listener prints `refresh` when the last refresh was 45 minutes ago or more. A refresh is a short sweep that keeps the board's thread lists current: do sweep steps 1, 2, 4, 5, 7 and 8, and read PRs only through `bin/pr-check`. Reply in one line, and stay silent when nothing changed.
+On weekdays from 8:00 to 20:00, the listener queues `refresh` when the last refresh was 45 minutes ago or more. A refresh is a short sweep that keeps the board's thread lists current: do sweep steps 1, 2, 4, 5, 7 and 8, and read PRs only through `bin/pr-check`. Reply in one line, and stay silent when nothing changed.
 
 ## Starting threads
 
@@ -83,7 +83,7 @@ Record the thread id in the effort's task table. When the effort has a manager (
 
 ## Listening
 
-The desk thread keeps `bin/desk-wait` running as a background Bash command (`run_in_background`, timeout 7200000). It waits for my actions on the board, prints them as JSON lines and exits, which wakes the desk. Handle what it printed. As the last step of every turn, also after a sweep or any other request, run `bin/desk-wait --check` and start the listener only when that fails. Whenever you start it, also make sure this thread's browser panel shows the board: when `preview_status` lists no tab of yours on http://127.0.0.1:8765/, open one with `preview_open`. The board shows "desk listening" while the listener runs. After a context handoff, the previous session of this thread can still own the listener and keep handling events where you can't see them. Then take it over with one background command: `kill $(cat state/listener.pid); sleep 1; exec bin/desk-wait`.
+The `local.desk-listener` service (`bin/desk-wait --serve`, from the dotfiles module `desk_listener`) runs outside T3, so it survives T3 restarts. It watches for my actions on the board and for due refreshes, PR checks and idle threads, queues them as lines and wakes this thread with the message "Desk wake-up: run `bin/desk-wait --take` ...". Run `bin/desk-wait --take`, which prints the queued lines and clears them, and handle them. When it prints nothing, an earlier wake-up already took them: end the turn without a reply. The board shows "desk listening" while the service runs. At the end of every turn, when `preview_status` lists no tab on http://127.0.0.1:8765/, open one with `preview_open`.
 
 Events are hints. Act on the items' current state, since I may have changed them again:
 - `adopt`: a thread handed itself over with `/desk` (see "Starting threads").
@@ -97,12 +97,10 @@ Events are hints. Act on the items' current state, since I may have changed them
 - `status` from `started` to `open` or `next`: I paused it, or the thread paused itself with `/desk block`. When its thread is still running, wait for its turn to end with `t3_thread_wait`. Then unsnooze it when it's snoozed, compact it and settle it (see "Compacting") and keep the thread id on the item.
 - `status` to `done` or `dropped`: when the item has a thread, archive it without compacting, after waiting the same way when it's still running. Older items may list more branches in `move.also`: remove the worktrees you added for them with `git worktree remove`, unless they hold uncommitted work, which you name in a desk comment instead. Mark its task row done or dropped, unless the effort has a manager.
 - `archive`: I cleared these done or dropped items from the board. Archive each of their threads that isn't archived yet, as above.
-- `timeout`, or the listener's task ended killed: nothing happened, just start it again without listing threads.
-- `already listening`: another listener runs, don't start one.
 
 An event with `"by": "manager"` is that effort's manager acting: handle it, but leave it out of the message to that manager. When an event touches items of an effort with a manager, send that manager one message per wake-up that lists them: started (with the thread), paused, done, dropped, archived, or my comment.
 
-Reply in one line per handled event, and stay silent on `timeout`. Leave the listener and compaction checks out of replies, and give times in my local time only.
+Reply in one line per handled event. Leave compaction checks out of replies, and give times in my local time only.
 
 ## PR check
 
@@ -136,7 +134,7 @@ Settle a compacted thread only when sweep step 5 allows it, also when T3 had set
 
 A thread's prompt cache expires about an hour after its last turn. Compacting before then is cheap, and a compacted thread is cheap to pick up again later, so the desk compacts idle threads at about 50 minutes, whether or not they wait on me. The listener runs `bin/compact-due` every minute, which prints an `idle` event once per run for each thread with a backlog item that is idle 50 minutes to 3 hours and isn't snoozed, settled or waiting on a request. Under `compact` it lists Claude and Codex threads with 40 or more turn items whose cache is still warm, and under `settle` the rest. Under `archive` it lists, once, each thread without a backlog item that has been settled for 7 days, other than the desk, managers, subagents and snoozed threads. It records each run it reported in `state/compacted.json`. For each thread under `compact`, send `/compact`, wait for it, and record the compaction's run id in `compacted.json`. Then settle each listed thread that sweep step 5 allows, after compacting when that step asks for it. Also record the run id of every compaction you send before settling or pausing a thread, so it isn't compacted again. When settling a thread whose latest run is a recorded compaction, don't compact it again. Wherever a rule looks at a thread's last reply, it means the last reply before any compaction.
 
-The desk and managers compact themselves. When more than about 20 of your turns came since this conversation started or was last compacted, and what you need later is in files, end the turn by queueing `/compact` to yourself with `t3_thread_send` and `mode` `queue` (your id comes from `t3_thread_configuration`). It runs once the turn ends. The desk does this after the listener check.
+The desk and managers compact themselves. When more than about 20 of your turns came since this conversation started or was last compacted, and what you need later is in files, end the turn by queueing `/compact` to yourself with `t3_thread_send` and `mode` `queue` (your id comes from `t3_thread_configuration`). It runs once the turn ends. The desk does this after opening the board tab.
 
 ## Backlog items
 

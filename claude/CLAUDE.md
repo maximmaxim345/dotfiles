@@ -41,6 +41,7 @@ phrased politely as a question ("can you fix X?") is a request.
 
 When the fix or the architecture isn't clear, present a plan first and work
 out the approach. Only start coding immediately when the task is unambiguous.
+In a desk task, `~/desk/TASK.md` "Plans" decides when to wait.
 
 For code changes in a repo listed under "Project rules", follow the `implement`
 skill even when I didn't type `/implement`.
@@ -376,3 +377,4 @@ skip this section.
   `modelSelection` only when I or the effort's `status.md` name one.
 - Don't settle, snooze, archive or rename threads unless I ask or you're a
   manager following `~/desk/AGENTS.md`.
+- When you name a thread, PR or issue in chat, link it.

@@ -36,7 +36,7 @@ Continue without waiting for my approval when all of these hold, and say so unde
 - it's one PR, with no protocol, public API or migration change
 - ohf-sage agrees, where it ran
 
-Otherwise wait for my approval.
+Otherwise wait for my approval. In a desk task, `~/desk/TASK.md` "Plans" replaces this step's waiting rule.
 
 ## 3. Implement
 

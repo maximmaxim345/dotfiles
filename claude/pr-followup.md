@@ -23,10 +23,17 @@ posting, so ask first like a push.
 
 When you have the T3 Code tools (`t3_thread_*`):
 
-- Watch a published PR with `watch_pull_request` only while nothing waits on
-  me, since a watched thread stays in my Working list instead of my inbox. Its
-  wake-ups are news, not permission.
-- Before a turn ends with a question, a draft or a request for my OK, call
+- When `~/desk/bin/pr-check` exists, watch a published PR with it until the PR
+  merges or closes, instead of `watch_pull_request`, since a thread watching
+  with T3 stays in my Working list instead of my inbox. Run
+  `~/desk/bin/pr-check --wait <your thread id>=<PR url>` as a background Bash
+  command (`run_in_background`, timeout 7200000). It exits after printing news
+  (reviews and comments by others and Copilot, conflicts, failed checks, a merge
+  or close) or `timeout`. Handle the news, then start it again unless the PR
+  merged or closed. Your thread id comes from `t3_thread_configuration`. Its
+  news is not permission.
+- Otherwise watch with `watch_pull_request` only while nothing waits on me.
+  Before a turn ends with a question, a draft or a request for my OK, call
   `unwatch_pull_request`. Once I've answered, read the PR's new comments and
   checks, then watch again.
 

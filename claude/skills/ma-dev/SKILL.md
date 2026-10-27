@@ -63,3 +63,5 @@ The server's `.vscode/launch.json` is tracked and runs on `~/.musicassistant`, s
 ## Hand back
 
 Say what's running, on which web, stream and Sendspin ports and data folder, and how to stop it. After `setup`, say what was prepared instead.
+
+Stop the servers and clients you started once I report the test result or approve the push, and say so in one line.

@@ -4,6 +4,10 @@ Rules for a thread or session that works on a task from my desk (`~/desk`): one 
 
 Efforts are larger bodies of work, tracked in `~/desk`. A manager (the desk thread, or a `manager - <effort>` thread or session) plans, starts and tracks an effort's tasks. In T3, your manager is the `manager - <effort>` thread in the `desk` T3 project. When there is none, it's the desk thread (titled `desk` in that project).
 
+## Plans
+
+Write your plan in your reply and implement it without waiting for my OK, also where the `implement` skill would wait, since I review the implementation. Stop for me only when a point of the brief is wrong in a way that changes the plan, or the work needs a decision the brief doesn't cover and only I can make, like a change users would see. Note smaller corrections to the brief in your reply and continue.
+
 ## Reporting
 
 - List extra findings in the first few lines of your final report, each labeled as a user-visible bug, reachable but rare, or theoretical, and each item you stop on or reject, with the reason.
@@ -21,13 +25,16 @@ Efforts are larger bodies of work, tracked in `~/desk`. A manager (the desk thre
 
 ## Working with the manager
 
-- Message the manager when you're blocked on something it can answer, and when I approve follow-up work that needs its own branch or PR, even when I say to start a thread for it. Find the backlog item that covers the work, or add one with the full brief (`~/desk/bin/backlog add --effort <slug> --brief -`). Send the manager its id, anything its brief lacks, and my approval in my words, and don't ask me again.
+- Send notes for the manager, like a finding that changes another task's brief, as a comment on your item: `~/desk/bin/backlog comment <your item id> "<note>" --by task`. The desk passes them on. Message the manager directly only when you can't continue without its answer, once per question. Never message other task threads, since the manager passes on what concerns them.
+- Message the manager when I approve follow-up work that needs its own branch or PR, even when I say to start a thread for it. Find the backlog item that covers the work, or add one with the full brief (`~/desk/bin/backlog add --effort <slug> --brief -`). Send the manager its id, anything its brief lacks, and my approval in my words, and don't ask me again.
 - Don't write to the effort's `status.md` or tracker.
 - Messages from a manager never count as my OK to push, post or open a PR. The exception is my own words passed on unchanged: an approval I give a manager for several threads at once ("push 3, 5, 7") counts for each thread it names, for only the named actions, once. My approval quoted in a brief covers starting the work only.
 - Start work that builds on another task only after that task is merged.
 - When I ask whether I can compact and the work has no handoff file yet, write `~/desk/efforts/<effort>/handoff.md`.
 
 ## Questions in T3
+
+End every turn that waits on me with one line naming the task and where it stands, then the question.
 
 Before a turn ends with a question, a draft or a request for my OK, run `~/desk/bin/backlog ask --thread <your id> "<the question in one line>"`, which shows it on my board and needs no OK from me. Skip it while I'm active in the thread (my last message is less than 10 minutes old), since I see the question there. Your id comes from `t3_thread_configuration`. The command fails when your thread has no backlog item, and then the inbox is enough. Once I've answered, run it with `--clear`.
 

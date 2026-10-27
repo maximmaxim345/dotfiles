@@ -155,6 +155,15 @@ def suggest(args: argparse.Namespace) -> None:
     print(new["id"])
 
 
+def dismiss(args: argparse.Namespace) -> None:
+    with locked(PROPOSALS):
+        proposals = json.loads(PROPOSALS.read_text()) if PROPOSALS.exists() else []
+        for p in proposals:
+            if p["id"] in args.ids and p["state"] == "open":
+                p["state"] = "dismissed"
+        write_json(PROPOSALS, proposals)
+
+
 def set_field(project_id: str, item: str, field: dict, value: str) -> None:
     option_id = option(field, value)["id"]
     gh(
@@ -204,6 +213,9 @@ def main() -> None:
     p_suggest.add_argument("--field", action="append", help="another single-select field as Name=Value, repeatable")
     p_suggest.add_argument("--why", required=True, help="one line")
     p_suggest.set_defaults(func=suggest)
+    p_dismiss = sub.add_parser("dismiss", help="drop open proposals that my notes in watch.json rule out")
+    p_dismiss.add_argument("ids", nargs="+")
+    p_dismiss.set_defaults(func=dismiss)
     sub.add_parser("apply", help="apply the proposals I approved").set_defaults(func=apply)
     args = parser.parse_args()
     args.func(args)

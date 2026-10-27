@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+"""Poll the GitHub sources in ~/desk/watch.json, record news in state/incoming.json and print one line per entry."""
+
+from __future__ import annotations
+
+import datetime
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+DESK = Path.home() / "desk"
+CONFIG = DESK / "watch.json"
+STATE = DESK / "state" / "watch.json"
+INCOMING = DESK / "state" / "incoming.json"
+ENDED = {"closed", "merged"}
+SORTING = ("action", "draft", "link", "item")
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import locked, write_json  # noqa: E402
+
+DISCUSSIONS = """
+query($q: String!) {
+  search(query: $q, type: DISCUSSION, first: 50) {
+    nodes { ... on Discussion {
+      url title createdAt closed author { login }
+      comments(last: 20) { nodes { createdAt author { login } replies(last: 20) { nodes { createdAt author { login } } } } }
+    } }
+  }
+}"""
+
+
+def gh(*args: str) -> object:
+    result = subprocess.run(["gh", *args], capture_output=True, text=True)
+    if result.returncode:
+        raise RuntimeError(result.stderr.strip() or f"gh exit {result.returncode}")
+    return json.loads(result.stdout or "null")
+
+
+def now() -> str:
+    return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def others(entries: list[dict], me: str, since: str, key: str) -> list[str]:
+    return sorted(
+        {
+            e["user"]["login"]
+            for e in entries
+            if e.get(key) and e[key] > since and e["user"]["login"] != me and e["user"]["type"] != "Bot"
+        }
+    )
+
+
+def issue_news(q: str, me: str, since: str) -> list[dict]:
+    found = gh("api", "-X", "GET", "search/issues", "-f", f"q={q} updated:>={since}", "-f", "per_page=100")
+    news = []
+    for issue in found["items"]:
+        kind = "pr" if issue.get("pull_request") else "issue"
+        base = issue["repository_url"].replace("https://api.github.com/", "")
+        lines = []
+        if issue["created_at"] > since and issue["user"]["login"] != me and issue["user"]["type"] != "Bot":
+            lines.append(f"new {kind} by {issue['user']['login']}")
+        comments = gh("api", f"{base}/issues/{issue['number']}/comments", "-X", "GET", "-f", f"since={since}")
+        people = others(comments, me, since, "created_at")
+        if kind == "pr":
+            reviews = gh("api", f"{base}/pulls/{issue['number']}/reviews")
+            inline = gh("api", f"{base}/pulls/{issue['number']}/comments", "-X", "GET", "-f", f"since={since}")
+            people = sorted({*people, *others(reviews, me, since, "submitted_at"), *others(inline, me, since, "created_at")})
+        if people:
+            lines.append("comments by " + ", ".join(people))
+        if issue["state"] == "closed" and (issue.get("closed_at") or "") > since:
+            merged = (issue.get("pull_request") or {}).get("merged_at")
+            lines.append("merged" if merged else "closed")
+        if lines:
+            news.append({"url": issue["html_url"], "kind": kind, "title": issue["title"], "news": lines})
+    return news
+
+
+def discussion_news(q: str, me: str, since: str) -> list[dict]:
+    found = gh("api", "graphql", "-f", f"query={DISCUSSIONS}", "-f", f"q={q} updated:>={since[:10]}")
+    news = []
+    for d in found["data"]["search"]["nodes"]:
+        if not d:
+            continue
+        lines = []
+        author = (d.get("author") or {}).get("login")
+        if d["createdAt"] > since and author != me:
+            lines.append(f"new discussion by {author}")
+        posts = d["comments"]["nodes"] + [r for c in d["comments"]["nodes"] for r in c["replies"]["nodes"]]
+        people = sorted(
+            {p["author"]["login"] for p in posts if p["createdAt"] > since and p.get("author") and p["author"]["login"] != me}
+        )
+        if people:
+            lines.append("comments by " + ", ".join(people))
+        if lines:
+            news.append({"url": d["url"], "kind": "discussion", "title": d["title"], "news": lines})
+    return news
+
+
+def board_news(owner: str, number: int, seen: dict) -> list[dict]:
+    items = gh("project", "item-list", str(number), "--owner", owner, "--format", "json", "--limit", "500")["items"]
+    news = []
+    for item in items:
+        status = item.get("status")
+        url = (item.get("content") or {}).get("url") or f"https://github.com/orgs/{owner}/projects/{number}?item={item['id']}"
+        if item["id"] not in seen:
+            lines = [f"added to the {owner} board as {status or 'no status'}"]
+        elif seen[item["id"]] != status:
+            lines = [f"moved on the {owner} board from {seen[item['id']]} to {status}"]
+        else:
+            continue
+        seen[item["id"]] = status
+        news.append({"url": url, "kind": "board", "title": item["title"], "news": lines})
+    return news
+
+
+def run_news(repo: str, seen: list) -> list[dict]:
+    runs = gh("run", "list", "-R", repo, "--limit", "20", "--json", "databaseId,conclusion,displayTitle,event,url,createdAt")
+    news = []
+    for run in runs:
+        if run["conclusion"] != "failure" or run["databaseId"] in seen:
+            continue
+        seen.append(run["databaseId"])
+        del seen[:-100]
+        news.append(
+            {"url": run["url"], "kind": "run", "title": f"{repo}: {run['displayTitle']}", "news": [f"{run['event']} run failed"]}
+        )
+    return news
+
+
+def record(entries: list[dict]) -> list[dict]:
+    """Merge entries into incoming.json and return the ones recorded."""
+    kept = []
+    with locked(INCOMING):
+        data = json.loads(INCOMING.read_text()) if INCOMING.exists() else {}
+        for entry in entries:
+            old = data.get(entry["url"]) or {}
+            closed = set(entry["news"]) <= ENDED
+            if closed and not old:
+                continue
+            kept.append(entry)
+            status = "closed" if closed else "noise" if old.get("status") == "noise" else "new"
+            fresh = {k: v for k, v in old.items() if k not in SORTING}
+            data[entry["url"]] = {**fresh, **entry, "status": status, "updated": now()}
+        write_json(INCOMING, data)
+    return kept
+
+
+def main() -> None:
+    config = json.loads(CONFIG.read_text()) if CONFIG.exists() else {}
+    state = json.loads(STATE.read_text()) if STATE.exists() else {}
+    me = gh("api", "user")["login"]
+    started = now()
+    sources = state.setdefault("sources", {})
+    checks = (
+        [(f"issues {q}", lambda since, q=q: issue_news(q, me, since)) for q in config.get("issues", [])]
+        + [(f"discussions {q}", lambda since, q=q: discussion_news(q, me, since)) for q in config.get("discussions", [])]
+        + [
+            (
+                f"board {b['owner']}/{b['number']}",
+                lambda since, b=b: board_news(
+                    b["owner"], b["number"], state.setdefault("boards", {}).setdefault(f"{b['owner']}/{b['number']}", {})
+                ),
+            )
+            for b in config.get("projects", [])
+        ]
+        + [
+            (f"runs {r}", lambda since, r=r: run_news(r, state.setdefault("runs", {}).setdefault(r, [])))
+            for r in config.get("workflows", [])
+        ]
+    )
+    found: dict[str, dict] = {}
+    for source, fetch in checks:
+        first = source not in sources
+        try:
+            entries = fetch(sources.get(source) or started)
+        except (RuntimeError, KeyError, TypeError, ValueError) as err:
+            print(json.dumps({"type": "watch-error", "source": source, "error": str(err)}))
+            continue
+        sources[source] = started
+        # A new source's first run only records what already exists.
+        if first:
+            continue
+        for entry in entries:
+            if entry["url"] in found:
+                found[entry["url"]]["news"] += [n for n in entry["news"] if n not in found[entry["url"]]["news"]]
+            else:
+                found[entry["url"]] = {**entry, "source": source}
+    for entry in record(list(found.values())):
+        print(json.dumps({"type": "watch", **entry}))
+    write_json(STATE, state)
+
+
+if __name__ == "__main__":
+    main()

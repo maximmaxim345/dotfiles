@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import datetime
+import fcntl
 import json
 import os
 import re
@@ -12,6 +14,7 @@ import sqlite3
 import tempfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Iterator
 from urllib.parse import urlsplit
 
 DESK = Path.home() / "desk"
@@ -34,6 +37,14 @@ def write_json(path: Path, data: dict) -> None:
         json.dump(data, f, indent=2)
         f.write("\n")
     os.replace(tmp, path)
+
+
+@contextlib.contextmanager
+def locked(path: Path) -> Iterator[None]:
+    """Hold an exclusive lock for a read-modify-write of path."""
+    with open(path.with_name(path.name + ".lock"), "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        yield
 
 
 def item_path(item_id: str) -> Path:

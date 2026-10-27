@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+"""List or sort the entries bin/watch recorded in ~/desk/state/incoming.json."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+INCOMING = Path.home() / "desk" / "state" / "incoming.json"
+STATUSES = ["new", "needs-you", "waiting", "filed", "duplicate", "noise", "closed", "dismissed"]
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import locked, write_json  # noqa: E402
+
+
+def load() -> dict:
+    return json.loads(INCOMING.read_text()) if INCOMING.exists() else {}
+
+
+def list_entries(args: argparse.Namespace) -> None:
+    for entry in load().values():
+        if args.status and entry["status"] not in args.status:
+            continue
+        if args.effort is not None and (entry.get("effort") or "") != args.effort:
+            continue
+        print(json.dumps(entry))
+
+
+def set_entry(args: argparse.Namespace) -> None:
+    draft = sys.stdin.read().strip() if args.draft == "-" else args.draft
+    fields = {
+        "effort": args.effort,
+        "status": args.status,
+        "action": args.action,
+        "draft": draft,
+        "item": args.item,
+        "link": args.link,
+    }
+    with locked(INCOMING):
+        data = load()
+        if args.url not in data:
+            sys.exit(f"no incoming entry {args.url}")
+        data[args.url].update({k: (v or None) for k, v in fields.items() if v is not None})
+        write_json(INCOMING, data)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p_list = sub.add_parser("list", help="print entries as JSON lines")
+    p_list.add_argument("--status", action="append", choices=STATUSES, help="only these statuses, repeatable")
+    p_list.add_argument("--effort", help="only this effort, or '' for entries without one")
+    p_list.set_defaults(func=list_entries)
+
+    p_set = sub.add_parser("set", help="route or sort an entry, an empty value clears a field")
+    p_set.add_argument("url")
+    p_set.add_argument("--effort", help="the effort whose scope covers it")
+    p_set.add_argument("--status", choices=STATUSES)
+    p_set.add_argument("--action", help="for needs-you: what I have to do, in one or two sentences")
+    p_set.add_argument("--draft", help="a reply I can post, or - to read it from stdin")
+    p_set.add_argument("--item", help="the backlog item it was filed as")
+    p_set.add_argument("--link", help="the duplicate, the fix, or the PR it relates to")
+    p_set.set_defaults(func=set_entry)
+
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

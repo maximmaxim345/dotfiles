@@ -11,6 +11,7 @@ This repo holds the state of my work across repos: efforts, the backlog and the 
 - `board/`: the local board page and its server.
 - `bin/`: scripts the routines call.
 - `repos.json`: optional, repo names that have no T3 project.
+- `watch.json`: the GitHub sources the desk watches, see "Watching".
 - `state/`: the board's and listener's runtime state, not committed.
 
 `AGENTS.md`, `TASK.md`, `bin/` and `board/` are links into my dotfiles. Don't edit them: add a backlog item with repo `dotfiles` instead.
@@ -71,6 +72,7 @@ Never delete threads, backlog items or task rows. Done and dropped work only lea
 9. Sort my captures (status `new`, my raw notes in `brief`): turn each into one or more proper items, one per idea, with title, kind, label, repo, effort, summary and brief, status `open`, and the original note quoted in a desk comment. When a capture becomes one item, run `bin/backlog reslug <id>` after giving it its title, fix the effort files it lists, and tell a started thread its brief's new path. Keep a repo or effort I picked, unless my note says I'm unsure of it: then check where the code lives and pick that repo, saying why in the comment. When a note is too unclear to sort, leave it `new` and ask in a comment.
 10. Triage open backlog items: set the repo name and the effort, drop duplicates and items whose fix is already on the default branch (with a comment saying why), and fill in missing briefs. Set `blockedBy` when none of an item can move before another item or an outside event, and remove blockers that no longer hold, also on started items. A blocker that names a date holds until that date: on it, remove the blocker, add a desk comment and list the item in your reply. Mark up to five open items I should do soon with `suggested` (a one-line reason) and remove it from items that no longer fit. In efforts with a manager, leave `suggested` to the manager. Move items into Next only when my note or message asks for it, and put them last, since that column is my order.
 11. Answer new comments on backlog items (`"by": "me"`) with a comment of your own (`"by": "desk"`), and apply what they ask that needs no launch.
+12. Do "Watching", then run `bin/project-sync propose`, which refreshes the proposed moves on the project boards in `watch.json` and prints `candidate <board> <url>` lines for my open PRs and started items' PRs that aren't on a board. Propose each candidate that belongs on the board with `bin/project-sync suggest --board <owner/number> --url <url> --status <status> [--field <Name>=<Value>] --why "<one line>"`, following the board's notes in `watch.json`. Drop open proposals those notes rule out with `bin/project-sync dismiss <id> ...`.
 
 After a sweep, run `bin/desk-wait --refreshed`, since the sweep covers a refresh.
 
@@ -78,7 +80,7 @@ Base every state on threads, git and `gh`, never on memory, and fix `status.md` 
 
 ## Refresh
 
-On weekdays from 8:00 to 20:00, the listener queues `refresh` when the last refresh was 45 minutes ago or more. A refresh is a short sweep that keeps the board's thread lists current: do sweep steps 1, 2, 4, 5, 7 and 8, and read PRs only through `bin/pr-check`. Reply in one line, and stay silent when nothing changed.
+On weekdays from 8:00 to 20:00, the listener queues `refresh` when the last refresh was 45 minutes ago or more. A refresh is a short sweep that keeps the board's thread lists and Incoming current: do sweep steps 1, 2, 4, 5, 7 and 8, read PRs only through `bin/pr-check`, and do "Watching". Reply in one line for the threads, plus one line per entry you set to needs-you, and stay silent when nothing changed.
 
 ## Starting threads
 
@@ -108,6 +110,7 @@ Events are hints. Act on the items' current state, since I may have changed them
 - `status` from `started` to `open` or `next`: I paused it, or the thread paused itself with `/desk block`. When its thread is still running, wait for its turn to end with `t3_thread_wait`. Then unsnooze it when it's snoozed, compact it and settle it (see "Compacting") and keep the thread id on the item.
 - `status` to `done` or `dropped`: when the item has a thread, archive it without compacting, after waiting the same way when it's still running. Older items may list more branches in `move.also`: remove the worktrees you added for them with `git worktree remove`, unless they hold uncommitted work, which you name in a desk comment instead. Mark its task row done or dropped, unless the effort has a manager.
 - `archive`: I cleared these done or dropped items from the board. Archive each of their threads that isn't archived yet, as above.
+- `apply`: I approved project board changes. Run `bin/project-sync apply` and reply with what it printed, one line per change.
 
 An event with `"by": "manager"` is that effort's manager acting: handle it, but leave it out of the message to that manager. When an event touches items of an effort with a manager, send that manager one message per wake-up that lists them: started (with the thread), paused, done, dropped, archived, my comment, or a task's note.
 
@@ -119,6 +122,25 @@ Settled threads don't watch their PRs, so the desk passes on their PR news.
 1. List all projects, and in each the settled threads with linked PRs and a backlog item.
 2. Run `bin/pr-check <thread id>=<PR url> ...` once with all of them. It prints only news since its last run: reviews and comments by people other than me and bots, conflicts, failed checks, merges and closes.
 3. For each line it prints: a PR merged or closed more than a day ago gets sweep step 6. On any other news, except a merge or close from the last day, unsettle the thread (never a snoozed one) and send it one message: "News on your PR, not my OK for anything: <the news after the colon>. Handle it as your rules say." A line saying pr-check failed goes in your reply.
+
+## Watching
+
+`watch.json` lists the GitHub sources I want watched: `issues` and `discussions` (GitHub search queries), `projects` (boards as `owner` and `number`), `workflows` (repos whose failed runs count) and `notes` (my free-form sorting notes). Write the query lines yourself from what I ask for, and keep my notes as I wrote them.
+
+Run `bin/watch`. It records news since its last run in `state/incoming.json`, one entry per issue, PR, discussion, board card or run, and prints each as a `watch` line. A new source's first run only records what exists. A `watch-error` line goes in your reply. The board shows entries with status new, needs-you or waiting under Incoming, grouped by effort.
+
+Route each new entry to the effort whose `status.md` Scope line covers it with `bin/incoming set <url> --effort <slug>`, and leave it without an effort otherwise. When that effort has a manager, tell it once per wake-up which entries are new for it, and it sorts them. Sort the rest yourself.
+
+Sorting reads the entry and its news, follows my notes in `watch.json`, and checks the code on the default branch when the entry reports a bug or asks how something works. End it with `bin/incoming set <url>` and one of:
+- `--status noise`: nothing for me, like bot updates or news I caused. Later news on it stays noise.
+- `--status duplicate --link <url>`: an existing issue, PR or item covers it.
+- `--status filed --item <id>`: it's work, filed as a backlog item with `bin/backlog add`.
+- `--status waiting`: it waits on someone other than me.
+- `--status needs-you --action "<what I have to do, one or two sentences>"`, with `--draft -` and the reply on stdin when an answer from me would help. Write drafts in my voice as `~/.claude/writing-examples.md` shows.
+
+An entry comes back as new when it gets more news. Read only what's new then.
+
+Never post, comment, label, close, assign or move anything on GitHub, and never change a project board outside `bin/project-sync apply`. Drafts only go on the board, where I copy them.
 
 ## Moving desktop sessions
 
@@ -179,7 +201,7 @@ The desk and managers compact themselves. When more than about 20 of your turns 
 
 ## Effort status files
 
-`efforts/<effort>/status.md` sections, in this order: Resume here, Tasks (table: thread, repo, branch, PR, state, blocked by), Defaults (model and repos), Open decisions, Log (dated, newest last).
+`efforts/<effort>/status.md` starts with a `Scope:` line naming the repos, labels or topics the effort covers, which "Watching" routes by. Its sections, in this order: Resume here, Tasks (table: thread, repo, branch, PR, state, blocked by), Defaults (model and repos), Open decisions, Log (dated, newest last).
 
 ## Board
 
@@ -200,4 +222,4 @@ The desk and managers compact themselves. When more than about 20 of your turns 
 
 A snoozed thread goes only in `snoozed`, with its wake time in local time. The board puts a started item without `asks` whose thread is in `waiting` in the In review column, and an open item with an open blocker in Blocked. The board adds items with `asks` to Needs you itself and drops a `needsYou` entry for the same thread in their favor.
 
-On the board I can capture notes (status `new`), comment on items, order my Next column, start, pause, finish (Done), drop or reopen items, archive a lane's Done cards, set blockers, and change their effort or repo. The server logs each action to `state/events.jsonl` for `bin/desk-wait`. It never launches anything itself.
+On the board I can capture notes (status `new`), comment on items, order my Next column, start, pause, finish (Done), drop or reopen items, archive a lane's Done cards, set blockers, change their effort or repo, hide Incoming entries (status dismissed), and apply or dismiss proposed project board changes. The server logs each action to `state/events.jsonl` for `bin/desk-wait`. It never launches anything itself.

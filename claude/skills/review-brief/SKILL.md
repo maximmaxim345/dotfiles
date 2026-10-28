@@ -16,18 +16,18 @@ Then a "Decide" list with each choice that is mine to make: your pick and one li
 
 Arguments: `$ARGUMENTS`. Compare against that base ref or PR, or cover only that commit range (`A..B`), otherwise against the merge base with the repo's default branch, taken from upstream when `origin` is my fork. Fetch the base first and name the commit you compare against. Include uncommitted and untracked files. Cover only what this session changed: when the branch also has commits from other work, list them in one line and leave them out of the parts below.
 
-When the diff is under about 20 changed lines, stop after the "Decide" list and one line per changed file.
+When the diff is under about 20 changed lines, follow the "Decide" list with one line per changed file, the folder, branch and commit range, and the critical pass findings, and leave out the rest.
 
 Write for someone who saw none of the session: no thread ids, finding numbers or names we made up, no bold, and each fact once.
 
 ## 1. Recap
 
-Two or three lines:
+A few short lines:
 
 - Only where it differs from what I asked: changes I didn't ask for, and things I asked for that are missing.
 - Scope: what stays the same that I might expect to change, and anything the change needs from another repo or a release.
 - PR reviewer comments still unresolved, when the branch has a PR. Find it with `gh pr view` when no PR was given, and read both its comments and its inline review threads (`gh api graphql` on `pullRequest.reviewThreads`, whose `isResolved` says which are open).
-- The absolute folder path, the branch and the commit range, on one line.
+- The absolute folder path, the branch, the commit range and the base commit you compared against, on one line.
 
 ## 2. File by file
 

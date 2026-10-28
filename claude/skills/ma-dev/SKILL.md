@@ -28,11 +28,11 @@ Run these from the server checkout or worktree for this task (default `~/project
 
 The server's built-in UI is at `http://localhost:<web port>`. Speakers get their stream URLs from the server, so they follow the stream port without changes. Two servers on copies of the same data see and control the same speakers, so don't test on a speaker another server is playing to.
 
-With `setup`, do steps 1 to 3 and start nothing, not even the frontend, then give me the VS Code line below so I can start it with F5. An F5 run uses Sendspin port 8927.
+With `setup`, do steps 1 to 3 and start nothing, not even the frontend, then give me the VS Code line below so I can start it with F5. An F5 run uses Sendspin port 8927, so when another server holds 8927, tell me that this server's Sendspin provider and browser player won't work.
 
 ## Players
 
-Test with the "Demo Sendspin Clients" provider (`_demo_sendspin_clients`), which runs in dev mode only. Its fake Sendspin speakers connect to this server, show up as normal Sendspin players, and decode and drop the audio, so nothing plays out loud. Enable it in the copy and pick the scenarios the test needs. Watch them through the server log and the provider's settings page.
+Test with the "Demo Sendspin Clients" provider (`_demo_sendspin_clients`), which runs in dev mode only. Its fake Sendspin speakers connect to this server, show up as normal Sendspin players, and decode and drop the audio, so nothing plays out loud. Enable it in the copy, in the built-in UI or through the API with the test login, and pick the scenarios the test needs. Watch them through the server log and the provider's settings page.
 
 Ask me before playing to, grouping, or changing a real speaker, every time.
 

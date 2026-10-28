@@ -43,8 +43,8 @@ Otherwise wait for my approval. In a desk task, `~/desk/TASK.md` "Plans" replace
 Commit as you go. A pure refactor gets its own commit before the behavior change. Run the project's lint, type checks, and tests, and fix failures you caused.
 
 Then test the change yourself the way I would, so I only do what needs me:
-- Run every test you can run on this machine: the Python version or other platforms CI uses (in a container when needed), and the real library end to end instead of mocks.
-- For Music Assistant server and frontend changes, start a server with the `ma-dev` skill and try the change on its demo Sendspin players. For frontend changes, also take screenshots of the changed screens as its "Frontend" part says.
+- When the change depends on a platform or Python version, run the relevant tests on those too, in a container when needed.
+- For Music Assistant changes I would try in the app, start a server with the `ma-dev` skill and try the change there, on its demo Sendspin players when it involves players or playback. For frontend changes, also take screenshots of the changed screens as its "Frontend" part says.
 - Ask me before testing on real speakers. For hand tests only I can do, set everything up first and give me numbered steps.
 
 ## 4. Review with fresh context

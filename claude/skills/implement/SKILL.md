@@ -57,6 +57,6 @@ Label each finding as a user-visible bug, reachable but rare, or theoretical. Fi
 
 ## 5. Hand over
 
-Run the `review-brief` skill. Its "Critical pass" starts from what step 4 fixed and kept.
+Start the companion threads the change needs, such as a docs update, as "In T3 Code" in my CLAUDE.md says. Then run the `review-brief` skill. Its "Critical pass" starts from what step 4 fixed and kept.
 
 When nothing blocks shipping, draft the PR in the same reply as `/open-pr` steps 1 to 6 say, without pushing. When something does, such as a decision or a hand test that blocks, end with that instead and draft the PR once it's resolved. Stop and wait for my review. Make fixes from my review as `--fixup` commits too, and post the updated PR draft with them. When I say to push or ship it, run `/open-pr`.

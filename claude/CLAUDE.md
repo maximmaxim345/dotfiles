@@ -371,9 +371,11 @@ it again after a compaction.
 These apply when you have the T3 Code tools (`t3_thread_*`). Without them,
 skip this section.
 
-- Start a separate thread only when I ask or you're a manager, with
-  `t3_thread_launch` and an explicit `workspaceStrategy`, never by creating a
-  worktree yourself (managers follow `~/desk/AGENTS.md`). Pass
+- Start a separate thread only when I ask, you're a manager, or your change
+  needs a companion PR in another repo (such as the docs, frontend or models
+  PR for a server change). Start it with `t3_thread_launch` and an explicit
+  `workspaceStrategy`, never by creating a worktree yourself (managers follow
+  `~/desk/AGENTS.md`), and link it in your brief. Pass
   `modelSelection` only when I or the effort's `status.md` name one.
 - Don't settle, snooze, archive or rename threads unless I ask or you're a
   manager following `~/desk/AGENTS.md`.

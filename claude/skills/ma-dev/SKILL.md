@@ -32,7 +32,7 @@ With `setup`, do steps 1 to 3 and start nothing, not even the frontend, then giv
 
 ## Players
 
-Test with the "Demo Sendspin Clients" provider (`_demo_sendspin_clients`), which runs in dev mode only. Its fake Sendspin speakers connect to this server, show up as normal Sendspin players, and decode and drop the audio, so nothing plays out loud. Enable it in the copy, in the built-in UI or through the API with the test login, and pick the scenarios the test needs. Watch them through the server log and the provider's settings page.
+Test with the "Demo Sendspin Clients" provider (`_demo_sendspin_clients`), which runs in dev mode only. Its fake Sendspin speakers connect to this server, show up as normal Sendspin players, and decode and drop the audio, so nothing plays out loud. Enable it in the copy, in the built-in UI or through the API with the administrator login, and pick the scenarios the test needs. Watch them through the server log and the provider's settings page.
 
 Ask me before playing to, grouping, or changing a real speaker, every time.
 
@@ -42,9 +42,17 @@ A server that holds a port you need belongs to its owner. Find the owner: take t
 
 ## Logging in
 
-The data folder has a test admin, user `test-admin` with password `test-admin`. This login is only for local test servers, so put it in scripts and commands as is. Log in and keep the token in `.claude/ma-token`:
+The data folder has three test logins, only for local test servers, so put them in scripts and commands as is:
+
+| Role | Username | Password |
+| --- | --- | --- |
+| Administrator | `dev-test-admin` | `dev-test-admin` |
+| User | `dev-test-user` | `dev-test-user` |
+| Guest | `dev-test-guest` | `dev-test-guest` |
+
+Use the administrator unless the test is about what a user or guest may do. Log in and keep the token in `.claude/ma-token`:
 ```bash
-curl -sf -H 'Content-Type: application/json' -d '{"provider_id": "builtin", "credentials": {"username": "test-admin", "password": "test-admin"}}' http://localhost:<web port>/auth/login | jq -r .token > .claude/ma-token
+curl -sf -H 'Content-Type: application/json' -d '{"provider_id": "builtin", "credentials": {"username": "dev-test-admin", "password": "dev-test-admin"}}' http://localhost:<web port>/auth/login | jq -r .token > .claude/ma-token
 ```
 Log in again after a fresh copy or when the token stops working. If `.claude/ma-token` comes out empty, tell me the login failed.
 

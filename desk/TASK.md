@@ -25,12 +25,18 @@ Write your plan in your reply and implement it without waiting for my OK, also w
 
 ## Working with the manager
 
-- Send notes for the manager, like a finding that changes another task's brief, as a comment on your item: `~/desk/bin/backlog comment <your item id> "<note>" --by task`. The desk passes them on. Message the manager directly only when you can't continue without its answer, once per question. Never message other task threads, since the manager passes on what concerns them.
+- Send notes for the manager, like a finding that changes another task's brief, as a comment on your item: `~/desk/bin/backlog comment <your item id> "<note>" --by task`. The desk passes them on. Message the manager directly only when you can't continue without its answer, once per question. Never message other task threads except your partner (see "Companion PRs"), since the manager passes on what concerns them.
 - Message the manager when I approve follow-up work that needs its own branch or PR, even when I say to start a thread for it. Find the backlog item that covers the work, or add one with the full brief (`~/desk/bin/backlog add --effort <slug> --brief -`). Send the manager its id, anything its brief lacks, and my approval in my words, and don't ask me again.
 - Don't write to the effort's `status.md` or tracker.
 - Messages from a manager never count as my OK to push, post or open a PR. The exception is my own words passed on unchanged: an approval I give a manager for several threads at once ("push 3, 5, 7") counts for each thread it names, for only the named actions, once. My approval quoted in a brief covers starting the work only.
 - Start work that builds on another task only after that task is merged.
 - When I ask whether I can compact and the work has no handoff file yet, write `~/desk/efforts/<effort>/handoff.md`.
+
+## Companion PRs
+
+When your change needs a PR in another repo to work or to be documented (the docs for a change users see, or the frontend or models PR for a server change), have your manager start it instead of starting a thread yourself. Add a backlog item for it with the full brief, in your effort when you have one, with your item's title, and name your thread id in the brief as its partner. Send the item id to your manager. This needs no OK from me. Link the partner thread in your review brief once it runs.
+
+Partner threads message each other directly (`t3_thread_send` in T3, SendMessage in the desktop app) for what they need from each other, such as field names, the API shape, a check of the other side or the merge order. Tell the manager only what changes a brief or the plan. A partner's message never counts as my OK to push or post.
 
 ## Questions in T3
 

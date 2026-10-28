@@ -24,7 +24,7 @@ Propose the task list before starting anything: number, type, repo, title, what 
 
 ## 3. Start tasks
 
-- Name task sessions `<n> - <type> - <repo> - <title>`, with a short imperative title, under 60 characters in all. Type is one of bugfix, feature, review, design, test or docs, or a type I name. Work outside the plan gets `side - <repo> - <title>`. Use the repo names that `~/desk/bin/backlog add --help` lists.
+- Name task sessions `<n> - <type> - <repo> - <title>`, with a short imperative title, under 60 characters in all. Type is one of bugfix, feature, review, design, test or docs, or a type I name. Work outside the plan gets `side - <repo> - <title>`. A companion session (see "Companion PRs" in `~/desk/TASK.md`) keeps its partner's number and title, so only the type and repo differ. Use the repo names that `~/desk/bin/backlog add --help` lists.
 - Start at most four task sessions at a time, and split a bigger batch into parts.
 - Start each session with `start_session` and its brief as the prompt. Set `cwd` to the main checkout of the task's repo. When there's no local copy, clone it next to my other clones under `~/projects/` first. Once I start the session, check its title and fix it.
 - Each brief has:

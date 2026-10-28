@@ -44,6 +44,12 @@ Start with a summary sentence. Only add `#` sections if there are truly distinct
 ### Repo templates
 If the repo has a PR template, use it. Fill in its sections rather than replacing it with free-form body.
 
+Tick each checklist box that holds:
+- "Tested and works locally" when you or I tried the change on a running build, such as a dev server or demo players.
+- Lint, test and build boxes when those ran and passed, apart from failures that also happen on the base branch.
+- The AI policy box and a contributor license box, always.
+- Boxes about a companion or docs PR only when that PR exists and is linked.
+
 ## Links
 
 - When the PR template has a field for related issues, fill it the way the template shows, with only the kind of link the field asks for, never a loosely related PR or page. Leave it empty otherwise. Without such a field, use `Closes #123` when fixing an issue

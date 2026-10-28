@@ -42,6 +42,11 @@ Otherwise wait for my approval. In a desk task, `~/desk/TASK.md` "Plans" replace
 
 Commit as you go. A pure refactor gets its own commit before the behavior change. Run the project's lint, type checks, and tests, and fix failures you caused.
 
+Then test the change yourself the way I would, so I only do what needs me:
+- Run every test you can run on this machine: the Python version or other platforms CI uses (in a container when needed), and the real library end to end instead of mocks.
+- For Music Assistant server and frontend changes, start a server with the `ma-dev` skill and try the change on its demo Sendspin players. For frontend changes, also take screenshots of the changed screens as its "Frontend" part says.
+- Ask me before testing on real speakers. For hand tests only I can do, set everything up first and give me numbered steps.
+
 ## 4. Review with fresh context
 
 Launch these in parallel, passing the diff (`git diff <base>...HEAD`), the changed paths, and the approved plan, but not your own reasoning:
@@ -52,6 +57,6 @@ Label each finding as a user-visible bug, reachable but rare, or theoretical. Fi
 
 ## 5. Hand over
 
-Run the `review-brief` skill. In its "Before I read" part, also say what you verified and how, and what I should test by hand. Its "Critical pass" starts from what step 4 fixed and kept.
+Run the `review-brief` skill. Its "Critical pass" starts from what step 4 fixed and kept.
 
-Then, in the same reply, draft the PR as `/open-pr` steps 1 to 6 say, without pushing. Stop and wait for my review. Make fixes from my review as `--fixup` commits too, and post the updated PR draft with them. When I say to push or ship it, run `/open-pr`.
+When nothing blocks shipping, draft the PR in the same reply as `/open-pr` steps 1 to 6 say, without pushing. When something does, such as a decision or a hand test that blocks, end with that instead and draft the PR once it's resolved. Stop and wait for my review. Make fixes from my review as `--fixup` commits too, and post the updated PR draft with them. When I say to push or ship it, run `/open-pr`.

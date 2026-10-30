@@ -4,7 +4,7 @@ description: Review a PR or the local changes with parallel reviewers, verify ev
 argument-hint: "[PR number or URL] [sage|nosage]"
 ---
 
-Read `~/.claude/writing-examples.md` first. Write every comment in that voice and follow the "Writing style" rules in `CLAUDE.md` and the "Review comment style" section at the end of this file.
+Read `~/.claude/writing-examples.md` first. Write every comment in that voice and follow the rules at its top and the "Review comment style" section at the end of this file.
 
 Arguments: `$ARGUMENTS`. A PR number or URL reviews that PR. Without one, review `./` in local mode (see the end). `sage` forces ohf-sage on, `nosage` turns it off.
 

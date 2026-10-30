@@ -1,8 +1,36 @@
 # Writing examples
 
-Real comments and PR descriptions I wrote, lightly cleaned up. They show my
-voice, not templates: match the tone and rhythm, and let the content and
-length follow the situation.
+Rules for anything written for other people under my name, then real comments
+and PR descriptions I wrote, lightly cleaned up. The examples show my voice,
+not templates: match the tone and rhythm, and let the content and length follow
+the situation.
+
+## Rules
+
+- No bold.
+- No em or en dashes.
+- Links go in a list under a short lead-in ("Superseded by:", "Related:"),
+  one per line.
+- State opinions in first person with the reason ("I think X, since Y").
+- Don't use "genuinely", "notably", or "essentially".
+- Use plain, common words and the host project's vocabulary. If a word needs
+  defining, pick another word. Leave out names the reader has never seen, such
+  as our test setups ("sync lab") or terms we made up in the session.
+- Lead with what the user sees. Give the cause in one clause and leave out
+  internals the diff shows.
+- Don't @-mention or name anyone besides the person I'm replying to unless I
+  ask.
+- Take every number and claim from the full source, never a partial read.
+- First drafts of comments, replies and messages for other people are one or
+  two sentences. PR descriptions follow the length rules in
+  `~/.claude/pr-guidelines.md`. Show one version.
+- Show each draft (title, description, reply, message) in its own fenced code
+  block so I can copy it. Put links I may want to open outside the block.
+- Before showing a draft, check it against this list and the PR rules in
+  `~/.claude/pr-guidelines.md` (length, a title that claims no more than the
+  change does) and fix what fails.
+- When I hand you my draft, keep its structure and wording and only fix what's
+  wrong.
 
 ## Approving a PR
 

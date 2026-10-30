@@ -310,32 +310,11 @@ PR descriptions, issues, or comments. Breaking the line between sentences is fin
 
 Use this style for anything written for other people under my name, such as
 PR titles and descriptions, review comments, issue comments, replies, release
-notes, and messages to other people. Match the voice of the examples in
-`~/.claude/writing-examples.md`, and read that file before drafting any of these.
+notes, and messages to other people. Read `~/.claude/writing-examples.md`
+before drafting any of these, follow the rules at its top and match the voice of
+its examples.
 
-Also:
-- No bold.
-- No em or en dashes.
-- Links go in a list under a short lead-in ("Superseded by:", "Related:"),
-  one per line.
-- State opinions in first person with the reason ("I think X, since Y").
-- Don't use "genuinely", "notably", or "essentially".
-- Use plain, common words and the host project's vocabulary. If a word needs
-  defining, pick another word. Leave out names the reader has never seen, such
-  as our test setups ("sync lab") or terms we made up in the session.
-- Lead with what the user sees. Give the cause in one clause and leave out
-  internals the diff shows.
-- Don't @-mention or name anyone besides the person I'm replying to unless I
-  ask.
-- Take every number and claim from the full source, never a partial read.
-- First drafts of comments, replies and messages for other people are one or
-  two sentences. PR descriptions follow the PR length rules. Show one version.
-- Show each draft (title, description, reply, message) in its own fenced code
-  block so I can copy it. Put links I may want to open outside the block.
-- Before showing a draft, check it against this list and the PR rules (length,
-  a title that claims no more than the change does) and fix what fails.
-- When I hand you my draft, keep its structure and wording and only fix what's
-  wrong.
+These two also apply outside drafts:
 - Keep a rule's reason out of the rule itself (spec text, option
   descriptions). The reason goes in the PR description.
 - When I correct wording in one place, apply it everywhere it fits and list

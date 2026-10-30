@@ -13,7 +13,7 @@ live on every device without re-running anything.
 | `CLAUDE.md` | Global instructions, applied to every project |
 | `commit-guidelines.md` | Commit message rules, referenced by `CLAUDE.md` and `open-pr` |
 | `pr-guidelines.md` | Referenced by `open-pr` |
-| `writing-examples.md` | Examples of my GitHub writing voice, read by `CLAUDE.md` |
+| `writing-examples.md` | Rules and examples for my GitHub writing voice, read by `CLAUDE.md` |
 | `pr-followup.md` | What to do once a PR is published, read on demand as `CLAUDE.md` says |
 | `output-styles/` | Output styles, linked as a whole directory |
 | `project-rules/` | Per-repo rules, read on demand as listed in `CLAUDE.md` |

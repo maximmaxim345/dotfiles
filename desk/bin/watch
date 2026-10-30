@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -13,6 +14,8 @@ DESK = Path.home() / "desk"
 CONFIG = DESK / "watch.json"
 STATE = DESK / "state" / "watch.json"
 INCOMING = DESK / "state" / "incoming.json"
+BACKLOG = DESK / "backlog"
+BLOCKER_URL = r"https://github\.com/([^/\s]+)/([^/\s]+)/(?:issues|pull)/(\d+)"
 ENDED = {"closed", "merged"}
 SORTING = ("action", "draft", "link", "item")
 
@@ -53,27 +56,60 @@ def others(entries: list[dict], me: str, since: str, key: str) -> list[str]:
 
 def issue_news(q: str, me: str, since: str) -> list[dict]:
     found = gh("api", "-X", "GET", "search/issues", "-f", f"q={q} updated:>={since}", "-f", "per_page=100")
-    news = []
-    for issue in found["items"]:
-        kind = "pr" if issue.get("pull_request") else "issue"
-        base = issue["repository_url"].replace("https://api.github.com/", "")
-        lines = []
-        if issue["created_at"] > since and issue["user"]["login"] != me and issue["user"]["type"] != "Bot":
-            lines.append(f"new {kind} by {issue['user']['login']}")
-        comments = gh("api", f"{base}/issues/{issue['number']}/comments", "-X", "GET", "-f", f"since={since}")
-        people = others(comments, me, since, "created_at")
-        if kind == "pr":
-            reviews = gh("api", f"{base}/pulls/{issue['number']}/reviews")
-            inline = gh("api", f"{base}/pulls/{issue['number']}/comments", "-X", "GET", "-f", f"since={since}")
-            people = sorted({*people, *others(reviews, me, since, "submitted_at"), *others(inline, me, since, "created_at")})
-        if people:
-            lines.append("comments by " + ", ".join(people))
-        if issue["state"] == "closed" and (issue.get("closed_at") or "") > since:
-            merged = (issue.get("pull_request") or {}).get("merged_at")
-            lines.append("merged" if merged else "closed")
-        if lines:
-            news.append({"url": issue["html_url"], "kind": kind, "title": issue["title"], "news": lines})
+    return [entry for issue in found["items"] if (entry := issue_entry(issue, me, since))]
+
+
+def blocker_news(blocking: dict[str, list[str]], me: str, since: str, seen: dict[str, str]) -> list[dict]:
+    """Read each blocker link, keeping a per-link time so a link that fails is read from the same point next run."""
+    news, checked = [], now()
+    for url in list(seen):
+        if url not in blocking:
+            del seen[url]
+    for url, ids in blocking.items():
+        url_since = seen.setdefault(url, since)
+        owner, repo, number = re.match(BLOCKER_URL, url).groups()
+        try:
+            issue = gh("api", f"repos/{owner}/{repo}/issues/{number}")
+        except RuntimeError as err:
+            print(json.dumps({"type": "watch-error", "source": url, "blocks": ids, "error": str(err)}))
+            continue
+        seen[url] = checked
+        if issue["updated_at"] > url_since and (entry := issue_entry(issue, me, url_since)):
+            news.append({**entry, "blocks": ids})
     return news
+
+
+def blocking_urls() -> dict[str, list[str]]:
+    """Map each GitHub issue or PR that an open item's blocker links to onto those items."""
+    blocking: dict[str, list[str]] = {}
+    for path in sorted(BACKLOG.glob("*.json")):
+        item = json.loads(path.read_text())
+        if item["status"] in ("done", "dropped"):
+            continue
+        for blocker in item.get("blockedBy") or []:
+            for match in re.finditer(BLOCKER_URL, blocker):
+                blocking.setdefault(match.group(0), []).append(item["id"])
+    return blocking
+
+
+def issue_entry(issue: dict, me: str, since: str) -> dict | None:
+    kind = "pr" if issue.get("pull_request") else "issue"
+    base = issue["repository_url"].replace("https://api.github.com/", "")
+    lines = []
+    if issue["created_at"] > since and issue["user"]["login"] != me and issue["user"]["type"] != "Bot":
+        lines.append(f"new {kind} by {issue['user']['login']}")
+    comments = gh("api", f"{base}/issues/{issue['number']}/comments", "-X", "GET", "-f", f"since={since}")
+    people = others(comments, me, since, "created_at")
+    if kind == "pr":
+        reviews = gh("api", f"{base}/pulls/{issue['number']}/reviews")
+        inline = gh("api", f"{base}/pulls/{issue['number']}/comments", "-X", "GET", "-f", f"since={since}")
+        people = sorted({*people, *others(reviews, me, since, "submitted_at"), *others(inline, me, since, "created_at")})
+    if people:
+        lines.append("comments by " + ", ".join(people))
+    if issue["state"] == "closed" and (issue.get("closed_at") or "") > since:
+        merged = (issue.get("pull_request") or {}).get("merged_at")
+        lines.append("merged" if merged else "closed")
+    return {"url": issue["html_url"], "kind": kind, "title": issue["title"], "news": lines} if lines else None
 
 
 def discussion_news(q: str, me: str, since: str) -> list[dict]:
@@ -136,7 +172,7 @@ def record(entries: list[dict]) -> list[dict]:
         for entry in entries:
             old = data.get(entry["url"]) or {}
             closed = set(entry["news"]) <= ENDED
-            if closed and not old:
+            if closed and not old and "blocks" not in entry:
                 continue
             kept.append(entry)
             status = "closed" if closed else "noise" if old.get("status") == "noise" else "new"
@@ -168,6 +204,7 @@ def main() -> None:
             (f"runs {r}", lambda since, r=r: run_news(r, state.setdefault("runs", {}).setdefault(r, [])))
             for r in config.get("workflows", [])
         ]
+        + [("blockers", lambda since: blocker_news(blocking_urls(), me, since, state.setdefault("blockers", {})))]
     )
     found: dict[str, dict] = {}
     for source, fetch in checks:
@@ -184,6 +221,7 @@ def main() -> None:
         for entry in entries:
             if entry["url"] in found:
                 found[entry["url"]]["news"] += [n for n in entry["news"] if n not in found[entry["url"]]["news"]]
+                found[entry["url"]].update({"blocks": entry["blocks"]} if "blocks" in entry else {})
             else:
                 found[entry["url"]] = {**entry, "source": source}
     for entry in record(list(found.values())):

@@ -24,6 +24,11 @@ these for the PR at once: push, mark it ready when it's a draft, post the
 replies I approved and resolve their threads, request a Copilot review unless
 I say without, and watch it.
 
+"Merge it" means squash: `gh pr merge <n> --repo <owner/repo> --squash`. Add
+`--auto` while checks still run, when the repo allows auto-merge. On a branch
+with a merge queue, the same command queues the PR, so report it as queued,
+not merged, until it merges.
+
 ## In T3 Code
 
 When you have the T3 Code tools (`t3_thread_*`):

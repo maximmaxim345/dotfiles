@@ -9,7 +9,7 @@ from df.osinfo import system
 
 ID: str = "claude_config"
 NAME: str = "Claude Code Config"
-DESCRIPTION: str = "Global instructions, guidelines, skills, output style and mods for Claude Code"
+DESCRIPTION: str = "Global instructions, guidelines, skills and output style for Claude Code"
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 
@@ -19,7 +19,7 @@ desk_path = Path.home() / "desk"
 # Account folders of cswap, each used as CLAUDE_CONFIG_DIR
 accounts_path = Path.home() / ".claude-swap-backup" / "sessions"
 # What Claude Code reads from its config folder, linked from ~/.claude into each account folder
-ACCOUNT_ENTRIES: List[str] = ["CLAUDE.md", "output-styles", "mods", "skills", "agents", "settings.json"]
+ACCOUNT_ENTRIES: List[str] = ["CLAUDE.md", "output-styles", "skills", "agents", "settings.json"]
 
 # (source relative to claude/, target relative to ~/.claude, config key for the backup)
 ENTRIES: List[Tuple[str, str, str]] = [
@@ -32,7 +32,6 @@ ENTRIES: List[Tuple[str, str, str]] = [
     ("project-rules", "project-rules", "old_project_rules"),
     ("skills/implement", "skills/implement", "old_skill_implement"),
     ("skills/review-brief", "skills/review-brief", "old_skill_review_brief"),
-    ("mods", "mods", "old_mods"),
     ("skills/blast-radius", "skills/blast-radius", "old_skill_blast_radius"),
     ("skills/ma-dev", "skills/ma-dev", "old_skill_ma_dev"),
     ("skills/manager", "skills/manager", "old_skill_manager"),
@@ -47,6 +46,7 @@ REMOVED: List[Tuple[str, str]] = [
     ("commands", "old_commands"),
     ("skills/commit", "old_skill_commit"),
     ("skills/commit-split", "old_skill_commit_split"),
+    ("mods", "old_mods"),
 ]
 
 

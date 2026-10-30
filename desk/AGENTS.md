@@ -169,7 +169,7 @@ On Thursdays, list in the sweep's reply, one line each, what has waited too long
 - blockers older than a week, by the comment that added them or the item's date;
 - project board proposals open for more than two days.
 
-The board shows old questions and proposals under "Getting old" itself.
+The board shows old questions under "Getting old" and marks old proposals with their age itself.
 
 ## Moving desktop sessions
 

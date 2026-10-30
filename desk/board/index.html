@@ -154,6 +154,18 @@
   .md pre code { padding: 0; }
   .md a { color: var(--accent); }
   .comment { border-left: 2px solid var(--line-2); padding: 2px 0 2px 10px; margin: 8px 0; font-size: 13px; }
+  .replies { margin-left: 18px; }
+  .glance { background: var(--sunk); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; display: grid; gap: 6px; margin-bottom: 14px; }
+  .glance .ask { font-size: 14px; }
+  .glance .block-title { margin: 6px 0 2px; }
+  .glance .md :is(p, ul, ol) { margin-bottom: 4px; }
+  .questions { border: 1px solid var(--accent); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; }
+  h4.sec { font-size: 14.5px; margin: 16px 0 6px; }
+  details.sec { margin: 8px 0; }
+  details.sec > summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--ink); }
+  details.sec[open] > summary { margin-bottom: 6px; }
+  .meta { font-size: 12px; color: var(--muted); margin: 18px 0 0; }
+  .muted { color: var(--muted); cursor: pointer; font-size: 12px; }
   .comment.desk { border-left-color: var(--accent); }
   .comment .who { font-size: 12px; color: var(--muted); }
   textarea { width: 100%; border: 1px solid var(--line-2); border-radius: 8px; padding: 8px 10px; background: var(--panel); resize: vertical; }
@@ -321,6 +333,48 @@ function blockers(item) {
   return (item.blockedBy || []).map(b => { const other = state.items.find(i => i.id === b); return { key: b, text: other ? other.title : b, resolved: !!other && CLOSED.includes(other.status) }; });
 }
 function openBlockers(item) { return blockers(item).filter(b => !b.resolved); }
+function ago(iso) {
+  const m = (Date.now() - new Date(iso).getTime()) / 60000;
+  return m < 60 ? `${Math.max(1, Math.round(m))}m` : m < 2880 ? `${Math.round(m / 60)}h` : `${Math.round(m / 1440)}d`;
+}
+function isOld(iso, minutes) { return !!iso && (Date.now() - new Date(iso).getTime()) / 60000 > minutes; }
+const OLD_MINUTES = 2 * 1440;
+const SECTION_LABEL = /^(goal|done when|done criteria|goal and done criteria|plan|suggested fix|next step|evidence|verified|done and verified|branch|branches|repo|repo and branch|rules|project rules|rules for this task|git-ignored files|ignored files|files|related|gaps|decisions that apply|kept on purpose|extra findings|open questions|context)\b/i;
+function briefSections(text) {
+  const out = [{ title: "", lines: [] }];
+  let fence = false;
+  for (const line of text.split("\n")) {
+    if (line.trimStart().startsWith("```")) fence = !fence;
+    const h = !fence && (line.match(/^#{1,6}\s+(.*)/) || line.match(/^\*\*([^*]+?):?\*\*:?\s*$/));
+    const label = !fence && !h && line.match(/^([A-Z][A-Za-z ,'/-]{1,60}):\s*(.*)$/);
+    if (h) out.push({ title: h[1].replace(/:$/, "").trim(), lines: [] });
+    else if (label && SECTION_LABEL.test(label[1])) out.push({ title: label[1].trim(), lines: label[2] ? [label[2]] : [] });
+    else out.at(-1).lines.push(line);
+  }
+  return out.map(x => ({ title: x.title, body: x.lines.join("\n").trim() })).filter(x => x.title || x.body);
+}
+function sectionKind(title) {
+  if (/^(goal|done when|done criteria)/i.test(title)) return "glance";
+  if (/^(open questions|waits on|next step and what waits)/i.test(title)) return "questions";
+  if (!title || /^(plan|suggested fix|next step|summary|what)/i.test(title)) return "open";
+  return "closed";
+}
+function commentGroups(comments) {
+  const groups = [];
+  for (const c of comments) {
+    const head = groups.at(-1)?.head;
+    if (["desk", "manager"].includes(c.by) && head?.by === "me") groups.at(-1).replies.push(c);
+    else groups.push({ head: c, replies: [] });
+  }
+  return groups.reverse();
+}
+function threadTitle(id) {
+  for (const list of ["needsYou", "working", "waiting", "snoozed", "unassigned"]) {
+    const hit = (state.threads?.[list] || []).find(x => x.thread === id);
+    if (hit) return hit.title;
+  }
+  return state.items.find(i => i.thread === id)?.title || null;
+}
 function threadState(id) {
   const t = state.threads;
   if (!id || !t) return null;
@@ -355,7 +409,7 @@ function matches(item) {
 function needsList() {
   const snoozed = (state.threads?.snoozed || []).map(z => z.thread);
   const own = state.items.filter(i => i.needs && i.status === "requested" || i.asks && i.status === "started" && !snoozed.includes(i.thread));
-  return [...own.map(i => ({ thread: i.thread, title: i.title, why: i.asks ? i.asks.text : i.needs, pr: i.pr, item: i.id, effort: i.effort })),
+  return [...own.map(i => ({ thread: i.thread, title: i.title, why: i.asks ? i.asks.text : i.needs, at: i.asks?.at, pr: i.pr, item: i.id, effort: i.effort })),
     ...(state.threads?.needsYou || []).filter(n => !own.some(i => i.thread && i.thread === n.thread))];
 }
 
@@ -389,7 +443,7 @@ function threadRow(t, waiting) {
   return el("div", { class: `nrow${waiting ? " waiting" : ""}${t.item ? " link" : ""}`, onclick: t.item ? e => { if (!e.target.closest("a")) openDrawer(t.item); } : null },
     el("div", { class: "t", title: t.title }, isManager(t.thread) && el("span", { class: "chip effort", style: { marginRight: "6px" } }, "manager"), t.title),
     el("div", { class: "w" }, t.until ? `until ${t.until}` : t.why || ""),
-    el("div", { class: "m" }, t.pr && el("a", { href: t.pr, target: "_blank" }, "PR"),
+    el("div", { class: "m" }, t.at && el("span", { class: `chip${isOld(t.at, 60) ? " hot" : ""}`, title: "Asked this long ago" }, ago(t.at)), t.pr && el("a", { href: t.pr, target: "_blank" }, "PR"),
       t.thread && state.threads?.environment && threadLink(t.thread, "open")));
 }
 
@@ -399,7 +453,10 @@ function renderNeeds() {
   if (!t) { wrap.replaceChildren(el("div", { class: "section-title" }, "Needs you"), el("div", { class: "empty-note" }, "No sweep yet. Ask the desk to sweep.")); return; }
   const needs = needsList().filter(n => !ui.effort || (n.effort || "") === (ui.effort === "-" ? "" : ui.effort)), waiting = t.waiting || [], snoozed = t.snoozed || [], unassigned = t.unassigned || [];
   const parts = [el("div", { class: "section-title" }, "Needs you", el("span", { style: { fontWeight: 400, textTransform: "none", letterSpacing: 0 } }, `· sweep ${t.updated}`))];
-  parts.push(needs.length ? el("div", { class: "needs" }, needs.map(n => threadRow(n))) : el("div", { class: "empty-note" }, "Nothing needs you right now."));
+  const fresh = needs.filter(n => !isOld(n.at, OLD_MINUTES)), old = needs.filter(n => isOld(n.at, OLD_MINUTES));
+  parts.push(fresh.length ? el("div", { class: "needs" }, fresh.map(n => threadRow(n))) : el("div", { class: "empty-note" }, "Nothing new needs you."));
+  if (old.length) parts.push(el("div", { class: "section-title" }, "Getting old", el("span", { style: { fontWeight: 400, textTransform: "none", letterSpacing: 0 } }, "· asked more than two days ago")),
+    el("div", { class: "needs" }, old.map(n => threadRow(n))));
   if (waiting.length || snoozed.length || unassigned.length) {
     const det = el("details", { style: { marginBottom: "18px" } }, el("summary", { class: "section-title", style: { cursor: "pointer" } }, `Waiting on others ${waiting.length} · Snoozed ${snoozed.length} · Not in an effort ${unassigned.length}`),
       el("div", { class: "needs", style: { marginTop: "8px" } }, waiting.map(w => threadRow(w, true)), snoozed.map(z => threadRow(z, true)), unassigned.map(u => threadRow(u, true))));
@@ -429,7 +486,7 @@ function proposalRow(p) {
     el("label", { class: "t", title: p.title }, box, " ", p.title),
     el("div", { class: "w" }, `${what}, ${p.why}`, p.state === "approved" && " (applying)", p.error && el("div", { style: { color: "var(--red)" } }, p.error),
       p.body && el("details", { class: "draft" }, el("summary", {}, p.action === "edit" ? "New description" : "Issue text"), Object.assign(el("div", { class: "md" }), { innerHTML: markdown(p.body) }))),
-    el("div", { class: "m" }, link && el("a", { href: link, target: "_blank" }, "open")));
+    el("div", { class: "m" }, isOld(p.at, OLD_MINUTES) && el("span", { class: "chip hot", title: "Proposed this long ago" }, ago(p.at)), link && el("a", { href: link, target: "_blank" }, "open")));
 }
 function renderIncoming() {
   const order = ["needs-you", "new", "waiting"];
@@ -647,7 +704,7 @@ function renderDrawer() {
   const field = (name, list, value) => locked ? (value ? (name === "effort" ? effortTitle(value) : value) : "none") :
     el("select", { onchange: e => post("/api/update", { ids: [item.id], fields: { [name]: e.target.value } }, "Saved") },
       el("option", { value: "" }, "none (desk decides)"), list.map(([v, t]) => el("option", { value: v, selected: v === value }, t)));
-  const textarea = el("textarea", { rows: 3, placeholder: state.listening ? "Comment for the desk. It answers in a minute." : "Comment for the desk. It answers on its next sweep.", onkeydown: e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) commentBtn.click(); } });
+  const textarea = el("textarea", { rows: 2, placeholder: state.listening ? "Comment for the desk. It answers in a minute." : "Comment for the desk. It answers on its next sweep.", onkeydown: e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) commentBtn.click(); } });
   const commentBtn = button("", "Comment", async () => {
     if (!textarea.value.trim()) return;
     await post("/api/comment", { id: item.id, text: textarea.value.trim() }, "Comment added");
@@ -655,6 +712,17 @@ function renderDrawer() {
     textarea.blur();
     renderDrawer();
   });
+  const sections = item.brief ? briefSections(item.brief) : [];
+  const glance = sections.filter(x => sectionKind(x.title) === "glance");
+  const questions = sections.filter(x => sectionKind(x.title) === "questions");
+  const rest = sections.filter(x => !["glance", "questions"].includes(sectionKind(x.title)));
+  const md = text => Object.assign(el("div", { class: "md" }), { innerHTML: markdown(text) });
+  const th = item.status === "started" ? threadState(item.thread) : null;
+  const prs = item.pr ? (item.prs?.length ? item.prs : [item.pr]) : [];
+  const groups = commentGroups(item.comments);
+  const commentEl = c => el("div", { class: `comment${c.by === "me" ? "" : " desk"}` }, el("div", { class: "who" }, `${c.by} · ${c.at.replace("T", " ").slice(0, 16)}`), el("div", {}, c.text));
+  const groupEl = g => el("div", {}, commentEl(g.head), g.replies.length > 0 && el("div", { class: "replies" }, g.replies.map(commentEl)));
+  const showBlockers = blockerEditor && (current.length || ui.blockerEdit === item.id);
   overlay.replaceChildren(el("div", { class: "scrim", onclick: closeOverlay }),
     el("aside", { class: "drawer", "data-id": item.id },
       el("div", { class: "head" },
@@ -665,26 +733,33 @@ function renderDrawer() {
         el("h2", {}, item.title),
         item.summary && el("p", { class: "prose", style: { margin: 0 } }, item.summary)),
       el("div", { class: "body" },
+        el("div", {},
+          el("div", { class: "glance" },
+            item.needs && el("div", { class: "ask" }, el("b", {}, "Needs you: "), item.needs),
+            item.asks && item.status === "started" && el("div", { class: "ask" }, el("b", {}, "Asks you: "), item.asks.text, " ", el("span", { class: `chip${isOld(item.asks.at, 60) ? " hot" : ""}` }, ago(item.asks.at))),
+            !item.asks && th && el("div", {}, el("b", {}, "State: "), `${th.label}${th.why ? ": " + th.why : ""}`),
+            prs.length > 0 && el("div", {}, el("b", {}, prs.length > 1 ? "PRs: " : "PR: "), prs.map((pr, n) => [n ? ", " : "", el("a", { href: pr, target: "_blank" }, pr.replace("https://github.com/", ""))])),
+            item.issue && el("div", {}, el("b", {}, "Issue: "), el("a", { href: item.issue, target: "_blank" }, item.issue.replace("https://github.com/", ""))),
+            glance.map(x => el("div", { class: "glance-sec" }, el("div", { class: "block-title" }, x.title), md(x.body))),
+            textarea, el("div", { style: { marginTop: "6px", display: "flex", justifyContent: "flex-end" } }, commentBtn)),
+          questions.map(x => el("div", { class: "questions" }, el("div", { class: "block-title", style: { marginTop: 0 } }, x.title), md(x.body))),
+          el("div", { class: "block-title" }, item.status === "new" ? "Your note" : "Brief"),
+          !item.brief && el("p", { class: "prose" }, "No brief yet."),
+          rest.map(x => sectionKind(x.title) === "open" ? el("div", {}, x.title && el("h4", { class: "sec" }, x.title), md(x.body))
+            : el("details", { class: "sec" }, el("summary", {}, x.title), md(x.body))),
+          el("div", { class: "block-title" }, `Comments ${item.comments.length || ""}`),
+          groups.slice(0, 3).map(groupEl),
+          groups.length > 3 && el("details", {}, el("summary", { class: "muted" }, `${groups.length - 3} older`), groups.slice(3).map(groupEl)),
+          el("p", { class: "meta" }, `Created ${item.created} by `, item.source?.startsWith("mcp:") ? threadLink(item.source, threadTitle(item.source) || "a thread") : item.source,
+            item.done && ` · finished ${item.done}`, " · ", el("span", { class: "mono" }, item.id))),
         el("dl", { class: "kv" },
           el("dt", {}, "Effort"), el("dd", {}, field("effort", state.efforts.map(e => [e.slug, e.title]), item.effort)),
           el("dt", {}, "Repo"), el("dd", {}, field("repo", state.repos.map(r => [r, r]), item.repo)),
           el("dt", {}, "Kind"), el("dd", {}, item.kind || "not sorted yet"),
-          item.needs && [el("dt", {}, "Needs you"), el("dd", {}, item.needs)],
-          item.asks && item.status === "started" && [el("dt", {}, "Asks you"), el("dd", {}, item.asks.text)],
           item.suggested && item.status === "open" && [el("dt", {}, "Desk pick"), el("dd", {}, item.suggested)],
-          item.status === "started" && threadState(item.thread) && [el("dt", {}, "State"), el("dd", {}, (th => `${th.label}${th.why ? ": " + th.why : ""}`)(threadState(item.thread)))],
-          blockerEditor && [el("dt", { style: { alignSelf: "start", paddingTop: "4px" } }, "Blocked by"), el("dd", {}, blockerEditor)],
-          el("dt", {}, "Created"), el("dd", {}, `${item.created} by ${item.source}`),
-          item.done && [el("dt", {}, "Finished"), el("dd", {}, item.done)],
-          item.thread && [el("dt", {}, "Thread"), el("dd", {}, threadLink(item.thread))],
-          item.pr && [el("dt", {}, "PR"), el("dd", {}, (item.prs?.length ? item.prs : [item.pr]).map(pr => el("div", {}, el("a", { href: pr, target: "_blank", style: { color: "var(--accent)" } }, pr))))],
-          el("dt", {}, "Id"), el("dd", { class: "mono" }, item.id)),
-        el("div", {},
-          el("div", { class: "block-title", style: { marginTop: 0 } }, item.status === "new" ? "Your note" : "Brief"),
-          item.brief ? Object.assign(el("div", { class: "md" }), { innerHTML: markdown(item.brief) }) : el("p", { class: "prose" }, "No brief yet."),
-          el("div", { class: "block-title" }, `Comments ${item.comments.length || ""}`),
-          item.comments.map(c => el("div", { class: `comment${c.by === "desk" ? " desk" : ""}` }, el("div", { class: "who" }, `${c.by} · ${c.at.replace("T", " ")}`), el("div", {}, c.text))),
-          textarea, el("div", { style: { marginTop: "6px", display: "flex", justifyContent: "flex-end" } }, commentBtn))),
+          item.thread && [el("dt", {}, "Thread"), el("dd", {}, threadLink(item.thread, threadTitle(item.thread) || "open thread"))],
+          blockerEditor && [el("dt", { style: { alignSelf: "start", paddingTop: "4px" } }, "Blocked by"),
+            el("dd", {}, showBlockers ? blockerEditor : el("a", { href: "#", onclick: e => { e.preventDefault(); ui.blockerEdit = item.id; renderDrawer(); } }, "add a blocker"))])),
       el("div", { class: "foot" }, actions)));
 }
 

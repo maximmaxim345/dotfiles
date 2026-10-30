@@ -15,7 +15,9 @@ explicit permission, and ask every single time. Permission covers the one
 action that was approved and never carries forward: after a follow-up fix,
 ask again before pushing it. If the user hasn't said yes in their most recent
 message, stop and ask, even mid-task when the next step is obvious. Local
-commits are fine without asking.
+commits are fine without asking. The exceptions are "ship", which covers the
+actions `~/.claude/pr-followup.md` lists, and `/babysit`, which grants the
+actions its skill lists, for the PR it names, until it stops.
 
 Marking a PR draft or ready, editing a description, resolving threads, and
 moving board cards count as posting too. On someone else's PR, push to its head
@@ -334,9 +336,11 @@ These two also apply outside drafts:
 
 Follow `~/.claude/pr-guidelines.md` for PR titles and bodies.
 
+"Open" on its own means `/open-pr`.
+
 Always create with `gh pr create -w` (opens the prefilled browser form, even
 for drafts: tell the user to pick draft in the form). The only exceptions are in
-`/open-pr`: `draft` and `ready` modes, and its fallback when no browser is available. `-w` does
+`/open-pr`: `draft`, `ready` and `babysit` modes, and its fallback when no browser is available. `-w` does
 NOT create the PR, so a missing PR afterward is expected: don't retry without
 `-w`, don't publish it yourself. When `-w` can't open the form (no working `gh`
 or no browser), create a PR only through `/open-pr`, even when asked directly.

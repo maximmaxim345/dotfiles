@@ -19,6 +19,11 @@ To request another Copilot review, run
 `gh pr edit <n> --repo <owner/repo> --add-reviewer @copilot`. This counts as
 posting, so ask first like a push.
 
+"Ship" from me, as the answer to a ship question or on its own, covers all of
+these for the PR at once: push, mark it ready when it's a draft, post the
+replies I approved and resolve their threads, request a Copilot review unless
+I say without, and watch it.
+
 ## In T3 Code
 
 When you have the T3 Code tools (`t3_thread_*`):

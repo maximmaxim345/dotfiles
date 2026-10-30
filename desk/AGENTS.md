@@ -74,7 +74,7 @@ Never delete threads, backlog items or task rows. Done and dropped work only lea
 9. Sort my captures (status `new`, my raw notes in `brief`): turn each into one or more proper items, one per idea, with title, kind, label, repo, effort, summary and brief, status `open`, and the original note quoted in a desk comment. When a capture becomes one item, run `bin/backlog reslug <id>` after giving it its title, fix the effort files it lists, and tell a started thread its brief's new path. Keep a repo or effort I picked, unless my note says I'm unsure of it: then check where the code lives and pick that repo, saying why in the comment. When a note is too unclear to sort, leave it `new` and ask in a comment.
 10. Triage open backlog items: set the repo name and the effort, drop duplicates and items whose fix is already on the default branch (with a comment saying why), and fill in missing briefs. Set `blockedBy` when none of an item can move before another item or an outside event, and remove blockers that no longer hold, also on started items, as "Blockers" says. A blocker that names a date holds until that date: on it, remove the blocker, add a desk comment and list the item in your reply, and resume its thread as "Blockers" says when it was the last one. Mark up to five open items I should do soon with `suggested` (a one-line reason) and remove it from items that no longer fit. In efforts with a manager, leave `suggested` to the manager. Move items into Next only when my note or message asks for it, and put them last, since that column is my order.
 11. Answer new comments on backlog items (`"by": "me"`) with a comment of your own (`"by": "desk"`), and apply what they ask that needs no launch.
-12. Do "Watching", then run `bin/project-sync propose`, which refreshes the proposed moves on the project boards in `watch.json` and prints `candidate <board> <url>` lines for my open PRs and started items' PRs that aren't on a board. Propose each candidate that belongs on the board with `bin/project-sync suggest --board <owner/number> --url <url> --status <status> [--field <Name>=<Value>] --why "<one line>"`, following the board's notes in `watch.json`. Drop open proposals those notes rule out with `bin/project-sync dismiss <id> ...`.
+12. Do "Watching", then "Project boards".
 
 After a sweep, run `bin/desk-wait --refreshed`, since the sweep covers a refresh.
 
@@ -142,7 +142,18 @@ Sorting reads the entry and its news, follows my notes in `watch.json`, and chec
 
 An entry comes back as new when it gets more news. Read only what's new then.
 
-Never post, comment, label, close, assign or move anything on GitHub, and never change a project board outside `bin/project-sync apply`. Drafts only go on the board, where I copy them.
+Never post, comment, label, close, assign or move anything on GitHub, and never change a project board or an issue outside `bin/project-sync apply`. Drafts only go on the board, where I copy them.
+
+## Project boards
+
+The boards in `watch.json` track issues, never PRs. Each board's `backlog` names the repo its issues live in. A large effort or topic is a parent issue there that gives the bigger picture: the goal, what's in and out, and the steps as its sub-issues. A backlog item is one of those sub-issues, or a standalone issue for small work, and its `issue` holds that URL (`bin/backlog issue <id> <url>`). Only parent and standalone issues go on a board.
+
+Run `bin/project-sync propose`. It refreshes the proposed card moves (closed issues to Done, cards of started work to In progress, my In progress cards with no activity for two weeks to Later) and prints:
+- `candidate <board> <url>`: a started item's issue, or its parent, isn't on the board. Propose it with `bin/project-sync suggest --board <owner/number> --url <url> --status <status> [--field <Name>=<Value>] --why "<one line>"`, following the board's notes in `watch.json`.
+- `error <board or id>: ...`: a board or an item's issue couldn't be read. List it in your reply.
+- `noissue <id> <title>`: a started item has no issue. When its work belongs on a board, link an issue that already covers it, or draft one with `bin/project-sync draft --repo <backlog repo> --title "<title>" [--parent <url>] --item <id> [--board <owner/number> --status <status>] --why "<one line>"` and the body on stdin. Draft it as a sub-issue under the effort's parent issue when there is one, without a board, and as a standalone issue on the board otherwise. Write titles and bodies in my voice as `~/.claude/writing-examples.md` shows, following the parent's structure.
+
+When a parent issue's picture changed (a step finished, the plan changed, a step was added), propose its new body with `bin/project-sync edit --url <url> --why "<one line>"` and the body on stdin, changing only what changed. Drop open proposals my notes rule out, and any that add a PR, with `bin/project-sync dismiss <id> ...`. Nothing reaches GitHub until I approve it on the board, which sends `apply`.
 
 ## Blockers
 
@@ -207,6 +218,7 @@ The desk and managers compact themselves. When more than about 20 of your turns 
   "thread": null,
   "pr": null,
   "prs": [],
+  "issue": null,
   "done": null,
   "comments": [],
   "rank": 3,
@@ -215,11 +227,11 @@ The desk and managers compact themselves. When more than about 20 of your turns 
 }
 ```
 
-`kind` is bugfix, feature, review, design, test or docs. `label` is user-visible bug, reachable but rare or theoretical. `status` is new (my unsorted capture from the board), open, next (my priority list, ordered by `rank`), requested (I pressed Start on the board), started, done (its PR merged, or I marked it done) or dropped. `blockedBy` lists item ids or notes on what it waits for, and `suggested` marks a desk pick. The last three are optional. Set `blockedBy` only when none of the item can move. Note a part that waits in a comment, and don't block a started item that waits on reviewers, since its settled thread shows that. `pr` is the PR URL and `prs` lists all of them, the main one first, which `bin/board-threads` fills in from the thread's linked PRs, `done` the date it finished or was dropped, and `archived` the date I cleared it from the board's Done column. `asks` holds the question its thread waits on me for (`text` and `at`), which the thread sets and clears with `bin/backlog ask`, and the desk sets or clears when the thread didn't. Task threads create items with status open, except that `/desk` adopts the thread's own item and may pause, finish or drop it. Managers change the rest. The desk and managers change an item's status only with `bin/backlog status <id> <open|next|started|done|dropped> [--thread <id>] [--pr <url>] --by <desk|manager>`, never by editing the JSON, so the change reaches `state/events.jsonl`. `next` puts it last in Next. The listener ignores the desk's own changes. Add comments with `bin/backlog comment <id> "<text>" --by <desk|manager>`, never by editing the JSON.
+`kind` is bugfix, feature, review, design, test or docs. `label` is user-visible bug, reachable but rare or theoretical. `status` is new (my unsorted capture from the board), open, next (my priority list, ordered by `rank`), requested (I pressed Start on the board), started, done (its PR merged, or I marked it done) or dropped. `blockedBy` lists item ids or notes on what it waits for, and `suggested` marks a desk pick. The last three are optional. Set `blockedBy` only when none of the item can move. Note a part that waits in a comment, and don't block a started item that waits on reviewers, since its settled thread shows that. `issue` is its GitHub issue (see "Project boards"). `pr` is the PR URL and `prs` lists all of them, the main one first, which `bin/board-threads` fills in from the thread's linked PRs, `done` the date it finished or was dropped, and `archived` the date I cleared it from the board's Done column. `asks` holds the question its thread waits on me for (`text` and `at`), which the thread sets and clears with `bin/backlog ask`, and the desk sets or clears when the thread didn't. Task threads create items with status open, except that `/desk` adopts the thread's own item and may pause, finish or drop it. Managers change the rest. Set `needs`, and the `thread` of an item left `requested`, by editing its JSON, since no command sets them. The desk and managers change an item's status only with `bin/backlog status <id> <open|next|started|done|dropped> [--thread <id>] [--pr <url>] --by <desk|manager>`, never by editing the JSON, so the change reaches `state/events.jsonl`. `next` puts it last in Next. The listener ignores the desk's own changes. Add comments with `bin/backlog comment <id> "<text>" --by <desk|manager>`, never by editing the JSON.
 
 ## Effort status files
 
-`efforts/<effort>/status.md` starts with a `Scope:` line naming the repos, labels or topics the effort covers, which "Watching" routes by. Its sections, in this order: Resume here, Tasks (table: thread, repo, branch, PR, state, blocked by), Defaults (model and repos), Open decisions, Log (dated, newest last).
+`efforts/<effort>/status.md` starts with a `Scope:` line naming the repos, labels or topics the effort covers, which "Watching" routes by, and an `Issue:` line with its parent issue when it has one (see "Project boards"). Its sections, in this order: Resume here, Tasks (table: thread, repo, branch, PR, state, blocked by), Defaults (model and repos), Open decisions, Log (dated, newest last).
 
 ## Board
 

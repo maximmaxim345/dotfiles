@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Add, list, adopt, move, rename, comment on, unblock or set the status of backlog items, or show a question."""
+"""Add, list, adopt, move, rename, comment on, unblock, link or set the status of backlog items, or show a question."""
 
 from __future__ import annotations
 
@@ -197,6 +197,15 @@ def unblock(args: argparse.Namespace) -> None:
     write_json(path, item)
 
 
+def link_issue(args: argparse.Namespace) -> None:
+    path = BACKLOG / f"{args.id}.json"
+    if not path.exists():
+        sys.exit(f"no item {args.id}")
+    item = json.loads(path.read_text())
+    item["issue"] = args.url or None
+    write_json(path, item)
+
+
 def reslug(args: argparse.Namespace) -> None:
     old_path = BACKLOG / f"{args.id}.json"
     if not old_path.exists():
@@ -339,6 +348,11 @@ def main() -> None:
     p_unblock.add_argument("id")
     p_unblock.add_argument("blocker", help="the blocker exactly as the item lists it")
     p_unblock.set_defaults(func=unblock)
+
+    p_issue = sub.add_parser("issue", help="link an item to its GitHub issue, or unlink it with an empty url")
+    p_issue.add_argument("id")
+    p_issue.add_argument("url")
+    p_issue.set_defaults(func=link_issue)
 
     p_reslug = sub.add_parser("reslug", help="rename an item's id and file after its title and update references to it")
     p_reslug.add_argument("id")

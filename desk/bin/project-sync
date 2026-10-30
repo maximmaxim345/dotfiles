@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Propose changes to the GitHub project boards in ~/desk/watch.json and apply the ones I approved on the desk board."""
+"""Propose changes to the GitHub project boards and backlog issues in ~/desk/watch.json, and apply the ones I approved."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 DESK = Path.home() / "desk"
@@ -23,11 +24,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
 from server import locked, write_json  # noqa: E402
 
 
-def gh(*args: str) -> object:
+def gh_text(*args: str) -> str:
     result = subprocess.run(["gh", *args], capture_output=True, text=True)
     if result.returncode:
         raise RuntimeError(result.stderr.strip() or f"gh exit {result.returncode}")
-    return json.loads(result.stdout or "null")
+    return result.stdout
+
+
+def gh(*args: str) -> object:
+    return json.loads(gh_text(*args) or "null")
 
 
 def boards() -> list[str]:
@@ -47,8 +52,9 @@ def option(field: dict, name: str) -> dict:
     return found
 
 
-def proposal(board: str, action: str, url: str, title: str, to: str, why: str, **extra: object) -> dict:
-    key = hashlib.sha1(f"{board} {action} {url} {to}".encode()).hexdigest()[:10]
+def proposal(board: str, action: str, url: str | None, title: str, to: str | None, why: str, **extra: object) -> dict:
+    body = f" {extra['body']}" if extra.get("body") else ""
+    key = hashlib.sha1(f"{board} {action} {url or title} {to}{body}".encode()).hexdigest()[:10]
     return {
         "id": key,
         "board": board,
@@ -58,6 +64,7 @@ def proposal(board: str, action: str, url: str, title: str, to: str, why: str, *
         "to": to,
         "why": why,
         "state": "open",
+        "at": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
         **extra,
     }
 
@@ -69,21 +76,38 @@ def content_state(url: str, cache: dict) -> dict:
     return cache[url]
 
 
-def active_urls() -> set[str]:
-    urls = set()
-    for path in BACKLOG.glob("*.json"):
+def html_url(api_url: str) -> str:
+    return api_url.replace("https://api.github.com/repos/", "https://github.com/")
+
+
+def active_issues(cache: dict) -> tuple[set[str], set[str], list[dict]]:
+    """Return the issues started items work on with their parents, the ones a board card stands for, and items without one."""
+    active, top, missing = set(), set(), []
+    for path in sorted(BACKLOG.glob("*.json")):
         item = json.loads(path.read_text())
-        if item["status"] == "started":
-            urls.update(u for u in [item.get("pr"), *(item.get("prs") or [])] if u)
-    return urls
+        if item["status"] != "started":
+            continue
+        if not item.get("issue"):
+            missing.append(item)
+            continue
+        try:
+            parent = content_state(item["issue"], cache).get("parent_issue_url")
+        except (RuntimeError, AttributeError) as err:
+            print(f"error {item['id']}: can't read its issue {item['issue']}: {err}")
+            continue
+        active.add(item["issue"])
+        if parent:
+            active.add(html_url(parent))
+        top.add(html_url(parent) if parent else item["issue"])
+    return active, top, missing
 
 
-def propose_board(board: str, me: str, active: set[str]) -> tuple[list[dict], list[str]]:
+def propose_board(board: str, me: str, active: set[str], top: set[str], cache: dict) -> tuple[list[dict], list[str]]:
     owner, number = board.split("/")
     status_field = fields(board)["status"]
     names = {o["name"].lower(): o["name"] for o in status_field["options"]}
     items = gh("project", "item-list", number, "--owner", owner, "--format", "json", "--limit", "500")["items"]
-    found, cache, on_board = [], {}, set()
+    found, on_board = [], set()
     now = datetime.datetime.now(datetime.timezone.utc)
     for item in items:
         content = item.get("content") or {}
@@ -107,26 +131,30 @@ def propose_board(board: str, me: str, active: set[str]) -> tuple[list[dict], li
                 found.append(
                     proposal(board, "move", url, item["title"], names["later"], f"no activity for {idle} days", **common)
                 )
-    mine = gh("search", "prs", "--author", "@me", "--state", "open", "--owner", owner, "--json", "url", "--limit", "100")
-    candidates = sorted(({p["url"] for p in mine} | {u for u in active if f"github.com/{owner}/" in u}) - on_board)
+    candidates = sorted({u for u in top if f"github.com/{owner}/" in u} - on_board)
     return found, candidates
 
 
 def propose(args: argparse.Namespace) -> None:
     me = gh("api", "user")["login"]
-    active = active_urls()
+    cache: dict = {}
+    active, top, missing = active_issues(cache)
     fresh, candidates = [], {}
     for board in boards():
         try:
-            found, candidates[board] = propose_board(board, me, active)
+            found, candidates[board] = propose_board(board, me, active, top, cache)
         except (RuntimeError, KeyError) as err:
             print(f"error {board}: {err}")
             continue
         fresh += found
     with locked(PROPOSALS):
         old = {p["id"]: p for p in json.loads(PROPOSALS.read_text())} if PROPOSALS.exists() else {}
-        kept = [p for p in old.values() if p["state"] != "open" or p["action"] == "add"]
-        kept += [p for p in fresh if p["id"] not in old or old[p["id"]]["state"] == "open"]
+        kept = [p for p in old.values() if p["state"] != "open" or p["action"] != "move"]
+        kept += [
+            {**p, "at": old.get(p["id"], p).get("at", p["at"])}
+            for p in fresh
+            if p["id"] not in old or old[p["id"]]["state"] == "open"
+        ]
         write_json(PROPOSALS, kept)
     for p in kept:
         if p["state"] in ("open", "approved", "failed"):
@@ -134,25 +162,56 @@ def propose(args: argparse.Namespace) -> None:
     for board, urls in candidates.items():
         for url in urls:
             print(f"candidate {board} {url}")
+    for item in missing:
+        print(f"noissue {item['id']} {item['title']}")
 
 
-def suggest(args: argparse.Namespace) -> None:
-    if args.board not in boards():
-        sys.exit(f"unknown board {args.board}, use one of: {', '.join(boards())}")
-    board_fields = fields(args.board)
-    extra = dict(f.split("=", 1) for f in args.field or [])
+def checked_fields(board: str, status: str, field: list[str] | None) -> dict[str, str]:
+    if board not in boards():
+        sys.exit(f"unknown board {board}, use one of: {', '.join(boards())}")
+    board_fields = fields(board)
+    extra = dict(f.split("=", 1) for f in field or [])
     try:
-        for name, value in {"status": args.status, **extra}.items():
+        for name, value in {"status": status, **extra}.items():
             option(board_fields[name.lower()], value)
     except (KeyError, ValueError) as err:
-        sys.exit(f"not a field or option of {args.board}: {err}")
-    issue = content_state(args.url, {})
-    new = proposal(args.board, "add", args.url, issue["title"], args.status, args.why, fields=extra)
+        sys.exit(f"not a field or option of {board}: {err}")
+    return extra
+
+
+def save(new: dict) -> None:
     with locked(PROPOSALS):
         old = json.loads(PROPOSALS.read_text()) if PROPOSALS.exists() else []
         if all(p["id"] != new["id"] for p in old):
+            for p in old:
+                if new["action"] == "edit" and p["action"] == "edit" and p["url"] == new["url"] and p["state"] == "open":
+                    p["state"] = "dismissed"
             write_json(PROPOSALS, [*old, new])
     print(new["id"])
+
+
+def suggest(args: argparse.Namespace) -> None:
+    extra = checked_fields(args.board, args.status, args.field)
+    issue = content_state(args.url, {})
+    save(proposal(args.board, "add", args.url, issue["title"], args.status, args.why, fields=extra))
+
+
+def draft(args: argparse.Namespace) -> None:
+    if bool(args.board) != bool(args.status):
+        sys.exit("--board and --status go together")
+    if args.parent and not re.match(r"https://github\.com/[^/]+/[^/]+/issues/\d+$", args.parent):
+        sys.exit(f"--parent must be an issue URL, not {args.parent}")
+    if args.item and not (BACKLOG / f"{args.item}.json").exists():
+        sys.exit(f"no backlog item {args.item}")
+    extra = checked_fields(args.board, args.status, args.field) if args.board else {}
+    body = sys.stdin.read().strip()
+    found = {"repo": args.repo, "body": body, "parent": args.parent, "backlog": args.item, "fields": extra}
+    save(proposal(args.board or "", "create", None, args.title, args.status, args.why, **found))
+
+
+def edit(args: argparse.Namespace) -> None:
+    issue = content_state(args.url, {})
+    save(proposal("", "edit", args.url, issue["title"], None, args.why, body=sys.stdin.read().strip()))
 
 
 def dismiss(args: argparse.Namespace) -> None:
@@ -180,23 +239,52 @@ def set_field(project_id: str, item: str, field: dict, value: str) -> None:
     )
 
 
+def body_file(text: str) -> str:
+    with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as f:
+        f.write(text + "\n")
+    return f.name
+
+
+def create_issue(p: dict) -> None:
+    """Create the issue once, recording each step on the proposal so a retry skips what already happened."""
+    if not p.get("url"):
+        p["url"] = gh_text(
+            "issue", "create", "--repo", p["repo"], "--title", p["title"], "--body-file", body_file(p["body"])
+        ).strip()
+    if p.get("parent") and not p.get("linked"):
+        owner, repo, number = re.match(r"https://github\.com/([^/]+)/([^/]+)/issues/(\d+)", p["parent"]).groups()
+        sub_id = content_state(p["url"], {})["id"]
+        gh_text("api", "-X", "POST", f"repos/{owner}/{repo}/issues/{number}/sub_issues", "-F", f"sub_issue_id={sub_id}")
+        p["linked"] = True
+    if p.get("backlog"):
+        path = BACKLOG / f"{p['backlog']}.json"
+        item = json.loads(path.read_text())
+        item["issue"] = p["url"]
+        write_json(path, item)
+
+
 def apply(args: argparse.Namespace) -> None:
     with locked(PROPOSALS):
         proposals = json.loads(PROPOSALS.read_text()) if PROPOSALS.exists() else []
         for p in (p for p in proposals if p["state"] == "approved"):
-            owner, number = p["board"].split("/")
             try:
-                project_id = gh("project", "view", number, "--owner", owner, "--format", "json")["id"]
-                board_fields = fields(p["board"])
-                item = p.get("item")
-                if p["action"] == "add":
-                    item = gh("project", "item-add", number, "--owner", owner, "--url", p["url"], "--format", "json")["id"]
-                set_field(project_id, item, board_fields["status"], p["to"])
-                for name, value in (p.get("fields") or {}).items():
-                    set_field(project_id, item, board_fields[name.lower()], value)
+                if p["action"] == "create":
+                    create_issue(p)
+                elif p["action"] == "edit":
+                    gh_text("issue", "edit", p["url"], "--body-file", body_file(p["body"]))
+                if p["board"] and p["to"]:
+                    owner, number = p["board"].split("/")
+                    project_id = gh("project", "view", number, "--owner", owner, "--format", "json")["id"]
+                    board_fields = fields(p["board"])
+                    item = p.get("item")
+                    if p["action"] in ("add", "create"):
+                        item = gh("project", "item-add", number, "--owner", owner, "--url", p["url"], "--format", "json")["id"]
+                    set_field(project_id, item, board_fields["status"], p["to"])
+                    for name, value in (p.get("fields") or {}).items():
+                        set_field(project_id, item, board_fields[name.lower()], value)
                 p["state"] = "applied"
-                print(f"applied {p['id']} {p['board']} {p['action']} {p['url']} to {p['to']}")
-            except (RuntimeError, ValueError, KeyError) as err:
+                print(f"applied {p['id']} {p['board'] or '-'} {p['action']} {p['url']} to {p['to'] or '-'}")
+            except (RuntimeError, ValueError, KeyError, OSError) as err:
                 p["state"], p["error"] = "failed", str(err)
                 print(f"failed {p['id']} {p['url']}: {p['error']}")
         write_json(PROPOSALS, proposals)
@@ -213,6 +301,22 @@ def main() -> None:
     p_suggest.add_argument("--field", action="append", help="another single-select field as Name=Value, repeatable")
     p_suggest.add_argument("--why", required=True, help="one line")
     p_suggest.set_defaults(func=suggest)
+    p_draft = sub.add_parser(
+        "draft", help="propose a new issue, read its body from stdin, optionally as a sub-issue or on a board"
+    )
+    p_draft.add_argument("--repo", required=True, help="owner/repo, the board's backlog repo")
+    p_draft.add_argument("--title", required=True)
+    p_draft.add_argument("--parent", help="the parent issue URL, to file it as a sub-issue")
+    p_draft.add_argument("--item", help="the backlog item to link the new issue to")
+    p_draft.add_argument("--board", help="owner/number, to add it to a board")
+    p_draft.add_argument("--status", help="its status on the board")
+    p_draft.add_argument("--field", action="append", help="another single-select field as Name=Value, repeatable")
+    p_draft.add_argument("--why", required=True, help="one line")
+    p_draft.set_defaults(func=draft)
+    p_edit = sub.add_parser("edit", help="propose a new body for an issue, read from stdin")
+    p_edit.add_argument("--url", required=True)
+    p_edit.add_argument("--why", required=True, help="one line")
+    p_edit.set_defaults(func=edit)
     p_dismiss = sub.add_parser("dismiss", help="drop open proposals that my notes in watch.json rule out")
     p_dismiss.add_argument("ids", nargs="+")
     p_dismiss.set_defaults(func=dismiss)

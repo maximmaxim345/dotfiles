@@ -422,11 +422,14 @@ function incomingRow(e) {
 }
 function proposalRow(p) {
   const box = el("input", { type: "checkbox", checked: ui.picked.has(p.id), disabled: p.state === "approved", onchange: ev => { ev.target.checked ? ui.picked.add(p.id) : ui.picked.delete(p.id); } });
-  const what = p.action === "add" ? `add as ${p.to}` : `${p.from || "no status"} → ${p.to}`;
+  const what = { add: `${p.board}: add as ${p.to}`, move: `${p.board}: ${p.from || "no status"} → ${p.to}`, edit: "new description",
+    create: `new issue in ${p.repo}${p.parent ? ` under #${p.parent.split("/").pop()}` : ""}${p.board && p.to ? `, on ${p.board} as ${p.to}` : ""}` }[p.action];
+  const link = p.url || p.parent;
   return el("div", { class: "nrow waiting" },
     el("label", { class: "t", title: p.title }, box, " ", p.title),
-    el("div", { class: "w" }, `${p.board}: ${what}, ${p.why}`, p.state === "approved" && " (applying)", p.error && el("div", { style: { color: "var(--red)" } }, p.error)),
-    el("div", { class: "m" }, el("a", { href: p.url, target: "_blank" }, "open")));
+    el("div", { class: "w" }, `${what}, ${p.why}`, p.state === "approved" && " (applying)", p.error && el("div", { style: { color: "var(--red)" } }, p.error),
+      p.body && el("details", { class: "draft" }, el("summary", {}, p.action === "edit" ? "New description" : "Issue text"), Object.assign(el("div", { class: "md" }), { innerHTML: markdown(p.body) }))),
+    el("div", { class: "m" }, link && el("a", { href: link, target: "_blank" }, "open")));
 }
 function renderIncoming() {
   const order = ["needs-you", "new", "waiting"];

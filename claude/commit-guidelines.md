@@ -4,7 +4,7 @@
 
 The user may have modified files since your last interaction. Base the commit only on the actual diff, not conversation context.
 
-1. If `git diff --staged` is empty, stage changes with `git add -A`
+1. If `git diff --staged` is empty, stage changes with `git add -A`, then unstage review results files (`review-*.md` at the checkout root) with `git reset -q -- 'review-*.md'`
 2. Run `git diff --staged` and read it. Verify your assumptions about the change set against the actual diff
 3. Compose a message following the rules below
 4. Commit with `git commit -m "..."`

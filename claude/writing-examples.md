@@ -24,8 +24,9 @@ the situation.
 - First drafts of comments, replies and messages for other people are one or
   two sentences. PR descriptions follow the length rules in
   `~/.claude/pr-guidelines.md`. Show one version.
-- Show each draft (title, description, reply, message) in its own fenced code
-  block so I can copy it. Put links I may want to open outside the block.
+- Show each draft (title, description, reply, message) as formatted text in
+  chat, under a short label and ended by a horizontal rule, so I see it as it
+  will render. Use a fenced code block only when I ask for one to copy.
 - Before showing a draft, check it against this list and the PR rules in
   `~/.claude/pr-guidelines.md` (length, a title that claims no more than the
   change does) and fix what fails.

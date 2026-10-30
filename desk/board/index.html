@@ -6,11 +6,12 @@
 <title>Desk</title>
 <style>
   :root {
+    color-scheme: light dark;
     --bg: #faf9f5; --panel: #ffffff; --sunk: #f0eee6; --ink: #1f1e1d; --ink-2: #3d3d3a; --muted: #87867f;
     --line: #e8e6dc; --line-2: #d8d5c8; --accent: #c96442; --accent-ink: #ffffff; --accent-soft: #f5e3da;
     --red: #c4473a; --amber: #c08532; --gray: #a3a198; --green: #5f8a4e; --blue: #4a78b5; --violet: #8a6bb8;
     --shadow: 0 1px 2px rgba(31,30,29,.06), 0 2px 8px rgba(31,30,29,.04);
-    --shadow-lg: 0 12px 40px rgba(31,30,29,.18);
+    --shadow-lg: 0 12px 40px rgba(31,30,29,.18); --scrim: rgba(20,20,19,.28);
     --radius: 10px; --font: ui-sans-serif, -apple-system, "SF Pro Text", system-ui, sans-serif;
     --mono: ui-monospace, "SF Mono", Menlo, monospace;
   }
@@ -18,14 +19,16 @@
     :root {
       --bg: #1c1b19; --panel: #262624; --sunk: #222120; --ink: #f2f0e8; --ink-2: #d6d3c8; --muted: #9a978d;
       --line: #34332f; --line-2: #45433e; --accent: #d97757; --accent-ink: #1c1b19; --accent-soft: #3a2a23;
-      --shadow: 0 1px 2px rgba(0,0,0,.3); --shadow-lg: 0 12px 40px rgba(0,0,0,.5);
+      --shadow: 0 1px 2px rgba(0,0,0,.3); --shadow-lg: 0 12px 40px rgba(0,0,0,.5); --scrim: rgba(0,0,0,.6);
     }
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 var(--font); -webkit-font-smoothing: antialiased; }
   button, input, select, textarea { font: inherit; color: inherit; }
   button { cursor: pointer; }
-  .btn { border: 1px solid var(--line-2); background: var(--panel); border-radius: 8px; padding: 6px 12px; line-height: 1.2; }
+  a { color: var(--accent); }
+  input[type=checkbox] { accent-color: var(--accent); }
+  .btn { border: 1px solid var(--line-2); background: var(--panel); border-radius: 8px; padding: 6px 12px; line-height: 1.2; white-space: nowrap; }
   .btn:hover { border-color: var(--muted); }
   .btn:disabled { opacity: .45; cursor: default; }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
@@ -41,38 +44,47 @@
   .top { display: flex; align-items: center; gap: 12px; padding: 12px 20px; }
   .brand { display: flex; align-items: center; gap: 8px; font-weight: 650; font-size: 16px; letter-spacing: -.01em; }
   .brand .mark { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); display: grid; place-items: center; color: var(--accent-ink); font-size: 13px; }
-  .stats { display: flex; gap: 6px; margin-left: 8px; }
+  .stats { display: flex; gap: 6px; margin-left: 8px; flex-wrap: wrap; min-width: 0; }
   .stat { font-size: 12px; color: var(--muted); padding: 3px 8px; border-radius: 999px; background: var(--sunk); white-space: nowrap; }
   .stat b { color: var(--ink); font-weight: 600; }
   .stat.hot { background: var(--accent-soft); color: var(--accent); }
   .stat.hot b { color: var(--accent); }
+  .stat.jump { cursor: pointer; }
+  .stat.jump:hover { filter: brightness(.95); }
+  #needsWrap, #incomingWrap, #board { scroll-margin-top: 110px; }
   .grow { flex: 1; }
   .search { position: relative; }
-  .search input { width: 240px; padding-left: 30px; }
+  .search input { width: 220px; padding-left: 30px; }
   .search svg { position: absolute; left: 9px; top: 50%; translate: 0 -50%; color: var(--muted); }
   .filters { display: flex; gap: 8px; align-items: center; padding: 0 20px 12px; flex-wrap: wrap; }
   .filters label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
   .filters select { padding: 4px 8px; font-size: 13px; }
 
   main { padding: 16px 20px 120px; }
+  .section-title .toggle { cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
   .section-title { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
   .needs { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 20px; }
-  .nrow { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) 5em; grid-template-areas: "t w m"; gap: 2px 14px; align-items: baseline; padding: 6px 12px; border-left: 3px solid var(--accent); font-size: 13px; }
+  .nrow { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) 7.5em; grid-template-areas: "t w m"; gap: 2px 14px; align-items: baseline; padding: 6px 12px; border-left: 3px solid var(--accent); font-size: 13px; }
   .nrow + .nrow { border-top: 1px solid var(--line); }
   .nrow.waiting { border-left-color: var(--gray); }
   .nrow.link { cursor: pointer; }
   .nrow.link:hover { background: var(--sunk); }
   .nrow .t { grid-area: t; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .nrow .w { grid-area: w; color: var(--ink-2); }
+  .nrow .eff { font-weight: 400; color: var(--muted); margin-left: 8px; font-size: 12px; }
   .nrow .m { grid-area: m; display: flex; justify-content: flex-end; gap: 10px; font-size: 12px; white-space: nowrap; }
   .nrow .m a { color: var(--accent); font-family: var(--font); }
   .nrow .draft { margin-top: 4px; }
   .nrow .draft pre { white-space: pre-wrap; font-family: var(--font); font-size: 12px; background: var(--sunk); border-radius: 6px; padding: 6px 8px; margin: 4px 0; }
-  .nrow .act { color: var(--ink); font-weight: 600; }
+  .nrow .act { color: var(--ink); }
+  .nrow.group { font-weight: 600; font-size: 12px; color: var(--muted); background: var(--sunk); border-left-color: transparent; padding: 4px 12px; }
   .empty-note { color: var(--muted); font-size: 13px; padding: 10px 0 18px; }
 
-  #board { overflow-x: auto; }
-  .legend { display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: center; padding: 0 4px 8px; }
+  #board { overflow-x: clip; }
+  .legend { display: grid; gap: 10px; align-items: center; padding: 8px 0; position: sticky; top: var(--head-h, 0px); z-index: 10; background: var(--bg); }
+  .legend .colhead { padding: 0 6px; min-width: 0; }
+  .legend .colhead.narrow { justify-content: center; gap: 3px; flex-direction: column; }
+  .legend .colhead.narrow .name { display: none; }
   .cols { display: grid; gap: 10px; }
   .colhead { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
   .colhead .n { font-weight: 500; color: var(--muted); font-size: 12px; }
@@ -83,6 +95,8 @@
   .cellhead .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
   .cell.empty { padding: 8px 0; align-items: center; }
   .cell.empty .cellhead { writing-mode: vertical-rl; padding: 0; color: var(--muted); font-weight: 500; white-space: nowrap; }
+  .cell.blank { background: color-mix(in srgb, var(--sunk) 50%, transparent); }
+  .cell.blank .cellhead { color: var(--muted); font-weight: 500; }
   .lane { margin-bottom: 14px; }
   .lanehead { display: flex; align-items: center; gap: 8px; padding: 8px 4px; cursor: pointer; user-select: none; border-top: 1px solid var(--line); }
   .lanehead .chev { transition: rotate .15s; color: var(--muted); }
@@ -106,6 +120,8 @@
   .card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
   .card.active { border-color: var(--accent); }
   .card.dragging { opacity: .4; }
+  .cell[data-col=done] .card { opacity: .7; }
+  .cell[data-col=done] .card:hover { opacity: 1; }
   .card .bar { position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; }
   .card .title { font-size: 13px; font-weight: 550; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .card .meta { display: flex; gap: 5px; align-items: center; margin-top: 6px; flex-wrap: wrap; font-size: 11px; color: var(--muted); }
@@ -125,14 +141,14 @@
   .card:hover .check, .card.selected .check { display: grid; }
   .card.selected .check { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 
-  .bulk { position: fixed; left: 50%; bottom: 20px; translate: -50% 0; z-index: 30; max-width: calc(100% - 16px); flex-wrap: wrap; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 8px 8px 8px 16px; display: flex; gap: 6px; align-items: center; box-shadow: var(--shadow-lg); }
+  .bulk { position: fixed; left: 50%; bottom: 20px; translate: -50% 0; z-index: 30; width: max-content; max-width: calc(100vw - 16px); flex-wrap: wrap; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 8px 8px 8px 16px; display: flex; gap: 6px; align-items: center; box-shadow: var(--shadow-lg); }
   .bulk .btn { background: transparent; border-color: color-mix(in srgb, var(--bg) 25%, transparent); color: var(--bg); padding: 5px 10px; }
   .bulk .btn:hover { background: color-mix(in srgb, var(--bg) 12%, transparent); }
   .bulk select { background: transparent; color: var(--bg); border-color: color-mix(in srgb, var(--bg) 25%, transparent); padding: 5px 8px; }
   .bulk select option { color: var(--ink); background: var(--panel); }
   .bulk .count { font-weight: 600; margin-right: 6px; }
 
-  .scrim { position: fixed; inset: 0; background: rgba(20,20,19,.28); z-index: 40; }
+  .scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 40; }
   .drawer { position: fixed; top: 4vh; left: 50%; translate: -50% 0; width: min(1200px, calc(100% - 48px)); height: 92vh; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; z-index: 41; display: flex; flex-direction: column; box-shadow: var(--shadow-lg); }
   .drawer .head { padding: 18px 20px 12px; border-bottom: 1px solid var(--line); }
   .drawer h2 { font-size: 17px; line-height: 1.35; margin: 6px 0 10px; letter-spacing: -.01em; }
@@ -150,13 +166,13 @@
   .md :is(p, ul, ol, pre) { margin: 0 0 10px; }
   .md :is(ul, ol) { padding-left: 22px; }
   .md code { font: 12px var(--mono); background: var(--sunk); padding: 1px 4px; border-radius: 4px; }
-  .md pre { background: var(--sunk); padding: 8px 10px; border-radius: 8px; overflow: auto; }
+  .md pre { background: var(--sunk); padding: 8px 10px; border-radius: 8px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
   .md pre code { padding: 0; }
   .md a { color: var(--accent); }
   .comment { border-left: 2px solid var(--line-2); padding: 2px 0 2px 10px; margin: 8px 0; font-size: 13px; }
   .replies { margin-left: 18px; }
   .glance { background: var(--sunk); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; display: grid; gap: 6px; margin-bottom: 14px; }
-  .glance .ask { font-size: 14px; }
+  .glance .ask { font-size: 14px; border-left: 3px solid var(--accent); padding-left: 10px; margin-left: -14px; padding-block: 2px; }
   .glance .block-title { margin: 6px 0 2px; }
   .glance .md :is(p, ul, ol) { margin-bottom: 4px; }
   .questions { border: 1px solid var(--accent); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; }
@@ -172,12 +188,14 @@
   .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--sunk); }
   .pill .dot { width: 7px; height: 7px; border-radius: 50%; }
   .mono { font-family: var(--mono); font-size: 12px; }
+  :is(.card .title, .nrow .t, .drawer h2) code { font: .92em var(--mono); background: var(--sunk); padding: 0 3px; border-radius: 4px; }
 
   .modal { position: fixed; z-index: 41; left: 50%; top: 12vh; translate: -50% 0; width: min(640px, calc(100% - 32px)); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-lg); padding: 18px; }
   .modal h3 { margin: 0 0 4px; font-size: 16px; }
   .modal p { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
   .modal textarea { min-height: 180px; font-size: 14px; }
   .modal .row { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+  .modal .row select { flex: 1 1 200px; min-width: 0; }
   .toast { position: fixed; bottom: 20px; right: 20px; z-index: 50; background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px; box-shadow: var(--shadow-lg); }
   [hidden] { display: none !important; }
 
@@ -199,6 +217,10 @@
     .cell { flex: 1 1 100%; min-height: 0; }
     .cell.empty { flex: 0 0 auto; order: 1; padding: 4px 10px; }
     .cell.empty .cellhead { writing-mode: horizontal-tb; }
+    .cell.blank { flex: 0 0 auto; order: 1; padding: 4px 10px; min-height: 0; background: var(--sunk); }
+    .legend { display: flex; flex-wrap: wrap; gap: 4px 18px; position: static; }
+    .legend .colhead.narrow { flex-direction: row; }
+    .legend .colhead.narrow .name { display: inline; }
   }
 </style>
 </head>
@@ -314,6 +336,7 @@ function markdown(text) {
   flush();
   return out.join("");
 }
+function codeText(text) { return text.split(/`([^`]+)`/).map((part, i) => i % 2 ? el("code", {}, part) : part); }
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2200); }
 async function api(path, body) {
   const res = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
@@ -416,10 +439,11 @@ function needsList() {
 function renderStats() {
   const count = s => state.items.filter(i => s.includes(i.status)).length;
   const needs = needsList().length;
-  const stat = (n, label, hot) => el("span", { class: `stat${hot && n ? " hot" : ""}` }, el("b", {}, String(n)), ` ${label}`);
+  const stat = (n, label, hot, target) => n ? el("span", { class: `stat${hot ? " hot" : ""}${target ? " jump" : ""}`, onclick: target ? () => $(target).scrollIntoView({ behavior: "smooth" }) : null }, el("b", {}, String(n)), ` ${label}`) : null;
   const listen = el("span", { class: "stat", title: state.listening ? "The desk reacts to Start, captures, comments and pauses within a minute." : "Run ./dotfiles.py install desk_listener in ~/dotfiles. Until then the desk only acts when you ask it." },
     el("span", { class: "dot", style: { background: state.listening ? "var(--green)" : "var(--gray)" } }), state.listening ? "desk listening" : "desk not listening");
-  $("stats").replaceChildren(stat(needs, "need you", true), stat((state.incoming || []).filter(e => e.status !== "waiting").length, "incoming", true), stat(count(["new"]), "inbox"), stat(count(["next"]), "next"), stat(count(["requested"]), "starting", true), stat(state.items.filter(i => i.status === "started" && columnOf(i) === "started").length, "in progress"), stat(state.items.filter(i => columnOf(i) === "review").length, "in review"), listen);
+  $("stats").replaceChildren(...[stat(needs, "need you", true, "needsWrap"), stat((state.incoming || []).filter(e => e.status !== "waiting").length, "incoming", true, "incomingWrap"), stat(count(["new"]), "inbox"), stat(count(["next"]), "next"), stat(count(["requested"]), "starting", true), stat(state.items.filter(i => i.status === "started" && columnOf(i) === "started").length, "in progress"), stat(state.items.filter(i => columnOf(i) === "review").length, "in review"), listen].filter(Boolean));
+  $("stats").prepend(...(needs ? [] : [el("span", { class: "stat" }, "nothing needs you")]));
 }
 
 function renderFilters() {
@@ -434,14 +458,15 @@ function renderFilters() {
 
 function threadLink(id, text) {
   const env = state.threads?.environment;
-  return env ? el("a", { class: "mono", href: `t3code://threads/${encodeURIComponent(env)}/${encodeURIComponent(id)}`, title: "Open in T3 Code", style: { color: "var(--accent)" } }, text || id) : el("span", { class: "mono" }, text || id);
+  return env ? el("a", { class: text ? "" : "mono", href: `t3code://threads/${encodeURIComponent(env)}/${encodeURIComponent(id)}`, title: "Open in T3 Code", style: { color: "var(--accent)" } }, text || id) : el("span", { class: "mono" }, text || id);
 }
 function managerOf(effort) { return state.threads?.managers?.[effort] || null; }
 function isManager(id) { return !!id && Object.values(state.threads?.managers || {}).includes(id); }
 function isManagerItem(item) { return !!item.move?.manager || isManager(item.thread); }
 function threadRow(t, waiting) {
   return el("div", { class: `nrow${waiting ? " waiting" : ""}${t.item ? " link" : ""}`, onclick: t.item ? e => { if (!e.target.closest("a")) openDrawer(t.item); } : null },
-    el("div", { class: "t", title: t.title }, isManager(t.thread) && el("span", { class: "chip effort", style: { marginRight: "6px" } }, "manager"), t.title),
+    el("div", { class: "t", title: t.title }, isManager(t.thread) && el("span", { class: "chip effort", style: { marginRight: "6px" } }, "manager"), codeText(t.title),
+      !ui.effort && t.effort && !isManager(t.thread) && el("span", { class: "eff" }, effortTitle(t.effort))),
     el("div", { class: "w" }, t.until ? `until ${t.until}` : t.why || ""),
     el("div", { class: "m" }, t.at && el("span", { class: `chip${isOld(t.at, 60) ? " hot" : ""}`, title: "Asked this long ago" }, ago(t.at)), t.pr && el("a", { href: t.pr, target: "_blank" }, "PR"),
       t.thread && state.threads?.environment && threadLink(t.thread, "open")));
@@ -478,12 +503,12 @@ function incomingRow(e) {
       el("a", { href: "#", title: "Hide it until it gets news", onclick: ev => { ev.preventDefault(); post("/api/incoming/dismiss", { url: e.url }, "Hidden"); } }, "hide")));
 }
 function proposalRow(p) {
-  const box = el("input", { type: "checkbox", checked: ui.picked.has(p.id), disabled: p.state === "approved", onchange: ev => { ev.target.checked ? ui.picked.add(p.id) : ui.picked.delete(p.id); } });
+  const box = el("input", { type: "checkbox", checked: ui.picked.has(p.id), disabled: p.state === "approved", onchange: ev => { ev.target.checked ? ui.picked.add(p.id) : ui.picked.delete(p.id); renderIncoming(); } });
   const what = { add: `${p.board}: add as ${p.to}`, move: `${p.board}: ${p.from || "no status"} → ${p.to}`, edit: "new description",
     create: `new issue in ${p.repo}${p.parent ? ` under #${p.parent.split("/").pop()}` : ""}${p.board && p.to ? `, on ${p.board} as ${p.to}` : ""}` }[p.action];
   const link = p.url || p.parent;
   return el("div", { class: "nrow waiting" },
-    el("label", { class: "t", title: p.title }, box, " ", p.title),
+    el("label", { class: "t", title: p.title }, box, " ", codeText(p.title)),
     el("div", { class: "w" }, `${what}, ${p.why}`, p.state === "approved" && " (applying)", p.error && el("div", { style: { color: "var(--red)" } }, p.error),
       p.body && el("details", { class: "draft" }, el("summary", {}, p.action === "edit" ? "New description" : "Issue text"), Object.assign(el("div", { class: "md" }), { innerHTML: markdown(p.body) }))),
     el("div", { class: "m" }, isOld(p.at, OLD_MINUTES) && el("span", { class: "chip hot", title: "Proposed this long ago" }, ago(p.at)), link && el("a", { href: link, target: "_blank" }, "open")));
@@ -496,18 +521,22 @@ function renderIncoming() {
   if (entries.length) {
     parts.push(el("div", { class: "section-title" }, "Incoming", el("span", { style: { fontWeight: 400, textTransform: "none", letterSpacing: 0 } }, "· from GitHub, nothing gets posted")));
     const groups = [...new Set(entries.map(e => e.effort || ""))];
-    for (const g of groups) {
-      parts.push(el("div", { class: "needs" }, groups.length > 1 && el("div", { class: "nrow waiting", style: { fontWeight: 600 } }, g ? effortTitle(g) : "Desk"),
-        entries.filter(e => (e.effort || "") === g).map(incomingRow)));
-    }
+    parts.push(el("div", { class: "needs" }, groups.map(g => [groups.length > 1 && el("div", { class: "nrow group" }, g ? effortTitle(g) : "No effort"),
+      entries.filter(e => (e.effort || "") === g).map(incomingRow)])));
   }
   const proposals = state.proposals || [];
   if (proposals.length) {
     const chosen = () => proposals.filter(p => p.state !== "approved" && ui.picked.has(p.id)).map(p => p.id);
     const decide = decision => async () => { const ids = chosen(); if (!ids.length) return; await post("/api/proposals", { ids, decision }, decision === "approve" ? "Approved. The desk applies them in a moment." : "Dismissed"); };
-    parts.push(el("div", { class: "section-title" }, "Project board changes", el("span", { class: "grow" }),
-      el("button", { class: "btn primary", onclick: guard(decide("approve")) }, "Apply checked"), el("button", { class: "btn ghost", onclick: guard(decide("dismiss")) }, "Dismiss checked")));
-    parts.push(el("div", { class: "needs" }, proposals.map(proposalRow)));
+    const open = ui.proposalsOpen ?? proposals.length <= 5;
+    const pending = proposals.filter(p => p.state !== "approved");
+    const all = el("input", { type: "checkbox", title: "Check all", checked: pending.length > 0 && pending.every(p => ui.picked.has(p.id)),
+      onchange: ev => { pending.forEach(p => ev.target.checked ? ui.picked.add(p.id) : ui.picked.delete(p.id)); renderIncoming(); } });
+    parts.push(el("div", { class: "section-title" },
+      el("span", { class: "toggle", onclick: () => { ui.proposalsOpen = !open; renderIncoming(); } }, el("span", { class: "chev" }, open ? "▾" : "▸"), `Project board changes ${proposals.length}`),
+      el("span", { class: "grow" }),
+      open && el("button", { class: "btn primary", onclick: guard(decide("approve")) }, "Apply checked"), open && el("button", { class: "btn ghost", onclick: guard(decide("dismiss")) }, "Dismiss checked")));
+    if (open) parts.push(el("div", { class: "needs" }, el("div", { class: "nrow group" }, el("label", {}, all, " Check all")), proposals.map(proposalRow)));
   }
   $("incomingWrap").replaceChildren(...parts);
 }
@@ -526,7 +555,7 @@ function card(item) {
   },
     el("span", { class: "bar", style: { background: LABEL_COLOR[item.label] || "transparent" } }),
     el("span", { class: "check" }, sel ? "✓" : ""),
-    el("div", { class: "title" }, item.title),
+    el("div", { class: "title" }, codeText(item.title)),
     el("div", { class: "meta" },
       item.status === "new" && el("span", { class: "chip new" }, "unsorted"),
       item.status === "dropped" && el("span", { class: "chip" }, "dropped"),
@@ -603,8 +632,12 @@ function renderBoard() {
   const nonEmpty = keys.filter(k => lanes.get(k).some(i => columnOf(i) !== "done"));
   const ordered = [...nonEmpty, ...keys.filter(k => !nonEmpty.includes(k) && lanes.get(k).length)];
 
-  const head = el("div", { class: "legend" }, COLUMNS.map(c => el("div", { class: "colhead", title: c.hint || "" },
-    el("span", { class: "dot", style: { background: c.color } }), c.name, el("span", { class: "n" }, String(visible.filter(i => columnOf(i) === c.key).length)),
+  const shownLanes = ordered.filter(k => ui.groupBy === "none" || !ui.collapsed.has(`${ui.groupBy}:${k}`));
+  const wide = new Set(COLUMNS.filter(c => shownLanes.some(k => lanes.get(k).some(i => columnOf(i) === c.key))).map(c => c.key));
+  wide.add("done");
+  const template = COLUMNS.map(c => wide.has(c.key) ? "minmax(120px, 1fr)" : "34px").join(" ");
+  const head = el("div", { class: "legend", style: { gridTemplateColumns: template } }, COLUMNS.map(c => el("div", { class: `colhead${wide.has(c.key) ? "" : " narrow"}`, title: `${c.name}${c.hint ? ". " + c.hint : ""}` },
+    el("span", { class: "dot", style: { background: c.color } }), el("span", { class: "name" }, c.name), el("span", { class: "n" }, String(visible.filter(i => columnOf(i) === c.key).length)),
     c.key === "done" && el("select", { onchange: e => { ui.doneDays = Number(e.target.value); save(); render(); } },
       [[7, "7 days"], [30, "30 days"], [365, "1 year"], [1e6, "all"], [-1, "all + archived"]].map(([v, t]) => el("option", { value: v, selected: v === ui.doneDays }, t))))));
 
@@ -625,7 +658,7 @@ function renderBoard() {
       const shown = long && !expanded ? colItems.slice(0, cellLimit()) : colItems;
       const toArchive = c.key === "done" && ui.groupBy !== "none" ? colItems.filter(i => !i.archived) : [];
       return el("div", {
-        class: `cell${colItems.length ? "" : " empty"}`, "data-col": c.key, "data-lane": key,
+        class: `cell${wide.has(c.key) ? colItems.length ? "" : " blank" : " empty"}`, "data-col": c.key, "data-lane": key,
         ondragover: e => { if (e.currentTarget.classList.contains("can-drop")) { e.preventDefault(); e.currentTarget.classList.add("over"); } },
         ondragleave: e => e.currentTarget.classList.remove("over"),
         ondrop: e => { e.preventDefault(); drop(c.key, key, e); },
@@ -641,7 +674,7 @@ function renderBoard() {
         collapsed && el("span", { class: "mini" }, COLUMNS.map(c => { const n = items.filter(i => columnOf(i) === c.key).length; return n ? el("span", { title: c.name }, el("span", { class: "dot", style: { background: c.color } }), String(n)) : null; })),
         ui.groupBy === "effort" && key && el("span", { class: "sub mono" }, key),
         ui.groupBy === "effort" && managerOf(key) && el("span", { class: "chip effort", title: "This effort's manager thread", onclick: e => e.stopPropagation() }, threadLink(managerOf(key), "manager"))),
-      el("div", { class: "cols", style: { gridTemplateColumns: cells.map(c => c.classList.contains("empty") ? "34px" : "minmax(150px, 1fr)").join(" ") } }, cells));
+      el("div", { class: "cols", style: { gridTemplateColumns: template } }, cells));
   });
   $("board").replaceChildren(head, ...(laneEls.length ? laneEls : [el("div", { class: "empty-note" }, "No items match.")]));
 }
@@ -720,7 +753,7 @@ function renderDrawer() {
   const th = item.status === "started" ? threadState(item.thread) : null;
   const prs = item.pr ? (item.prs?.length ? item.prs : [item.pr]) : [];
   const groups = commentGroups(item.comments);
-  const commentEl = c => el("div", { class: `comment${c.by === "me" ? "" : " desk"}` }, el("div", { class: "who" }, `${c.by} · ${c.at.replace("T", " ").slice(0, 16)}`), el("div", {}, c.text));
+  const commentEl = c => el("div", { class: `comment${c.by === "me" ? "" : " desk"}` }, el("div", { class: "who", title: c.at.replace("T", " ").slice(0, 16) }, `${{ me: "you", task: "task thread" }[c.by] || c.by} · ${ago(c.at)} ago`), el("div", {}, c.text));
   const groupEl = g => el("div", {}, commentEl(g.head), g.replies.length > 0 && el("div", { class: "replies" }, g.replies.map(commentEl)));
   const showBlockers = blockerEditor && (current.length || ui.blockerEdit === item.id);
   overlay.replaceChildren(el("div", { class: "scrim", onclick: closeOverlay }),
@@ -729,8 +762,10 @@ function renderDrawer() {
         el("div", { style: { display: "flex", alignItems: "center", gap: "8px" } },
           el("span", { class: "pill" }, el("span", { class: "dot", style: { background: col.color } }), item.status === "dropped" ? "Dropped" : col.name),
           item.label && el("span", { class: "pill" }, el("span", { class: "dot", style: { background: LABEL_COLOR[item.label] } }), item.label),
-          el("span", { class: "grow" }), el("button", { class: "btn ghost", title: "Close (Esc)", onclick: closeOverlay }, "✕ Close")),
-        el("h2", {}, item.title),
+          el("span", { class: "grow" }),
+          item.thread && state.threads?.environment && el("a", { class: `btn${item.asks ? " primary" : ""}`, style: { textDecoration: "none" }, href: `t3code://threads/${encodeURIComponent(state.threads.environment)}/${encodeURIComponent(item.thread)}`, title: "Open in T3 Code" }, item.asks ? "Answer in thread ↗" : "Open thread ↗"),
+          el("button", { class: "btn ghost", title: "Close (Esc)", onclick: closeOverlay }, "✕ Close")),
+        el("h2", {}, codeText(item.title)),
         item.summary && el("p", { class: "prose", style: { margin: 0 } }, item.summary)),
       el("div", { class: "body" },
         el("div", {},
@@ -745,12 +780,12 @@ function renderDrawer() {
           questions.map(x => el("div", { class: "questions" }, el("div", { class: "block-title", style: { marginTop: 0 } }, x.title), md(x.body))),
           el("div", { class: "block-title" }, item.status === "new" ? "Your note" : "Brief"),
           !item.brief && el("p", { class: "prose" }, "No brief yet."),
-          rest.map(x => sectionKind(x.title) === "open" ? el("div", {}, x.title && el("h4", { class: "sec" }, x.title), md(x.body))
+          rest.map((x, n) => sectionKind(x.title) === "open" || n === 0 && !glance.length ? el("div", {}, x.title && el("h4", { class: "sec" }, x.title), md(x.body))
             : el("details", { class: "sec" }, el("summary", {}, x.title), md(x.body))),
           el("div", { class: "block-title" }, `Comments ${item.comments.length || ""}`),
           groups.slice(0, 3).map(groupEl),
           groups.length > 3 && el("details", {}, el("summary", { class: "muted" }, `${groups.length - 3} older`), groups.slice(3).map(groupEl)),
-          el("p", { class: "meta" }, `Created ${item.created} by `, item.source?.startsWith("mcp:") ? threadLink(item.source, threadTitle(item.source) || "a thread") : item.source,
+          el("p", { class: "meta" }, `Created ${item.created} by `, item.source === "me" ? "you" : threadTitle(item.source) || item.source?.startsWith("mcp:") ? threadLink(item.source, threadTitle(item.source) || "a thread") : item.source,
             item.done && ` · finished ${item.done}`, " · ", el("span", { class: "mono" }, item.id))),
         el("dl", { class: "kv" },
           el("dt", {}, "Effort"), el("dd", {}, field("effort", state.efforts.map(e => [e.slug, e.title]), item.effort)),
@@ -778,7 +813,8 @@ function captureModal() {
   text.addEventListener("keydown", e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) add.click(); });
   setTimeout(() => text.focus());
   return el("div", { class: "modal" }, el("h3", {}, "Capture"), el("p", {}, "Lands in Inbox. Nothing starts until you press Start."),
-    text, el("div", { class: "row" }, repo, effort, el("span", { class: "grow" }), el("span", { style: { color: "var(--muted)", fontSize: "12px" } }, "⌘↵ to add"),
+    text, el("div", { class: "row" }, repo, effort),
+    el("div", { class: "row", style: { justifyContent: "flex-end" } }, el("span", { style: { color: "var(--muted)", fontSize: "12px" } }, "⌘↵ to add"),
       el("button", { class: "btn", onclick: closeOverlay }, "Cancel"), add));
 }
 
@@ -812,6 +848,7 @@ async function refresh() {
   const json = JSON.stringify(data);
   if (json !== lastJson) setState(data);
 }
+new ResizeObserver(([entry]) => document.documentElement.style.setProperty("--head-h", `${entry.target.offsetHeight}px`)).observe(document.querySelector("header"));
 refresh();
 setInterval(refresh, 5000);
 </script>

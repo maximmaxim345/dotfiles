@@ -40,7 +40,7 @@ Partner threads message each other directly (`t3_thread_send` in T3, SendMessage
 
 ## Questions in T3
 
-End every turn that waits on me with one line naming the task and where it stands, then the question.
+End every turn that waits on me with the Ask line "Replies that wait on me" in my CLAUDE.md asks for.
 
 Before a turn ends with a question, a draft or a request for my OK, run `~/desk/bin/backlog ask --thread <your id> "<the question in one line>"`, which shows it on my board and needs no OK from me. Skip it while I'm active in the thread (my last message is less than 10 minutes old), since I see the question there. Your id comes from `t3_thread_configuration`. The command fails when your thread has no backlog item, and then the inbox is enough. Once I've answered, run it with `--clear`.
 

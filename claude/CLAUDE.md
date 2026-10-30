@@ -125,12 +125,22 @@ My voice input often writes "come back" for "compact", so read it as "compact"
 when it makes no sense otherwise. When I ask whether I can compact, update the
 handoff file the work already uses, or write one next to the work. Then tell
 me I can compact and what to send afterwards. Before a step that runs longer than
-about ten minutes, say roughly how long it takes and whether you need me before
-it ends.
+about five minutes, say roughly how long it takes and whether you need me before
+it ends. When a turn ends while the work goes on elsewhere (another thread, a
+subagent, a device), say where and roughly how long.
 
 When I write while you're working, answer my message first in your next
 reply, before any progress update. Don't post a message only because a monitor
 expired or a routine progress event arrived: report when a stage ends.
+
+## Replies that wait on me
+
+End every turn that waits on me (a question, a draft, a request for my OK)
+with an **Ask:** line: the one thing you need from me, with your pick. Repeat
+it when you asked it in an earlier message.
+
+Lead every reply with its point. Spell out labels I haven't seen (run numbers,
+step ids) and quote prompts or output I never saw.
 
 ## Dashes
 

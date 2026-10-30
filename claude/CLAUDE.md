@@ -134,10 +134,8 @@ expired or a routine progress event arrived: report when a stage ends.
 
 ## Dashes
 
-NEVER use em dashes (—) or en dashes (–). Applies everywhere: chat replies,
-code comments, commit messages, PR descriptions, docs. Use a comma, colon,
-parentheses, or two sentences instead. For numeric ranges write "to" or a
-hyphen (5-10), not an en dash.
+Never use em (—) or en (–) dashes, anywhere. Use a comma, colon, parentheses or
+two sentences instead, and a hyphen or "to" for ranges (5-10).
 
 ## Comment style
 
@@ -316,6 +314,7 @@ notes, and messages to other people. Match the voice of the examples in
 
 Also:
 - No bold.
+- No em or en dashes.
 - Links go in a list under a short lead-in ("Superseded by:", "Related:"),
   one per line.
 - State opinions in first person with the reason ("I think X, since Y").

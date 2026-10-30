@@ -22,7 +22,7 @@ Run these from the server checkout or worktree for this task (default `~/project
    ```
 4. Start the server in the background. `MASS_APP_VARS_FILE` provides the bundled provider credentials. The `-c` wrapper sets the Sendspin port before the server imports it, so the checkout stays unchanged.
    ```bash
-   PYTHONDEVMODE=1 MASS_APP_VARS_FILE="$HOME/projects/music-assistant/appvars/app_vars.json" .venv/bin/python -c 'import sys, runpy, music_assistant.constants as c; c.SENDSPIN_SERVER_PORT = int(sys.argv.pop(1)); runpy.run_module("music_assistant", run_name="__main__", alter_sys=True)' <sendspin port> --log-level debug --data-dir .claude/ma-data
+   PYTHONDEVMODE=1 MASS_APP_VARS_FILE="$HOME/projects/music-assistant/appvars/app_vars.json" .venv/bin/python -c 'import sys, runpy, music_assistant.constants as c; c.SENDSPIN_SERVER_PORT = int(sys.argv.pop(1)); runpy.run_module("music_assistant", run_name="__main__", alter_sys=True)' <sendspin port> --log-level debug --data-dir .claude/ma-data --cache-dir .claude/ma-data/.cache
    ```
 5. Once the web port listens, write `.claude/ma-dev.json` with this thread's id from `t3_thread_configuration` (the session title outside T3 Code), the server's pid from `lsof -t -nP -iTCP:<web port> -sTCP:LISTEN`, and the ports, like `{"thread": "<id>", "pid": 12345, "web_port": 8195, "stream_port": 8197, "sendspin_port": 9027}`. Delete it when you stop the server.
 
@@ -66,7 +66,7 @@ Start it only when the task touches the frontend or I pass `frontend`. The built
 
 ## Debugging in VS Code
 
-The server's `.vscode/launch.json` is tracked and runs on `~/.musicassistant`, so don't edit it. When I want to debug on the copy, or after `setup`, tell me to add `"--data-dir", "${workspaceFolder}/.claude/ma-data"` to the "Music Assistant: Server" arguments myself.
+The server's `.vscode/launch.json` is tracked and runs on `~/.musicassistant`, so don't edit it. When I want to debug on the copy, or after `setup`, tell me to add `"--data-dir", "${workspaceFolder}/.claude/ma-data", "--cache-dir", "${workspaceFolder}/.claude/ma-data/.cache"` to the "Music Assistant: Server" arguments myself.
 
 ## Hand back
 

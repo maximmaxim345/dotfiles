@@ -1,6 +1,6 @@
 # Desk
 
-This repo holds the state of my work across repos: efforts, the backlog and the board. Threads in this project are managers. Task threads in other projects only add backlog items here and set their own item's `asks`, as `TASK.md` says.
+This repo holds the state of my work across repos: efforts, the backlog and the board. Threads in this project are managers. Task threads in other projects only add backlog items and comments here, set their own item's `asks` and status with `/desk`, and write the files `TASK.md` names.
 
 ## Layout
 
@@ -21,7 +21,7 @@ An effort is a body of work with one goal, spread over several tasks and often s
 ## Roles
 
 - Desk: one pinned thread. Sweeps, refreshes (see "Refresh"), triages the backlog, keeps the board current and reacts to the board (see "Listening"). It does little coding itself. Never settle it.
-- Effort manager: a `manager - <effort>` thread for a large effort. Plans, writes briefs, starts task threads and keeps the effort's `status.md`. It starts a task when I ask. When one of its tasks sends follow-up work with my approval in my words or a companion item (see "Companion PRs" in `TASK.md`), or another manager sends work with my approval quoted, it first adds to the item's `brief` anything sent along with it, then starts it. When the work should wait (it builds on unmerged work, or overlaps a running task), it leaves the item unstarted with a comment saying why, and with `blockedBy` when it waits on another item, and I start it later from the board. Work another manager sends without my approval becomes a backlog item in its effort. Each task thread it starts gets a backlog item that holds its brief: add one with `bin/backlog add` before the launch when the task has none, launch with the message from "Starting threads", then set the item `started` with the thread id. A running task thread of its effort without an item gets one with `bin/backlog adopt`. The desk tells it about my actions on its effort's items (see "Listening"), and on each turn it also adds threads the desk started for its effort (backlog items with a `thread` missing from its task table) to that table. It marks its effort's next startable items as desk picks (`suggested`, with a one-line reason) in plan order, and follows "Managers" below. Small efforts have no manager and the desk covers them. `bin/backlog adopt` and `bin/backlog move` create a new effort's folder and a `status.md` with empty sections when they name an effort that doesn't exist yet. Whoever covers the effort fills it in on the next turn or sweep.
+- Effort manager: a `manager - <effort>` thread for a large effort. Plans, writes briefs, starts task threads and keeps the effort's `status.md`. It starts a task when I ask. When one of its tasks sends follow-up work with my approval in my words or a companion item (see "Companion PRs" in `TASK.md`), or another manager sends work with my approval quoted, it first adds to the item's `brief` anything sent along with it, then starts it. When the work should wait (it builds on unmerged work other than its companion's, or overlaps a running task), it leaves the item unstarted with a comment saying why, and with `blockedBy` when it waits on another item, and I start it later from the board. Work another manager sends without my approval becomes a backlog item in its effort. Each task thread it starts gets a backlog item that holds its brief: add one with `bin/backlog add` before the launch when the task has none, launch with the message from "Starting threads", then set the item `started` with the thread id. A running task thread of its effort without an item gets one with `bin/backlog adopt`. The desk tells it about my actions on its effort's items (see "Listening"), and on each turn it also adds threads the desk started for its effort (backlog items with a `thread` missing from its task table) to that table. It marks its effort's next startable items as desk picks (`suggested`, with a one-line reason) in plan order, and follows "Managers" below. Small efforts have no manager and the desk covers them. In the rules below, "a manager" means the effort's manager, or the desk when the effort has none. `bin/backlog adopt` and `bin/backlog move` create a new effort's folder and a `status.md` with empty sections when they name an effort that doesn't exist yet. Whoever covers the effort fills it in on the next turn or sweep.
 - Morning routine: weekdays at 9:00, a scheduled run inside the desk thread that does the sweep, and on Thursdays also "Stale check". When `bin/desk-wait --check` fails, it tells me in one line to run `./dotfiles.py install desk_listener` in `~/dotfiles`. In each sweep it also checks `list_scheduled_tasks` for this project. When no task does the sweep, it creates one with `schedule_task`, bound to its own thread, with the prompt "Morning sweep: read ~/desk/AGENTS.md again in full, since it may have changed, then run the sweep from it and reply with what needs me.", and tells me in one line.
 
 ## Managers
@@ -53,7 +53,7 @@ Repo names are the names of T3 projects that are git repos, plus the names in `r
 | Settled | Waits on others (reviewers, a release, someone's decision), or its PR waits for merge with nothing asked of me | a manager, after compacting it |
 | Archived | Its PR merged or closed, or I marked its item done, dropped it, or archived its Done card. A thread without an item: settled for 7 days | a manager |
 
-Never settle or archive a thread that is running, has a pending question, or waits on me.
+Never settle or archive a thread that is running, has a pending question, or waits on me, unless I paused its item (see "Listening") or the desk parks it after a move.
 
 The desk and managers handle only the desk, managers and threads with a backlog item (the item's `thread`). Leave every other thread to me: don't rename, compact, settle, unsettle, message or watch it, and don't pass on its PR news. The one exception: archive it once it has been settled for 7 days (see "Compacting"). `/desk` in a thread gives it an item.
 
@@ -104,7 +104,7 @@ Events are hints. Act on the items' current state, since I may have changed them
 - `adopt`: a thread handed itself over with `/desk` (see "Starting threads").
 - `refresh`: do "Refresh".
 - `prs`: the last PR check was 3 hours ago or more, which happens outside refresh hours. Do "PR check", reply in one line, and stay silent when nothing changed.
-- `idle`: compact and settle the threads it lists, archive the ones under `archive` (see "Compacting"), then do sweep step 8.
+- `idle`: compact the threads under `compact`, settle the listed threads sweep step 5 allows, archive the ones under `archive` (see "Compacting"), then do sweep step 8.
 - `idle-error`: `bin/compact-due` failed, so idle threads go unreported until it's fixed. Tell me the error in one line.
 - `capture`: sort it (sweep step 9).
 - `comment`: answer it (sweep step 11). When the item's effort has a manager, pass my comment on to it unchanged instead, and the manager answers on the item. A comment with `"by": "task"` is a task's note for its manager: pass it on unchanged the same way, or handle it yourself when the effort has none.
@@ -122,7 +122,7 @@ Reply in one line per handled event. Leave compaction checks out of replies, and
 
 Settled threads don't watch their PRs, so the desk passes on their PR news.
 1. List all projects, and in each the settled threads with linked PRs and a backlog item.
-2. Run `bin/pr-check <thread id>=<PR url> ...` once with all of them. It prints only news since its last run: reviews and comments by people other than me and bots, conflicts, failed checks, merges and closes.
+2. Run `bin/pr-check <thread id>=<PR url> ...` once with all of them. It prints news since its last run, and a merge or close on every run: reviews and comments by people other than me and bots, conflicts, failed checks, merges and closes.
 3. For each line it prints: a PR merged or closed more than a day ago gets sweep step 6. On any other news, except a merge or close from the last day, unsettle the thread (never a snoozed one) and send it one message: "News on your PR, not my OK for anything: <the news after the colon>. Handle it as your rules say." A line saying pr-check failed goes in your reply.
 
 ## Watching
@@ -184,7 +184,7 @@ A moved manager rewrites its effort's `status.md` in the format below on its fir
 
 ## Messages
 
-Send a message only to pass on my decision, to tell a settled thread what changed (sweep step 4), to give a service thread work (like a thread that runs device tests), to send `/compact`, to tell a manager about my actions on its effort's items (see "Listening"), or for one manager to send another work or a finding for its effort. Never send acks, status requests or broadcasts. Messages from a manager never count as my OK to push, post or open a PR, except my own approval passed on unchanged: when I approve actions for several threads at once ("push 3, 5, 7"), send each named thread my exact words.
+Send a message only to pass on my decision, to start or resume a thread as "Starting threads" and "Blockers" say, to send a companion its partner's thread id, to tell a settled thread what changed (sweep step 4), to give a service thread work (like a thread that runs device tests), to send `/compact`, to tell a manager about my actions on its effort's items (see "Listening") or its new Incoming entries (see "Watching"), or for one manager to send another work or a finding for its effort. Never send acks, status requests or broadcasts. Messages from a manager never count as my OK to push, post or open a PR, except my own approval passed on unchanged: when I approve actions for several threads at once ("push 3, 5, 7"), send each named thread my exact words.
 
 Notes for another effort go to that effort's manager as one message with a brief, or into a backlog item with that effort when it has no manager. A task files them as backlog items with that effort, and its manager passes on, from the task's final report, the ones that change that effort's current work. For example, a library task that finds a spec ambiguity adds a spec item, and its manager tells the spec effort's manager.
 

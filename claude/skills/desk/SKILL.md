@@ -12,7 +12,7 @@ The desk (`~/desk`, see its `AGENTS.md`) tracks work as backlog items on its boa
 ## Modes
 
 - `help`: show the "Phrases" table from `~/desk/TASK.md` as it is, and stop. Skip the board check above.
-- Nothing: hand this thread to the desk (see "Hand over this thread"). It shows on the board as started, and the desk sweeps it like the threads it started.
+- Nothing: hand this thread to the desk (see "Hand over this thread"). It shows on the board as started, or keeps its paused status when it already has an item, and the desk sweeps it like the threads it started.
 - `later`: hand it over paused with `--status open` and no note. Start on the board resumes this thread.
 - `block <what it waits for>`: hand it over paused until that happens. The desk compacts and settles it after this turn. When the blocker clears (GitHub news, a date, or a blocking item finishing), the desk removes it and resumes this thread. A blocker I remove on the board waits for Start.
 - `move`, alone or followed by which sessions to move and optionally an effort, in any words: move Claude desktop sessions to T3 Code threads (see "Move desktop sessions").
@@ -25,11 +25,11 @@ The desk (`~/desk`, see its `AGENTS.md`) tracks work as backlog items on its boa
 
   Do nothing else the note asks, and don't start work on it. The desk reads it and acts or answers on the item.
 
-In the Claude Code desktop app (you have the `mcp__ccd_session_mgmt__*` tools), the desk can't track or resume this session. There, nothing means `move` for this session alone. `block` and notes aren't available: say so and stop.
+In the Claude Code desktop app (you have the `mcp__ccd_session_mgmt__*` tools), the desk can't track or resume this session. There, nothing means `move` for this session alone. `block`, `later` and notes aren't available: say so and stop.
 
 ## Effort
 
-An effort is named by its slug, the folder name under `~/desk/efforts/`. When I name an effort, match it to an existing slug. When none fits, it's a new effort: pick a short lowercase slug (`spec-cleanup`) and say it's new. `bin/backlog` creates its folder.
+An effort is named by its slug, the folder name under `~/desk/efforts/`. When I name an effort, match it to an existing slug. When none fits, it's a new effort: pick a short lowercase slug (`spec-cleanup`) and say it's new. `bin/backlog adopt` and `move` create its folder.
 
 ## Quoting
 
@@ -62,7 +62,7 @@ For each task this moves, usually one per session, the desk starts a T3 Code thr
 Read the words after `move` freely, as numbers, names, descriptions or a mix:
 - No sessions named: move this session alone. Do "Prepare", "Hand over" and "Archive" for it yourself.
 - Task sessions named: this session coordinates an effort in `~/desk/efforts/<effort>/status.md`. Match my words to the tasks in its table and move those. `all` means every active task session in its table, and then this session last as the effort's manager.
-- `archive`: do only "Archive", for items moved earlier whose sessions are still active (`~/desk/bin/backlog list` and the items' `move` fields).
+- `archive`: do only "Archive", for items moved earlier whose sessions are still active (`~/desk/bin/backlog list` and the `move` field in each item's JSON).
 
 The words may also name an effort ("into spec-cleanup", "as a new effort for the docs"). The moved sessions go into it (see "Effort"). Without one, a moved task keeps its coordinator's effort, and a single session keeps the effort its brief names, if any. When a coordinator moves itself into another effort, its T3 thread manages that effort.
 

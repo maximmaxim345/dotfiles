@@ -17,11 +17,11 @@ Write your plan in your reply and implement it without waiting for my OK, also w
 ~/desk/bin/backlog add --repo <repo name> --title "<imperative title>" \
   --kind <bugfix|feature|review|design|test|docs> \
   --label "<user-visible bug|reachable but rare|theoretical>" \
-  --summary "<one or two sentences>" --brief "<evidence and plan>" \
+  --summary "<one or two sentences>" --brief - \
   [--effort <effort slug>]
 ```
 
-`~/desk/bin/backlog add --help` lists the repo names.
+`--brief -` reads the brief from stdin. `~/desk/bin/backlog add --help` lists the repo names.
 
 ## Phrases
 

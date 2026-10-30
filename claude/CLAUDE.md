@@ -229,7 +229,7 @@ and the spec, and name the commit you compared against.
 
 Don't bake runtime-specific magnitudes or backend names into comments
 without confirming on the runtime that executes the code. Generic
-mechanism wording survives backend swaps; specifics don't.
+mechanism wording survives backend swaps, but specifics don't.
 
 ## Speculative fixes
 

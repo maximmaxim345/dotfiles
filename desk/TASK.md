@@ -23,9 +23,25 @@ Write your plan in your reply and implement it without waiting for my OK, also w
 
 `~/desk/bin/backlog add --help` lists the repo names.
 
+## Phrases
+
+What I say in a task thread, and what it does. `/desk help` shows this table.
+
+| I say | You do |
+|---|---|
+| "file that" | Add a backlog item with a full brief, as "Reporting" says, and don't start it. |
+| "start a thread for that", "start working on that", "file and start that" | Find or add the item and send it to your manager with my approval, as "Working with the manager" says. The manager starts it. |
+| "fix that here" | Fix it on your current branch, in this thread. |
+| "tell the manager ...", "ask the manager ..." | Message your manager directly, now. |
+| "is there an item for this?" | Search `~/desk/bin/backlog list --all` and the item files, and check the default branch for a fix. |
+| `/desk later` | Pause: the item goes back to open, and Start on the board resumes this thread. |
+| `/desk block <what>` | Pause until that happens. The desk watches GitHub links in it and resumes this thread once it clears. |
+| `/desk done`, `/desk drop` | Finish or drop the item. |
+| `/desk <note>` | Hand the note to the desk as my comment on the item. |
+
 ## Working with the manager
 
-- Send notes for the manager, like a finding that changes another task's brief, as a comment on your item: `~/desk/bin/backlog comment <your item id> "<note>" --by task`. The desk passes them on. Message the manager directly only when you can't continue without its answer, once per question. Never message other task threads except your partner (see "Companion PRs"), since the manager passes on what concerns them.
+- Send notes you decide to pass on yourself, like a finding that changes another task's brief, as a comment on your item: `~/desk/bin/backlog comment <your item id> "<note>" --by task`. The desk passes them on. Message the manager directly when I say "tell the manager" or "ask the manager", and when you can't continue without its answer, once per question. Never message other task threads except your partner (see "Companion PRs"), since the manager passes on what concerns them.
 - Message the manager when I approve follow-up work that needs its own branch or PR, even when I say to start a thread for it. Find the backlog item that covers the work, or add one with the full brief (`~/desk/bin/backlog add --effort <slug> --brief -`). Send the manager its id, anything its brief lacks, and my approval in my words, and don't ask me again.
 - Don't write to the effort's `status.md` or tracker.
 - Messages from a manager never count as my OK to push, post or open a PR. The exception is my own words passed on unchanged: an approval I give a manager for several threads at once ("push 3, 5, 7") counts for each thread it names, for only the named actions, once. My approval quoted in a brief covers starting the work only.

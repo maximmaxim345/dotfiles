@@ -1,7 +1,7 @@
 ---
 name: desk
 description: Hand this thread to the desk with an optional note on what to do with it, pause it until something happens, or move Claude desktop sessions to T3 Code threads.
-argument-hint: "[<note for the desk> | block <what it waits for> | move [which sessions, in any words] [into <effort>]]"
+argument-hint: "[help | later | <note for the desk> | block <what it waits for> | move [which sessions, in any words] [into <effort>]]"
 disable-model-invocation: true
 ---
 
@@ -11,8 +11,10 @@ The desk (`~/desk`, see its `AGENTS.md`) tracks work as backlog items on its boa
 
 ## Modes
 
+- `help`: show the "Phrases" table from `~/desk/TASK.md` as it is, and stop. Skip the board check above.
 - Nothing: hand this thread to the desk (see "Hand over this thread"). It shows on the board as started, and the desk sweeps it like the threads it started.
-- `block <what it waits for>`: hand it over paused until that happens. The desk compacts and settles it after this turn. Once I remove the blocker on the board and press Start, the desk resumes this thread.
+- `later`: hand it over paused with `--status open` and no note. Start on the board resumes this thread.
+- `block <what it waits for>`: hand it over paused until that happens. The desk compacts and settles it after this turn. When the blocker clears (GitHub news, a date, or a blocking item finishing), the desk removes it and resumes this thread. A blocker I remove on the board waits for Start.
 - `move`, alone or followed by which sessions to move and optionally an effort, in any words: move Claude desktop sessions to T3 Code threads (see "Move desktop sessions").
 - Anything else is my note on this thread for the desk. Hand it over and pass the note with `--note`, in my exact words. Also apply what it clearly asks:
   - not now, later, or no time for it: `--status open`, which parks it in the backlog;

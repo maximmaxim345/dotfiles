@@ -75,7 +75,7 @@ A coordinator sends each task session "Prepare to move to T3 Code: follow the Pr
 1. Stops after its current step and starts nothing new.
 2. Lists every branch it worked on, in every repo it touched, with its worktree (`git worktree list` in each repo) and its PR. Each branch becomes a task of its own, since a T3 thread shows only its own branch. Leave out branches with nothing left to keep (merged, or abandoned experiments), and name them in the brief of the task they relate to.
 3. Commits everything in each of those worktrees, untracked files included, following my commit rules. Unfinished work goes in a `wip:` commit. Never commit secrets. Nothing is pushed.
-4. Writes one brief per task to `~/desk/efforts/<effort>/briefs/<slug>.md`, or to a file under `$TMPDIR` without an effort, since the backlog item keeps its text. Write it for someone who never saw this session:
+4. Writes one brief per task to `~/desk/efforts/<effort>/briefs/<slug>.md`, or to a file under `$TMPDIR` without an effort, since the backlog item keeps its text. Write it for someone who never saw this session, in the `##` sections "Backlog items" in `~/desk/AGENTS.md` lists, and cover:
    - the goal and the done criteria;
    - the repo, its project rules file, the branch and its base, each commit with one line on what it does, and its PR with its state;
    - the other tasks from this session and which of them this one builds on;

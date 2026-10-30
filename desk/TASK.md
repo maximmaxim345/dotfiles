@@ -11,7 +11,7 @@ Write your plan in your reply and implement it without waiting for my OK, also w
 ## Reporting
 
 - List extra findings in the first few lines of your final report, each labeled as a user-visible bug, reachable but rare, or theoretical, and each item you stop on or reject, with the reason.
-- File each extra finding that doesn't belong in this change as a backlog item before you end your turn, without asking me first, and give its repo and a one-line TLDR in your reply. Check first that the default branch and `~/desk/bin/backlog list` don't already cover it. Write the brief so someone without this conversation can start from it, and don't start the work yourself: I or a manager start it.
+- File each extra finding that doesn't belong in this change as a backlog item before you end your turn, without asking me first, and give its repo and a one-line TLDR in your reply. Check first that the default branch and `~/desk/bin/backlog list --all` don't already cover it. Write the brief so someone without this conversation can start from it, with the sections "Backlog items" in `~/desk/AGENTS.md` lists, and don't start the work yourself: I or a manager start it.
 
 ```sh
 ~/desk/bin/backlog add --repo <repo name> --title "<imperative title>" \

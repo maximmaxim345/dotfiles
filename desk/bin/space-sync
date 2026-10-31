@@ -59,6 +59,7 @@ def main() -> None:
 
     setting = spaces_setting()
     off = set(setting["off"])
+    idle = idle_threads() if off else set()
     by_thread = {i["thread"]: i for i in all_items().values() if i.get("thread") and i["status"] not in CLOSED_STATUSES}
     for thread, entry in list(parked.items()):
         item = by_thread.get(thread)
@@ -70,7 +71,6 @@ def main() -> None:
 
     threads = json.loads(THREADS.read_text()) if THREADS.exists() else {}
     skip = set((threads.get("managers") or {}).values()) | {n["thread"] for n in threads.get("needsYou") or []}
-    idle = idle_threads() if off else set()
     for thread, item in by_thread.items():
         if (
             item["status"] == "started"

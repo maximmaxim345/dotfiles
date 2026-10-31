@@ -129,7 +129,7 @@ def change_spaces(body: dict) -> None:
         if "create" in body:
             name = body["create"].strip().lower()
             if not SPACE_NAME.fullmatch(name):
-                raise ValueError("use lowercase letters, digits and dashes for a space name")
+                raise ValueError("use letters, digits and dashes for a space name")
             if name not in setting["spaces"]:
                 setting["spaces"].append(name)
         elif body["space"] not in setting["spaces"]:

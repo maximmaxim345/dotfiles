@@ -472,7 +472,7 @@ function renderAutostart() {
   $("autoReviews").checked = a.reviews;
   $("autoReviewsWrap").hidden = a.mode === "off";
   $("autoEfforts").hidden = a.mode !== "focus";
-  $("autoEfforts").replaceChildren(el("span", { class: "auto" }, "Auto-start in"), state.efforts.map(e => {
+  $("autoEfforts").replaceChildren(el("span", { class: "auto" }, "Auto-start in"), ...state.efforts.map(e => {
     const on = a.efforts.includes(e.slug);
     return el("button", { class: `chip${on ? " effort" : ""}`, title: on ? "Stop auto-starting here" : "Auto-start here too",
       onclick: guard(() => setAutostart({ efforts: on ? a.efforts.filter(x => x !== e.slug) : [...a.efforts, e.slug] })) }, e.title);

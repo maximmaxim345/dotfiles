@@ -29,6 +29,30 @@ Not to be confused with the repository root `CLAUDE.md`, which is a symlink to
 `AGENTS.md` and describes this repo as a project. The file here is the global
 user config.
 
+## Account folders
+
+Each Claude account I use outside the default `~/.claude` gets its own config
+folder, used as `CLAUDE_CONFIG_DIR`. The module links `CLAUDE.md`,
+`output-styles`, `skills`, `agents`, `plugins`, `settings.json` and
+`settings.local.json` from `~/.claude` into every folder under these two
+parents, skipping entries a folder already has:
+
+- `~/.claude-accounts/<name>`, one folder per account, named after the account
+  (for example `ohf-team` or `personal`). These hold their own login, so they
+  are the ones for T3 Code instances and anything else that runs alongside
+  cswap.
+- `~/.claude-swap-backup/sessions/<n>-<email>`, created by `cswap run`. These
+  hold a copy of cswap's stored login, which breaks when the same account also
+  runs as cswap's active login, because renewing one copy invalidates the other.
+
+To add an account on a new device:
+
+```bash
+mkdir -p ~/.claude-accounts/<name>
+./dotfiles.py update
+CLAUDE_CONFIG_DIR=~/.claude-accounts/<name> claude  # then /login
+```
+
 ## Not covered by the module
 
 `settings.json` is deliberately untracked, because Claude Code rewrites it on

@@ -9,17 +9,29 @@ from df.osinfo import system
 
 ID: str = "claude_config"
 NAME: str = "Claude Code Config"
-DESCRIPTION: str = "Global instructions, guidelines, skills and output style for Claude Code"
+DESCRIPTION: str = (
+    "Global instructions, guidelines, skills and output style for Claude Code. "
+    "Also links the shared config into every account folder used as CLAUDE_CONFIG_DIR: "
+    "cswap's session folders and the folders in ~/.claude-accounts (one per account, each with its own /login)"
+)
 DEPENDENCIES: List[str] = []
 CONFLICTING: List[str] = []
 
 claude_path = Path.home() / ".claude"
 settings_path = claude_path / "settings.json"
 desk_path = Path.home() / "desk"
-# Account folders of cswap, each used as CLAUDE_CONFIG_DIR
-accounts_path = Path.home() / ".claude-swap-backup" / "sessions"
+# Parents of account folders, each used as CLAUDE_CONFIG_DIR: cswap's session folders and my own logins
+ACCOUNT_PARENTS: List[Path] = [Path.home() / ".claude-swap-backup" / "sessions", Path.home() / ".claude-accounts"]
 # What Claude Code reads from its config folder, linked from ~/.claude into each account folder
-ACCOUNT_ENTRIES: List[str] = ["CLAUDE.md", "output-styles", "skills", "agents", "settings.json"]
+ACCOUNT_ENTRIES: List[str] = [
+    "CLAUDE.md",
+    "output-styles",
+    "skills",
+    "agents",
+    "plugins",
+    "settings.json",
+    "settings.local.json",
+]
 
 # (source relative to claude/, target relative to ~/.claude, config key for the backup)
 ENTRIES: List[Tuple[str, str, str]] = [
@@ -70,11 +82,11 @@ def link(source_name: str, target_name: str, key: str, config: ModuleConfig) -> 
 
 
 def missing_account_links() -> List[Tuple[Path, Path]]:
-    if not accounts_path.is_dir():
-        return []
     return [
         (claude_path / name, account / name)
-        for account in sorted(accounts_path.iterdir())
+        for parent in ACCOUNT_PARENTS
+        if parent.is_dir()
+        for account in sorted(parent.iterdir())
         if account.is_dir()
         for name in ACCOUNT_ENTRIES
         if (claude_path / name).exists() and not (account / name).exists() and not (account / name).is_symlink()

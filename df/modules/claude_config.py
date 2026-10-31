@@ -20,7 +20,7 @@ CONFLICTING: List[str] = []
 claude_path = Path.home() / ".claude"
 settings_path = claude_path / "settings.json"
 desk_path = Path.home() / "desk"
-# Parents of account folders, each used as CLAUDE_CONFIG_DIR: cswap's session folders and my own logins
+# Parents of the account folders used as CLAUDE_CONFIG_DIR: cswap's session folders and ~/.claude-accounts
 ACCOUNT_PARENTS: List[Path] = [Path.home() / ".claude-swap-backup" / "sessions", Path.home() / ".claude-accounts"]
 # What Claude Code reads from its config folder, linked from ~/.claude into each account folder
 ACCOUNT_ENTRIES: List[str] = [

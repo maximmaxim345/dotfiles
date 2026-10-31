@@ -59,6 +59,11 @@
   .filters { display: flex; gap: 8px; align-items: center; padding: 0 20px 12px; flex-wrap: wrap; }
   .filters label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
   .filters select { padding: 4px 8px; font-size: 13px; }
+  .auto { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .auto select { padding: 4px 8px; font-size: 13px; }
+  .auto.on select { border-color: var(--accent); color: var(--accent); }
+  button.chip { border: 1px solid var(--line-2); cursor: pointer; padding: 2px 8px; font-size: 12px; max-width: none; }
+  button.chip.effort { border-color: var(--accent); }
 
   main { padding: 16px 20px 120px; }
   .section-title .toggle { cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
@@ -230,6 +235,9 @@
     <div class="brand"><span class="mark">D</span>Desk</div>
     <div class="stats" id="stats"></div>
     <div class="grow"></div>
+    <label class="auto" id="autoWrap" title="Lets the desk start up to 5 work threads and 2 reviews on its own, on weekdays from 8:00 to 20:00. Threads that wait on reviewers don't count.">Auto-start
+      <select id="autoMode"><option value="off">off</option><option value="focus">focus</option><option value="all">all efforts</option></select></label>
+    <label class="auto" id="autoReviewsWrap" title="Also review other people's PRs that want my review, 2 at a time. Reviews only draft, nothing gets posted."><input type="checkbox" id="autoReviews"> reviews</label>
     <div class="search">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="5"/><path d="m11 11 3.5 3.5"/></svg>
       <input type="search" id="q" placeholder="Search  /" autocomplete="off">
@@ -249,6 +257,7 @@
     <button class="btn ghost" id="collapseAll">Collapse all</button>
     <button class="btn ghost" id="expandAll">Expand all</button>
   </div>
+  <div class="filters" id="autoEfforts" hidden></div>
 </header>
 <main>
   <div id="needsWrap"></div>
@@ -454,6 +463,24 @@ function renderFilters() {
   $("groupBy").value = ui.groupBy;
   $("laneSort").value = ui.laneSort;
   $("clearFilters").hidden = !(ui.q || ui.effort || ui.repo || ui.label);
+}
+
+function renderAutostart() {
+  const a = state.autostart;
+  $("autoMode").value = a.mode;
+  $("autoWrap").classList.toggle("on", a.mode !== "off");
+  $("autoReviews").checked = a.reviews;
+  $("autoReviewsWrap").hidden = a.mode === "off";
+  $("autoEfforts").hidden = a.mode !== "focus";
+  $("autoEfforts").replaceChildren(el("span", { class: "auto" }, "Auto-start in"), state.efforts.map(e => {
+    const on = a.efforts.includes(e.slug);
+    return el("button", { class: `chip${on ? " effort" : ""}`, title: on ? "Stop auto-starting here" : "Auto-start here too",
+      onclick: guard(() => setAutostart({ efforts: on ? a.efforts.filter(x => x !== e.slug) : [...a.efforts, e.slug] })) }, e.title);
+  }));
+}
+async function setAutostart(change) {
+  const next = { ...state.autostart, ...change };
+  await post("/api/autostart", next, next.mode === "off" ? "Auto-start off" : next.mode === "focus" && !next.efforts.length ? "Pick the efforts to auto-start in" : "Auto-start on. The desk fills free slots on weekdays from 8:00 to 20:00.");
 }
 
 function threadLink(id, text) {
@@ -820,7 +847,7 @@ function captureModal() {
 
 function render() {
   const y = scrollY;
-  renderStats(); renderFilters(); renderNeeds(); renderIncoming(); renderBoard(); renderBulk(); renderDrawer();
+  renderStats(); renderFilters(); renderAutostart(); renderNeeds(); renderIncoming(); renderBoard(); renderBulk(); renderDrawer();
   scrollTo(0, y);
 }
 
@@ -831,6 +858,8 @@ $("fEffort").addEventListener("change", e => { ui.effort = e.target.value; rende
 $("fRepo").addEventListener("change", e => { ui.repo = e.target.value; render(); });
 $("fLabel").addEventListener("change", e => { ui.label = e.target.value; render(); });
 $("clearFilters").addEventListener("click", () => { ui.q = ui.effort = ui.repo = ui.label = ""; $("q").value = ""; $("fLabel").value = ""; render(); });
+$("autoMode").addEventListener("change", e => setAutostart({ mode: e.target.value }));
+$("autoReviews").addEventListener("change", e => setAutostart({ reviews: e.target.checked }));
 $("captureBtn").addEventListener("click", () => { ui.capture = true; render(); });
 $("collapseAll").addEventListener("click", () => { document.querySelectorAll(".lane[data-key]").forEach(l => ui.collapsed.add(`${ui.groupBy}:${l.dataset.key}`)); save(); render(); });
 $("expandAll").addEventListener("click", () => { ui.collapsed.clear(); save(); render(); });

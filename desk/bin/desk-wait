@@ -22,6 +22,7 @@ REFRESHED = STATE / "refreshed.at"
 PRS_CHECKED = STATE / "prs-checked.at"
 IDLE_ERROR = STATE / "compact-due.error"
 WAKE = STATE / "wake.jsonl"
+AUTOSTART = STATE / "autostart.json"
 WAKE_SENT = STATE / "wake.sent"
 WAKE_LOCK = STATE / "wake.lock"
 T3 = Path.home() / ".t3"
@@ -76,13 +77,20 @@ def mark_refreshed() -> None:
     PRS_CHECKED.write_text(str(time.time()))
 
 
+def autostart_on() -> bool:
+    return AUTOSTART.exists() and json.loads(AUTOSTART.read_text())["mode"] != "off"
+
+
 def actionable(event: dict) -> bool:
     if event.get("by") == "desk" or event["type"] == "comment" and event.get("by") == "manager":
         return False
-    if event["type"] in ("capture", "comment", "archive", "adopt", "apply"):
+    if event["type"] in ("capture", "comment", "archive", "adopt", "apply", "autostart"):
         return True
     if event["type"] == "status":
-        return any(c["to"] in ("requested", "done", "dropped") or c["from"] == "started" for c in event["changes"])
+        return any(
+            c["to"] in ("requested", "done", "dropped") or c["from"] == "started" or c["to"] == "next" and autostart_on()
+            for c in event["changes"]
+        )
     return False
 
 

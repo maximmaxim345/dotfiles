@@ -29,6 +29,8 @@ EVENTS = STATE / "events.jsonl"
 LISTENER = STATE / "listener.pid"
 INCOMING = STATE / "incoming.json"
 PROPOSALS = STATE / "proposals.json"
+AUTOSTART = STATE / "autostart.json"
+AUTOSTART_MODES = {"off", "focus", "all"}
 SHOWN_INCOMING = {"new", "needs-you", "waiting"}
 SHOWN_PROPOSALS = {"open", "approved", "failed"}
 SETTABLE_STATUSES = {"open", "next", "requested", "done", "dropped"}
@@ -106,6 +108,10 @@ def open_blockers(item: dict, items: dict[str, dict]) -> list[str]:
     return [b for b in item.get("blockedBy") or [] if b not in items or items[b]["status"] not in CLOSED_STATUSES]
 
 
+def autostart_setting() -> dict:
+    return json.loads(AUTOSTART.read_text()) if AUTOSTART.exists() else {"mode": "off", "efforts": [], "reviews": False}
+
+
 def all_items() -> dict[str, dict]:
     return {p.stem: json.loads(p.read_text()) for p in sorted(BACKLOG.glob("*.json"))}
 
@@ -123,11 +129,17 @@ def load_state() -> dict:
         "listening": listening(),
         "incoming": [e for e in incoming.values() if e["status"] in SHOWN_INCOMING],
         "proposals": [p for p in proposals if p["state"] in SHOWN_PROPOSALS],
+        "autostart": autostart_setting(),
     }
 
 
 def apply_status(item: dict, status: str) -> None:
     """Set an item's status and the fields that follow from it, leaving a new Next rank to the caller."""
+    if item["status"] == "started" and status in ("open", "next"):
+        item["paused"] = datetime.datetime.now().isoformat(timespec="seconds")
+    elif status not in ("open", "next"):
+        item.pop("paused", None)
+        item.pop("unblocked", None)
     item["status"] = status
     item.pop("needs", None)
     item.pop("asks", None)
@@ -305,6 +317,13 @@ class Handler(BaseHTTPRequestHandler):
                     write_json(PROPOSALS, proposals)
                 if chosen and body["decision"] == "approve":
                     log_event({"type": "apply", "ids": [p["id"] for p in chosen]})
+            elif self.path == "/api/autostart":
+                known = {e["slug"] for e in efforts()}
+                if body["mode"] not in AUTOSTART_MODES:
+                    raise ValueError(f"unknown mode {body['mode']}")
+                chosen = sorted(set(body["efforts"]) & known)
+                write_json(AUTOSTART, {"mode": body["mode"], "efforts": chosen, "reviews": bool(body["reviews"])})
+                log_event({"type": "autostart"})
             elif self.path == "/api/update":
                 known = {e["slug"] for e in efforts()}
                 fields = {k: (v or None) for k, v in body["fields"].items() if k in ("effort", "repo")}
@@ -320,6 +339,8 @@ class Handler(BaseHTTPRequestHandler):
                     path = item_path(item_id)
                     item = json.loads(path.read_text())
                     item.update(fields)
+                    if "blockedBy" in fields:
+                        item.pop("unblocked", None)
                     write_json(path, item)
             else:
                 self.send_json(404, {"error": "not found"})

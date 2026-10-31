@@ -198,6 +198,8 @@ def unblock(args: argparse.Namespace) -> None:
     if args.blocker not in (item.get("blockedBy") or []):
         sys.exit(f"{args.id} has no blocker {args.blocker!r}")
     item["blockedBy"] = [b for b in item["blockedBy"] if b != args.blocker]
+    if not item["blockedBy"]:
+        item["unblocked"] = datetime.datetime.now().isoformat(timespec="seconds")
     write_json(path, item)
 
 

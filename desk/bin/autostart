@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+"""Print what the desk may start on its own under the auto-start setting I picked on the board."""
+
+from __future__ import annotations
+
+import datetime
+import json
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import THREADS, all_items, autostart_setting, open_blockers  # noqa: E402
+
+WORK_SLOTS = 5
+REVIEW_SLOTS = 2
+ACTIVE = ("requested", "started")
+PAUSED = ("open", "next")
+
+
+def in_window(now: datetime.datetime) -> bool:
+    return now.weekday() < 5 and 8 <= now.hour < 20
+
+
+def ready_brief(brief: str) -> bool:
+    headings = {m.lower() for m in re.findall(r"^##\s+(.+?)\s*$", brief or "", re.M)}
+    return {"goal", "done when", "plan"} <= headings and "open questions" not in headings
+
+
+def main() -> None:
+    setting = autostart_setting()
+    items = all_items()
+    threads = json.loads(THREADS.read_text()) if THREADS.exists() else {}
+    managers = set((threads.get("managers") or {}).values())
+    resting = {t["thread"] for key in ("waiting", "snoozed") for t in threads.get(key) or []}
+    allowed = (lambda item: True) if setting["mode"] == "all" else (lambda item: item.get("effort") in setting["efforts"])
+    now = datetime.datetime.now()
+    today = now.date().isoformat()
+
+    def eligible(item: dict) -> bool:
+        return (
+            item["status"] in PAUSED
+            and not item.get("needs")
+            and not item.get("move")
+            and item.get("thread") not in managers
+            and not open_blockers(item, items)
+        )
+
+    def cleared(item: dict) -> bool:
+        if not item.get("thread") or not eligible(item):
+            return False
+        return (item.get("unblocked") or "") > (item.get("paused") or "") or bool(item.get("blockedBy"))
+
+    def startable(item: dict) -> bool:
+        if not eligible(item):
+            return False
+        return (item.get("paused") or "") < today if item.get("thread") else ready_brief(item.get("brief", ""))
+
+    def busy(item: dict) -> bool:
+        return item["status"] in ACTIVE and item.get("thread") not in managers and item.get("thread") not in resting
+
+    resumes = sorted((i for i in items.values() if cleared(i)), key=lambda i: i.get("unblocked") or i.get("paused") or "")
+    if setting["mode"] == "off":
+        print("auto-start off")
+        for item in resumes:
+            print(f"resume {item['id']} {item['thread']}")
+        return
+    reviews_busy = sum(busy(i) for i in items.values() if i.get("kind") == "review")
+    work_busy = sum(busy(i) for i in items.values() if i.get("kind") != "review")
+    scope = "all efforts" if setting["mode"] == "all" else "focus on " + (", ".join(setting["efforts"]) or "no effort")
+    print(
+        f"auto-start {scope}, work {work_busy} of {WORK_SLOTS}"
+        + (f", reviews {reviews_busy} of {REVIEW_SLOTS}" if setting["reviews"] else ", reviews off")
+    )
+    if not in_window(now):
+        return
+
+    candidates = [i for i in items.values() if startable(i) and allowed(i)]
+    nexts = sorted((i for i in candidates if i["status"] == "next"), key=lambda i: i.get("rank") or 1e9)
+    picks = sorted((i for i in candidates if i["status"] == "open" and i.get("suggested")), key=lambda i: i["id"])
+    paused = sorted((i for i in candidates if i["status"] == "open" and i.get("thread")), key=lambda i: i.get("paused") or "")
+    reviews = sorted((i for i in candidates if i["status"] == "open" and i.get("kind") == "review"), key=lambda i: i["id"])
+
+    chosen: list[str] = []
+    free = {"work": WORK_SLOTS - work_busy, "review": REVIEW_SLOTS - reviews_busy if setting["reviews"] else 0}
+    for item in [*resumes, *nexts, *picks, *paused, *reviews]:
+        track = "review" if item.get("kind") == "review" else "work"
+        if item["id"] in chosen or free[track] <= 0:
+            continue
+        free[track] -= 1
+        chosen.append(item["id"])
+        verb = "resume" if item.get("thread") else "review" if track == "review" else "start"
+        print(f"{verb} {item['id']}" + (f" {item['thread']}" if item.get("thread") else ""))
+
+
+if __name__ == "__main__":
+    main()

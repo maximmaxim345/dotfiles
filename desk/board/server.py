@@ -31,6 +31,9 @@ INCOMING = STATE / "incoming.json"
 PROPOSALS = STATE / "proposals.json"
 AUTOSTART = STATE / "autostart.json"
 AUTOSTART_MODES = {"off", "focus", "all"}
+SPACES = STATE / "spaces.json"
+DEFAULT_SPACE = "work"
+SPACE_NAME = re.compile(r"[a-z0-9][a-z0-9-]{0,30}")
 SHOWN_INCOMING = {"new", "needs-you", "waiting"}
 SHOWN_PROPOSALS = {"open", "approved", "failed"}
 SETTABLE_STATUSES = {"open", "next", "requested", "done", "dropped"}
@@ -112,6 +115,38 @@ def autostart_setting() -> dict:
     return json.loads(AUTOSTART.read_text()) if AUTOSTART.exists() else {"mode": "off", "efforts": [], "reviews": False}
 
 
+def spaces_setting() -> dict:
+    return json.loads(SPACES.read_text()) if SPACES.exists() else {"spaces": [DEFAULT_SPACE], "off": [], "efforts": {}}
+
+
+def space_of(effort: str | None, setting: dict) -> str:
+    return setting["efforts"].get(effort or "", DEFAULT_SPACE)
+
+
+def change_spaces(body: dict) -> None:
+    with locked(SPACES):
+        setting = spaces_setting()
+        if "create" in body:
+            name = body["create"].strip().lower()
+            if not SPACE_NAME.fullmatch(name):
+                raise ValueError("use lowercase letters, digits and dashes for a space name")
+            if name not in setting["spaces"]:
+                setting["spaces"].append(name)
+        elif body["space"] not in setting["spaces"]:
+            raise ValueError(f"unknown space {body['space']}")
+        elif "effort" in body:
+            if body["effort"] not in {e["slug"] for e in efforts()}:
+                raise ValueError(f"unknown effort {body['effort']}")
+            setting["efforts"][body["effort"]] = body["space"]
+        elif body["on"]:
+            setting["off"] = [s for s in setting["off"] if s != body["space"]]
+        elif body["space"] not in setting["off"]:
+            setting["off"].append(body["space"])
+        write_json(SPACES, setting)
+    if "create" not in body:
+        log_event({"type": "space"})
+
+
 def all_items() -> dict[str, dict]:
     return {p.stem: json.loads(p.read_text()) for p in sorted(BACKLOG.glob("*.json"))}
 
@@ -130,6 +165,7 @@ def load_state() -> dict:
         "incoming": [e for e in incoming.values() if e["status"] in SHOWN_INCOMING],
         "proposals": [p for p in proposals if p["state"] in SHOWN_PROPOSALS],
         "autostart": autostart_setting(),
+        "spaces": spaces_setting(),
     }
 
 
@@ -324,6 +360,8 @@ class Handler(BaseHTTPRequestHandler):
                 chosen = sorted(set(body["efforts"]) & known)
                 write_json(AUTOSTART, {"mode": body["mode"], "efforts": chosen, "reviews": bool(body["reviews"])})
                 log_event({"type": "autostart"})
+            elif self.path == "/api/spaces":
+                change_spaces(body)
             elif self.path == "/api/update":
                 known = {e["slug"] for e in efforts()}
                 fields = {k: (v or None) for k, v in body["fields"].items() if k in ("effort", "repo")}

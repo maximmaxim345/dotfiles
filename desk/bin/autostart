@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import THREADS, all_items, autostart_setting, open_blockers  # noqa: E402
+from server import THREADS, all_items, autostart_setting, open_blockers, space_of, spaces_setting  # noqa: E402
 
 WORK_SLOTS = 5
 REVIEW_SLOTS = 2
@@ -29,6 +29,7 @@ def ready_brief(brief: str) -> bool:
 
 def main() -> None:
     setting = autostart_setting()
+    spaces = spaces_setting()
     items = all_items()
     threads = json.loads(THREADS.read_text()) if THREADS.exists() else {}
     managers = set((threads.get("managers") or {}).values())
@@ -44,6 +45,7 @@ def main() -> None:
             and not item.get("move")
             and item.get("thread") not in managers
             and not open_blockers(item, items)
+            and space_of(item.get("effort"), spaces) not in spaces["off"]
         )
 
     def cleared(item: dict) -> bool:

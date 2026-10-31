@@ -62,6 +62,7 @@
   .auto { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
   button.chip { border: 1px solid var(--line-2); cursor: pointer; padding: 2px 8px; font-size: 12px; max-width: none; }
   button.chip.effort { border-color: var(--accent); }
+  .lanehead select { font-size: 12px; padding: 1px 6px; border-radius: 6px; }
 
   main { padding: 16px 20px 120px; }
   .section-title .toggle { cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
@@ -233,6 +234,7 @@
     <div class="brand"><span class="mark">D</span>Desk</div>
     <div class="stats" id="stats"></div>
     <div class="grow"></div>
+    <div class="auto" id="spaceWrap" title="Spaces group efforts, like work and personal. Turning a space off hides it here and puts its idle threads away until you turn it on again."></div>
     <div class="auto" id="autoWrap" title="Lets the desk start up to 5 work threads and 2 reviews on its own, on weekdays from 8:00 to 20:00. Threads that wait on reviewers don't count."></div>
     <div class="search">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="5"/><path d="m11 11 3.5 3.5"/></svg>
@@ -243,6 +245,7 @@
   <div class="filters">
     <label>Group <select id="groupBy"><option value="effort">by effort</option><option value="repo">by repo</option><option value="none">no groups</option></select></label>
     <label>Sort <select id="laneSort"><option value="activity">recent first</option><option value="name">by name</option></select></label>
+    <label>Space <select id="fSpace"></select></label>
     <label>Effort <select id="fEffort"></select></label>
     <label>Repo <select id="fRepo"></select></label>
     <label>Label <select id="fLabel">
@@ -283,7 +286,7 @@ const COMMENT_ICON = () => { const s = document.createElementNS("http://www.w3.o
 const store = JSON.parse(localStorage.getItem("desk-board") || "{}");
 const ui = {
   groupBy: store.groupBy || "effort", laneSort: store.laneSort || "activity", collapsed: new Set(store.collapsed || []), doneDays: store.doneDays || 7,
-  picked: new Set(), q: "", effort: new URLSearchParams(location.search).get("effort") || "", repo: "", label: "", selected: new Set(), openId: null, expanded: new Set(), drag: null,
+  picked: new Set(), q: "", effort: new URLSearchParams(location.search).get("effort") || "", space: "", repo: "", label: "", selected: new Set(), openId: null, expanded: new Set(), drag: null,
 };
 let state = { items: [], threads: null, efforts: [], repos: [] };
 let lastJson = "";
@@ -413,6 +416,11 @@ function threadState(id) {
   return null;
 }
 const startMsg = () => state.listening ? "Starting. The desk launches it in a moment." : "Marked to start. The desk isn't listening, so type \"go\" in the desk thread.";
+function spaceOf(effort) { return state.spaces?.efforts?.[effort || ""] || "work"; }
+function spaceShown(effort) {
+  if (ui.effort || ui.space === "*") return true;
+  return ui.space ? spaceOf(effort) === ui.space : !(state.spaces?.off || []).includes(spaceOf(effort));
+}
 function effortTitle(slug) { return state.efforts.find(e => e.slug === slug)?.title || slug; }
 function baseColumn(item) { return COLUMNS.find(c => c.statuses.includes(item.status))?.key; }
 function columnOf(item) {
@@ -423,6 +431,7 @@ function columnOf(item) {
 function inColumn(item, col) { return columnOf(item) === col || baseColumn(item) === col; }
 function inDoneWindow(item) { return ui.doneDays < 0 || !item.done || (Date.now() - new Date(item.done).getTime()) / 86400000 <= ui.doneDays; }
 function matches(item) {
+  if (!spaceShown(item.effort)) return false;
   if (ui.effort && (item.effort || "") !== (ui.effort === "-" ? "" : ui.effort)) return false;
   if (ui.repo && (item.repo || "") !== (ui.repo === "-" ? "" : ui.repo)) return false;
   if (ui.label && item.label !== ui.label) return false;
@@ -438,27 +447,43 @@ function needsList() {
   const snoozed = (state.threads?.snoozed || []).map(z => z.thread);
   const own = state.items.filter(i => i.needs && i.status === "requested" || i.asks && i.status === "started" && !snoozed.includes(i.thread));
   return [...own.map(i => ({ thread: i.thread, title: i.title, why: i.asks ? i.asks.text : i.needs, at: i.asks?.at, pr: i.pr, item: i.id, effort: i.effort })),
-    ...(state.threads?.needsYou || []).filter(n => !own.some(i => i.thread && i.thread === n.thread))];
+    ...(state.threads?.needsYou || []).filter(n => !own.some(i => i.thread && i.thread === n.thread))].filter(n => spaceShown(n.effort));
 }
 
 function renderStats() {
-  const count = s => state.items.filter(i => s.includes(i.status)).length;
+  const items = state.items.filter(i => spaceShown(i.effort));
+  const count = s => items.filter(i => s.includes(i.status)).length;
   const needs = needsList().length;
   const stat = (n, label, hot, target) => n ? el("span", { class: `stat${hot ? " hot" : ""}${target ? " jump" : ""}`, onclick: target ? () => $(target).scrollIntoView({ behavior: "smooth" }) : null }, el("b", {}, String(n)), ` ${label}`) : null;
   const listen = el("span", { class: "stat", title: state.listening ? "The desk reacts to Start, captures, comments and pauses within a minute." : "Run ./dotfiles.py install desk_listener in ~/dotfiles. Until then the desk only acts when you ask it." },
     el("span", { class: "dot", style: { background: state.listening ? "var(--green)" : "var(--gray)" } }), state.listening ? "desk listening" : "desk not listening");
-  $("stats").replaceChildren(...[stat(needs, "need you", true, "needsWrap"), stat((state.incoming || []).filter(e => e.status !== "waiting").length, "incoming", true, "incomingWrap"), stat(count(["new"]), "inbox"), stat(count(["next"]), "next"), stat(count(["requested"]), "starting", true), stat(state.items.filter(i => i.status === "started" && columnOf(i) === "started").length, "in progress"), stat(state.items.filter(i => columnOf(i) === "review").length, "in review"), listen].filter(Boolean));
+  $("stats").replaceChildren(...[stat(needs, "need you", true, "needsWrap"), stat((state.incoming || []).filter(e => e.status !== "waiting" && spaceShown(e.effort)).length, "incoming", true, "incomingWrap"), stat(count(["new"]), "inbox"), stat(count(["next"]), "next"), stat(count(["requested"]), "starting", true), stat(items.filter(i => i.status === "started" && columnOf(i) === "started").length, "in progress"), stat(items.filter(i => columnOf(i) === "review").length, "in review"), listen].filter(Boolean));
   $("stats").prepend(...(needs ? [] : [el("span", { class: "stat" }, "nothing needs you")]));
 }
 
 function renderFilters() {
   const opts = (sel, all, list, current) => sel.replaceChildren(el("option", { value: "" }, all), el("option", { value: "-", selected: current === "-" }, "none"),
     ...list.map(([v, t]) => el("option", { value: v, selected: v === current }, t)));
+  $("fSpace").replaceChildren(el("option", { value: "" }, "spaces that are on"), ...(state.spaces?.spaces || []).map(n => el("option", { value: n, selected: n === ui.space }, n)),
+    el("option", { value: "*", selected: ui.space === "*" }, "all"));
   opts($("fEffort"), "all", state.efforts.map(e => [e.slug, e.title]), ui.effort);
   opts($("fRepo"), "all", state.repos.map(r => [r, r]), ui.repo);
   $("groupBy").value = ui.groupBy;
   $("laneSort").value = ui.laneSort;
-  $("clearFilters").hidden = !(ui.q || ui.effort || ui.repo || ui.label);
+  $("clearFilters").hidden = !(ui.q || ui.effort || ui.space || ui.repo || ui.label);
+}
+
+function renderSpaces() {
+  const sp = state.spaces;
+  const wake = state.listening ? "in a minute" : "on its next sweep";
+  $("spaceWrap").replaceChildren("Spaces", ...sp.spaces.map(n => {
+    const on = !sp.off.includes(n);
+    return el("button", { class: `chip${on ? " effort" : ""}`, title: on ? "Turn off" : "Turn on",
+      onclick: guard(() => post("/api/spaces", { space: n, on: !on }, on ? `${n} off. The desk puts its idle threads away ${wake}.` : `${n} on. The desk brings its threads back ${wake}.`)) }, n);
+  }), el("button", { class: "chip", title: "New space", onclick: guard(async () => {
+    const name = prompt("Name of the new space");
+    if (name?.trim()) await post("/api/spaces", { create: name }, `Space ${name.trim().toLowerCase()} added. Move efforts into it from their lane.`);
+  }) }, "+"));
 }
 
 function renderAutostart() {
@@ -498,7 +523,8 @@ function renderNeeds() {
   const t = state.threads;
   const wrap = $("needsWrap");
   if (!t) { wrap.replaceChildren(el("div", { class: "section-title" }, "Needs you"), el("div", { class: "empty-note" }, "No sweep yet. Ask the desk to sweep.")); return; }
-  const needs = needsList().filter(n => !ui.effort || (n.effort || "") === (ui.effort === "-" ? "" : ui.effort)), waiting = t.waiting || [], snoozed = t.snoozed || [], unassigned = t.unassigned || [];
+  const needs = needsList().filter(n => !ui.effort || (n.effort || "") === (ui.effort === "-" ? "" : ui.effort)), shown = list => (list || []).filter(x => spaceShown(x.effort));
+  const waiting = shown(t.waiting), snoozed = shown(t.snoozed), unassigned = shown(t.unassigned);
   const parts = [el("div", { class: "section-title" }, "Needs you", el("span", { style: { fontWeight: 400, textTransform: "none", letterSpacing: 0 } }, `· sweep ${t.updated}`))];
   const fresh = needs.filter(n => !isOld(n.at, OLD_MINUTES)), old = needs.filter(n => isOld(n.at, OLD_MINUTES));
   parts.push(fresh.length ? el("div", { class: "needs" }, fresh.map(n => threadRow(n))) : el("div", { class: "empty-note" }, "Nothing new needs you."));
@@ -537,7 +563,7 @@ function proposalRow(p) {
 }
 function renderIncoming() {
   const order = ["needs-you", "new", "waiting"];
-  const entries = (state.incoming || []).filter(e => !ui.effort || (e.effort || "") === (ui.effort === "-" ? "" : ui.effort))
+  const entries = (state.incoming || []).filter(e => spaceShown(e.effort) && (!ui.effort || (e.effort || "") === (ui.effort === "-" ? "" : ui.effort)))
     .sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status) || b.updated.localeCompare(a.updated));
   const parts = [];
   if (entries.length) {
@@ -645,7 +671,7 @@ async function drop(col, lane, e) {
 function renderBoard() {
   const visible = state.items.filter(matches);
   const lanes = new Map();
-  if (ui.groupBy === "effort" && !ui.effort) state.efforts.forEach(e => lanes.set(e.slug, []));
+  if (ui.groupBy === "effort" && !ui.effort) state.efforts.filter(e => spaceShown(e.slug)).forEach(e => lanes.set(e.slug, []));
   for (const item of visible) { const k = laneKey(item); if (!lanes.has(k)) lanes.set(k, []); lanes.get(k).push(item); }
   const activity = k => lanes.get(k).reduce((m, i) => (i.done || i.created) > m ? (i.done || i.created) : m, "");
   const keys = [...lanes.keys()].sort((a, b) => ui.laneSort === "name"
@@ -695,6 +721,9 @@ function renderBoard() {
         el("span", { class: "sub" }, `${open} open · ${items.length - open} done`),
         collapsed && el("span", { class: "mini" }, COLUMNS.map(c => { const n = items.filter(i => columnOf(i) === c.key).length; return n ? el("span", { title: c.name }, el("span", { class: "dot", style: { background: c.color } }), String(n)) : null; })),
         ui.groupBy === "effort" && key && el("span", { class: "sub mono" }, key),
+        ui.groupBy === "effort" && key && state.spaces.spaces.length > 1 && el("select", { title: "This effort's space", onclick: e => e.stopPropagation(),
+          onchange: e => post("/api/spaces", { effort: key, space: e.target.value }, `Moved to ${e.target.value}`) },
+          state.spaces.spaces.map(n => el("option", { value: n, selected: n === spaceOf(key) }, n))),
         ui.groupBy === "effort" && managerOf(key) && el("span", { class: "chip effort", title: "This effort's manager thread", onclick: e => e.stopPropagation() }, threadLink(managerOf(key), "manager"))),
       el("div", { class: "cols", style: { gridTemplateColumns: template } }, cells));
   });
@@ -842,17 +871,18 @@ function captureModal() {
 
 function render() {
   const y = scrollY;
-  renderStats(); renderFilters(); renderAutostart(); renderNeeds(); renderIncoming(); renderBoard(); renderBulk(); renderDrawer();
+  renderStats(); renderFilters(); renderSpaces(); renderAutostart(); renderNeeds(); renderIncoming(); renderBoard(); renderBulk(); renderDrawer();
   scrollTo(0, y);
 }
 
 $("q").addEventListener("input", e => { ui.q = e.target.value; renderBoard(); renderFilters(); });
 $("groupBy").addEventListener("change", e => { ui.groupBy = e.target.value; save(); render(); });
 $("laneSort").addEventListener("change", e => { ui.laneSort = e.target.value; save(); render(); });
+$("fSpace").addEventListener("change", e => { ui.space = e.target.value; render(); });
 $("fEffort").addEventListener("change", e => { ui.effort = e.target.value; render(); });
 $("fRepo").addEventListener("change", e => { ui.repo = e.target.value; render(); });
 $("fLabel").addEventListener("change", e => { ui.label = e.target.value; render(); });
-$("clearFilters").addEventListener("click", () => { ui.q = ui.effort = ui.repo = ui.label = ""; $("q").value = ""; $("fLabel").value = ""; render(); });
+$("clearFilters").addEventListener("click", () => { ui.q = ui.effort = ui.space = ui.repo = ui.label = ""; $("q").value = ""; $("fLabel").value = ""; render(); });
 $("captureBtn").addEventListener("click", () => { ui.capture = true; render(); });
 $("collapseAll").addEventListener("click", () => { document.querySelectorAll(".lane[data-key]").forEach(l => ui.collapsed.add(`${ui.groupBy}:${l.dataset.key}`)); save(); render(); });
 $("expandAll").addEventListener("click", () => { ui.collapsed.clear(); save(); render(); });

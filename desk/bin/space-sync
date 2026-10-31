@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""Print the threads to put away or bring back for spaces I turned off or on, and record them in ~/desk/state/parked.json."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sqlite3
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import CLOSED_STATUSES, STATE, T3_DB, THREADS, all_items, space_of, spaces_setting, write_json  # noqa: E402
+
+PARKED = STATE / "parked.json"
+LIVE_RUNS = {"preparing", "queued", "starting", "running"}
+
+
+def idle_threads() -> set[str]:
+    """Threads that are neither settled, snoozed, running nor waiting on a request."""
+    conn = sqlite3.connect(f"file:{T3_DB}?mode=ro", uri=True)
+    try:
+        rows = conn.execute(
+            "SELECT t.thread_id, t.payload_json, r.status,"
+            " (SELECT COUNT(*) FROM orchestration_v2_projection_runtime_requests q"
+            " WHERE q.thread_id = t.thread_id AND q.status != 'resolved')"
+            " FROM orchestration_v2_projection_threads t LEFT JOIN orchestration_v2_projection_runs r"
+            " ON r.thread_id = t.thread_id"
+            " AND r.ordinal = (SELECT MAX(ordinal) FROM orchestration_v2_projection_runs WHERE thread_id = t.thread_id)"
+            " WHERE t.archived_at IS NULL AND t.deleted_at IS NULL"
+        ).fetchall()
+    finally:
+        conn.close()
+    idle = set()
+    for thread_id, payload, status, pending in rows:
+        payload = json.loads(payload)
+        if (
+            payload.get("settledOverride") != "settled"
+            and not payload.get("snoozedUntil")
+            and status not in LIVE_RUNS
+            and not pending
+        ):
+            idle.add(thread_id)
+    return idle
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--hold", nargs=2, metavar=("THREAD", "NEWS"), help="keep PR news for a thread in an off space until its space is on"
+    )
+    args = parser.parse_args()
+    parked = json.loads(PARKED.read_text()) if PARKED.exists() else {}
+    if args.hold:
+        thread, news = args.hold
+        parked.setdefault(thread, {"news": []})["news"].append(news)
+        write_json(PARKED, parked)
+        return
+
+    setting = spaces_setting()
+    off = set(setting["off"])
+    by_thread = {i["thread"]: i for i in all_items().values() if i.get("thread") and i["status"] not in CLOSED_STATUSES}
+    for thread, entry in list(parked.items()):
+        item = by_thread.get(thread)
+        if item and space_of(item.get("effort"), setting) in off:
+            continue
+        del parked[thread]
+        if item and (item["status"] == "started" or entry["news"]):
+            print(json.dumps({"action": "restore", "item": item["id"], "thread": thread, "news": entry["news"]}))
+
+    threads = json.loads(THREADS.read_text()) if THREADS.exists() else {}
+    skip = set((threads.get("managers") or {}).values()) | {n["thread"] for n in threads.get("needsYou") or []}
+    idle = idle_threads() if off else set()
+    for thread, item in by_thread.items():
+        if (
+            item["status"] == "started"
+            and not item.get("asks")
+            and thread not in parked
+            and thread not in skip
+            and thread in idle
+            and space_of(item.get("effort"), setting) in off
+        ):
+            parked[thread] = {"news": []}
+            print(json.dumps({"action": "park", "item": item["id"], "thread": thread}))
+    write_json(PARKED, parked)
+
+
+if __name__ == "__main__":
+    main()

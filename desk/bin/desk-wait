@@ -84,7 +84,7 @@ def autostart_on() -> bool:
 def actionable(event: dict) -> bool:
     if event.get("by") == "desk" or event["type"] == "comment" and event.get("by") == "manager":
         return False
-    if event["type"] in ("capture", "comment", "archive", "adopt", "apply", "autostart"):
+    if event["type"] in ("capture", "comment", "archive", "adopt", "apply", "autostart", "space"):
         return True
     if event["type"] == "status":
         return any(

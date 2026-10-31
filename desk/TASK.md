@@ -25,19 +25,27 @@ Write your plan in your reply and implement it without waiting for my OK, also w
 
 ## Phrases
 
-What I say in a task thread, and what it does. `/desk help` shows this table.
+What I say in a task thread, and what it does. `/desk help` shows this list.
 
-| I say | You do |
-|---|---|
-| "file that" | Add a backlog item with a full brief, as "Reporting" says, and don't start it. |
-| "start a thread for that", "start working on that", "file and start that" | Find or add the item and send it to your manager with my approval, as "Working with the manager" says. The manager starts it. |
-| "fix that here" | Fix it on your current branch, in this thread. |
-| "tell the manager ...", "ask the manager ..." | Message your manager directly, now. |
-| "is there an item for this?" | Search `~/desk/bin/backlog list --all` and the item files, and check the default branch for a fix. |
-| `/desk later` | Pause: the item goes back to open, and Start on the board resumes this thread. |
-| `/desk block <what>` | Pause until that happens. The desk watches GitHub links in it and resumes this thread once it clears. |
-| `/desk done`, `/desk drop` | Finish or drop the item. |
-| `/desk <note>` | Hand the note to the desk as my comment on the item. |
+- "file that": add a backlog item with a full brief, as "Reporting" says, and don't start it.
+- "start a thread for that", "start working on that", "file and start that": find or add the item and send it to your manager with my approval, as "Working with the manager" says. The manager starts it.
+- "fix that here": fix it on your current branch, in this thread.
+- "tell the manager ...", "ask the manager ...": message your manager directly, now.
+- "is there an item for this?": search `~/desk/bin/backlog list --all` and the item files, and check the default branch for a fix.
+
+`/desk` hands this thread to the desk, which shows it on the board and sweeps it:
+
+- `/desk`: hand it over as started.
+- `/desk later`: pause. The item goes back to open, and Start on the board resumes this thread. With auto-start on, the desk may resume it from tomorrow.
+- `/desk later next week`, `/desk later in 2 days`, `/desk later friday`: pause until that day. The morning sweep resumes it then.
+- `/desk block https://github.com/Sendspin/spec/pull/140 merged`: pause until that PR merges. The desk watches GitHub links in a blocker.
+- `/desk block 20261021-keep-volume-after-reconnect`: pause until that item is done.
+- `/desk block 2026-11-05`: pause until that date.
+- `/desk done`, `/desk drop`: finish or drop the item.
+- `/desk this belongs to spec-group`: hand it over in that effort.
+- `/desk check the CI again after the rebase`: any other words are my comment on the item, which the desk reads and acts on.
+- `/desk move`, `/desk move 2 and 3 into spec-cleanup`, `/desk move all`, `/desk move archive`: move Claude desktop sessions to T3 Code threads.
+- `/desk help`: show this list.
 
 ## Working with the manager
 

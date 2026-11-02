@@ -162,12 +162,14 @@ def propose(args: argparse.Namespace) -> None:
         fresh += found
     with locked(PROPOSALS):
         old = {p["id"]: p for p in json.loads(PROPOSALS.read_text())} if PROPOSALS.exists() else {}
-        kept = [p for p in old.values() if p["state"] != "open" or p["action"] != "move"]
-        kept += [
-            {**p, "at": old.get(p["id"], p).get("at", p["at"])}
+        held = {i: p for i, p in old.items() if p["state"] != "open" or p["action"] != "move" or p.get("revised")}
+        refreshed = {
+            p["id"]: {**old.get(p["id"], {}), **p, "at": old.get(p["id"], p).get("at", p["at"])}
             for p in fresh
-            if p["id"] not in old or old[p["id"]]["state"] == "open"
-        ]
+            if p["id"] not in held
+        }
+        chatted = [p for i, p in old.items() if i not in held and i not in refreshed and p.get("chat")]
+        kept = [*held.values(), *refreshed.values(), *chatted]
         write_json(PROPOSALS, kept)
     for p in kept:
         if p["state"] in ("open", "approved", "failed"):
@@ -233,6 +235,38 @@ def dismiss(args: argparse.Namespace) -> None:
         for p in proposals:
             if p["id"] in args.ids and p["state"] == "open":
                 p["state"] = "dismissed"
+        write_json(PROPOSALS, proposals)
+
+
+def revise(args: argparse.Namespace) -> None:
+    body = sys.stdin.read().strip() if args.body else None
+    with locked(PROPOSALS):
+        proposals = json.loads(PROPOSALS.read_text()) if PROPOSALS.exists() else []
+        p = next((p for p in proposals if p["id"] == args.id and p["state"] in ("open", "failed")), None)
+        if p is None:
+            sys.exit(f"no open proposal {args.id}")
+        if args.status or args.field:
+            extra = checked_fields(p["board"], args.status or p["to"], args.field)
+            p["to"] = args.status or p["to"]
+            if args.field:
+                p["fields"] = extra
+        if args.title:
+            p["title"] = args.title
+        if body is not None:
+            p["body"] = body
+        p.update(why=args.why, state="open", revised=True)
+        p.pop("error", None)
+        write_json(PROPOSALS, proposals)
+
+
+def chat(args: argparse.Namespace) -> None:
+    with locked(PROPOSALS):
+        proposals = json.loads(PROPOSALS.read_text()) if PROPOSALS.exists() else []
+        p = next((p for p in proposals if p["id"] == args.id), None)
+        if p is None:
+            sys.exit(f"no proposal {args.id}")
+        message = {"at": datetime.datetime.now().isoformat(timespec="seconds"), "by": args.by, "text": args.text}
+        p.setdefault("chat", []).append(message)
         write_json(PROPOSALS, proposals)
 
 
@@ -333,6 +367,19 @@ def main() -> None:
     p_dismiss = sub.add_parser("dismiss", help="drop open proposals that my notes in watch.json rule out")
     p_dismiss.add_argument("ids", nargs="+")
     p_dismiss.set_defaults(func=dismiss)
+    p_revise = sub.add_parser("revise", help="change an open proposal as my chat asks, keeping its id and chat")
+    p_revise.add_argument("id")
+    p_revise.add_argument("--status", help="the new status on its board")
+    p_revise.add_argument("--field", action="append", help="replace its other fields, as Name=Value, repeatable")
+    p_revise.add_argument("--title", help="the new title of a drafted issue")
+    p_revise.add_argument("--body", action="store_true", help="read a new issue body from stdin")
+    p_revise.add_argument("--why", required=True, help="one line")
+    p_revise.set_defaults(func=revise)
+    p_chat = sub.add_parser("chat", help="answer my chat message on a proposal")
+    p_chat.add_argument("id")
+    p_chat.add_argument("text")
+    p_chat.add_argument("--by", required=True, choices=["desk", "manager"])
+    p_chat.set_defaults(func=chat)
     sub.add_parser("apply", help="apply the proposals I approved").set_defaults(func=apply)
     args = parser.parse_args()
     args.func(args)

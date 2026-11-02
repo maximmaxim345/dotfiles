@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""List or sort the entries bin/watch recorded in ~/desk/state/incoming.json."""
+"""List, sort or answer chat on the entries bin/watch recorded in ~/desk/state/incoming.json."""
 
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import sys
 from pathlib import Path
@@ -46,6 +47,16 @@ def set_entry(args: argparse.Namespace) -> None:
         write_json(INCOMING, data)
 
 
+def chat(args: argparse.Namespace) -> None:
+    with locked(INCOMING):
+        data = load()
+        if args.url not in data:
+            sys.exit(f"no incoming entry {args.url}")
+        message = {"at": datetime.datetime.now().isoformat(timespec="seconds"), "by": args.by, "text": args.text}
+        data[args.url].setdefault("chat", []).append(message)
+        write_json(INCOMING, data)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -64,6 +75,12 @@ def main() -> None:
     p_set.add_argument("--item", help="the backlog item it was filed as")
     p_set.add_argument("--link", help="the duplicate, the fix, or the PR it relates to")
     p_set.set_defaults(func=set_entry)
+
+    p_chat = sub.add_parser("chat", help="answer my chat message on an entry")
+    p_chat.add_argument("url")
+    p_chat.add_argument("text")
+    p_chat.add_argument("--by", required=True, choices=["desk", "manager"])
+    p_chat.set_defaults(func=chat)
 
     args = parser.parse_args()
     args.func(args)

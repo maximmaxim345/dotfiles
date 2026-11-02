@@ -80,6 +80,8 @@
   .nrow .m a { color: var(--accent); font-family: var(--font); }
   .nrow .draft { margin-top: 4px; }
   .nrow .post + .post { margin-top: 8px; }
+  .nrow .chat textarea { margin-top: 4px; }
+  .nrow .chat .btn { margin-top: 4px; }
   .nrow .post .by { font-size: 12px; color: var(--muted); }
   .nrow .draft pre { white-space: pre-wrap; font-family: var(--font); font-size: 12px; background: var(--sunk); border-radius: 6px; padding: 6px 8px; margin: 4px 0; }
   .nrow .act { color: var(--ink); }
@@ -289,6 +291,7 @@ const store = JSON.parse(localStorage.getItem("desk-board") || "{}");
 const ui = {
   groupBy: store.groupBy || "effort", laneSort: store.laneSort || "activity", collapsed: new Set(store.collapsed || []), doneDays: store.doneDays || 7,
   picked: new Set(), q: "", effort: new URLSearchParams(location.search).get("effort") || "", space: "", repo: "", label: "", selected: new Set(), openId: null, expanded: new Set(), drag: null,
+  folds: new Set(), chatDrafts: {},
 };
 let state = { items: [], threads: null, efforts: [], repos: [] };
 let lastJson = "";
@@ -540,6 +543,26 @@ function renderNeeds() {
   wrap.replaceChildren(...parts);
 }
 
+function commentEl(c) {
+  return el("div", { class: `comment${c.by === "me" ? "" : " desk"}` }, el("div", { class: "who", title: c.at.replace("T", " ").slice(0, 16) }, `${{ me: "you", task: "task thread" }[c.by] || c.by} · ${ago(c.at)} ago`), el("div", {}, c.text));
+}
+function fold(key, summary, ...children) {
+  return el("details", { class: "draft", open: ui.folds.has(key), ontoggle: ev => ev.target.open ? ui.folds.add(key) : ui.folds.delete(key) }, el("summary", {}, summary), ...children);
+}
+function chatFold(key, chat, hint, send) {
+  const textarea = el("textarea", { rows: 2, placeholder: `Ask the desk, like ${hint}. ⌘↵ sends.`, oninput: ev => { ui.chatDrafts[key] = ev.target.value; },
+    onkeydown: ev => { if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) sendBtn.click(); } });
+  textarea.value = ui.chatDrafts[key] || "";
+  const sendBtn = el("button", { class: "btn", onclick: guard(async () => {
+    const text = textarea.value.trim();
+    if (!text) return;
+    textarea.blur();
+    await send(text);
+    delete ui.chatDrafts[key];
+    toast(state.listening ? "Sent. The desk answers in a minute." : "Sent. The desk answers on its next sweep.");
+  }) }, "Send");
+  return fold(key, chat?.length ? `Chat (${chat.length})` : "Ask the desk", el("div", { class: "chat" }, (chat || []).map(commentEl), textarea, sendBtn));
+}
 const INCOMING_BADGE = { "needs-you": ["hot", "needs you"], waiting: ["", "waiting for user"], new: ["new", "new"] };
 function incomingRow(e) {
   const [cls, label] = INCOMING_BADGE[e.status];
@@ -548,9 +571,10 @@ function incomingRow(e) {
     el("div", { class: "t", title: e.title }, el("span", { class: `chip ${cls}`, style: { marginRight: "6px" } }, label), e.title),
     el("div", { class: "w" },
       e.status === "needs-you" && e.action ? el("div", { class: "act" }, e.action) : el("div", {}, (e.news || []).join(", ")),
-      e.posts?.length > 0 && el("details", { class: "draft" }, el("summary", {}, e.posts.length === 1 ? "What they wrote" : `What they wrote (${e.posts.length})`),
+      e.posts?.length > 0 && fold(`${e.url} posts`, e.posts.length === 1 ? "What they wrote" : `What they wrote (${e.posts.length})`,
         e.posts.map(p => el("div", { class: "post" }, el("div", { class: "by" }, `${p.by}, ${ago(p.at)} ago`), Object.assign(el("div", { class: "md" }), { innerHTML: markdown(p.text) })))),
-      e.draft && el("details", { class: "draft" }, el("summary", {}, "Draft reply"), el("pre", {}, e.draft), copy)),
+      e.draft && fold(`${e.url} draft`, "Draft reply", el("pre", {}, e.draft), copy),
+      chatFold(`${e.url} chat`, e.chat, '"start a review"', text => post("/api/incoming/chat", { url: e.url, text }))),
     el("div", { class: "m" }, el("a", { href: e.url, target: "_blank" }, e.kind), e.link && el("a", { href: e.link, target: "_blank" }, "related"),
       el("a", { href: "#", title: "Hide it until it gets news", onclick: ev => { ev.preventDefault(); post("/api/incoming/dismiss", { url: e.url }, "Hidden"); } }, "hide")));
 }
@@ -565,9 +589,10 @@ function proposalRow(p) {
   return el("div", { class: "nrow waiting" },
     el("label", { class: "t", title: p.title }, box, " ", codeText(p.title)),
     el("div", { class: "w" }, `${what}, ${p.why}`, p.state === "approved" && " (applying)", p.error && el("div", { style: { color: "var(--red)" } }, p.error),
-      issue && el("details", { class: "draft" }, el("summary", {}, "About the issue"), el("div", { class: "post" }, el("div", { class: "by" }, issue),
+      issue && fold(`${p.id} issue`, "About the issue", el("div", { class: "post" }, el("div", { class: "by" }, issue),
         p.issue.text && Object.assign(el("div", { class: "md" }), { innerHTML: markdown(p.issue.text) }))),
-      p.body && el("details", { class: "draft" }, el("summary", {}, p.action === "edit" ? "New description" : "Issue text"), Object.assign(el("div", { class: "md" }), { innerHTML: markdown(p.body) }))),
+      p.body && fold(`${p.id} body`, p.action === "edit" ? "New description" : "Issue text", Object.assign(el("div", { class: "md" }), { innerHTML: markdown(p.body) })),
+      p.state !== "approved" && chatFold(`${p.id} chat`, p.chat, '"move it to Next instead"', text => post("/api/proposals/chat", { id: p.id, text }))),
     el("div", { class: "m" }, isOld(p.at, OLD_MINUTES) && el("span", { class: "chip hot", title: "Proposed this long ago" }, ago(p.at)),
       item && el("a", { href: "#", title: item.title, onclick: ev => { ev.preventDefault(); openDrawer(item.id); } }, "item"), link && el("a", { href: link, target: "_blank" }, "open")));
 }
@@ -814,7 +839,6 @@ function renderDrawer() {
   const th = item.status === "started" ? threadState(item.thread) : null;
   const prs = item.pr ? (item.prs?.length ? item.prs : [item.pr]) : [];
   const groups = commentGroups(item.comments);
-  const commentEl = c => el("div", { class: `comment${c.by === "me" ? "" : " desk"}` }, el("div", { class: "who", title: c.at.replace("T", " ").slice(0, 16) }, `${{ me: "you", task: "task thread" }[c.by] || c.by} · ${ago(c.at)} ago`), el("div", {}, c.text));
   const groupEl = g => el("div", {}, commentEl(g.head), g.replies.length > 0 && el("div", { class: "replies" }, g.replies.map(commentEl)));
   const showBlockers = blockerEditor && (current.length || ui.blockerEdit === item.id);
   overlay.replaceChildren(el("div", { class: "scrim", onclick: closeOverlay }),
@@ -905,7 +929,7 @@ document.addEventListener("keydown", e => {
 });
 
 async function refresh() {
-  if (ui.drag || ui.capture || document.activeElement?.closest(".drawer")) return;
+  if (ui.drag || ui.capture || document.activeElement?.closest(".drawer, .chat")) return;
   const data = await api("/api/state");
   const json = JSON.stringify(data);
   if (json !== lastJson) setState(data);

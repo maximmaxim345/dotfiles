@@ -342,6 +342,19 @@ class Handler(BaseHTTPRequestHandler):
                     incoming[body["url"]]["status"] = "dismissed"
                     write_json(INCOMING, incoming)
                 log_event({"type": "hide", "url": body["url"]})
+            elif self.path == "/api/incoming/chat":
+                with locked(INCOMING):
+                    incoming = json.loads(INCOMING.read_text())
+                    incoming[body["url"]].setdefault("chat", []).append({"at": now, "by": "me", "text": body["text"]})
+                    write_json(INCOMING, incoming)
+                log_event({"type": "chat", "url": body["url"]})
+            elif self.path == "/api/proposals/chat":
+                with locked(PROPOSALS):
+                    proposals = json.loads(PROPOSALS.read_text())
+                    proposal = {p["id"]: p for p in proposals}[body["id"]]
+                    proposal.setdefault("chat", []).append({"at": now, "by": "me", "text": body["text"]})
+                    write_json(PROPOSALS, proposals)
+                log_event({"type": "chat", "id": body["id"]})
             elif self.path == "/api/proposals":
                 if body["decision"] not in ("approve", "dismiss"):
                     raise ValueError(body["decision"])

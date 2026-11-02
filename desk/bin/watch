@@ -17,6 +17,8 @@ INCOMING = DESK / "state" / "incoming.json"
 BACKLOG = DESK / "backlog"
 BLOCKER_URL = r"https://github\.com/([^/\s]+)/([^/\s]+)/(?:issues|pull)/(\d+)"
 ENDED = {"closed", "merged"}
+POSTS_KEPT = 5
+POST_CHARS = 600
 SORTING = ("action", "draft", "link", "item")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
@@ -26,8 +28,11 @@ DISCUSSIONS = """
 query($q: String!) {
   search(query: $q, type: DISCUSSION, first: 50) {
     nodes { ... on Discussion {
-      url title createdAt closed author { login }
-      comments(last: 20) { nodes { createdAt author { login } replies(last: 20) { nodes { createdAt author { login } } } } }
+      url title createdAt closed body author { login }
+      comments(last: 20) { nodes {
+        createdAt body author { login }
+        replies(last: 20) { nodes { createdAt body author { login } } }
+      } }
     } }
   }
 }"""
@@ -44,14 +49,17 @@ def now() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
-def others(entries: list[dict], me: str, since: str, key: str) -> list[str]:
-    return sorted(
-        {
-            e["user"]["login"]
-            for e in entries
-            if e.get(key) and e[key] > since and e["user"]["login"] != me and e["user"]["type"] != "Bot"
-        }
-    )
+def by_others(entries: list[dict], me: str, since: str, key: str) -> list[dict]:
+    return [e for e in entries if e.get(key) and e[key] > since and e["user"]["login"] != me and e["user"]["type"] != "Bot"]
+
+
+def post(by: str, at: str, text: str | None) -> dict:
+    text = (text or "").strip()
+    return {"by": by, "at": at, "text": text[:POST_CHARS] + ("…" if len(text) > POST_CHARS else "")}
+
+
+def latest(posts: list[dict]) -> list[dict]:
+    return sorted((p for p in posts if p["text"]), key=lambda p: p["at"])[-POSTS_KEPT:]
 
 
 def issue_news(q: str, me: str, since: str) -> list[dict]:
@@ -95,21 +103,26 @@ def blocking_urls() -> dict[str, list[str]]:
 def issue_entry(issue: dict, me: str, since: str) -> dict | None:
     kind = "pr" if issue.get("pull_request") else "issue"
     base = issue["repository_url"].replace("https://api.github.com/", "")
-    lines = []
+    lines, posts = [], []
     if issue["created_at"] > since and issue["user"]["login"] != me and issue["user"]["type"] != "Bot":
         lines.append(f"new {kind} by {issue['user']['login']}")
+        posts.append(post(issue["user"]["login"], issue["created_at"], issue.get("body")))
     comments = gh("api", f"{base}/issues/{issue['number']}/comments", "-X", "GET", "-f", f"since={since}")
-    people = others(comments, me, since, "created_at")
+    new = [(c, "created_at") for c in by_others(comments, me, since, "created_at")]
     if kind == "pr":
         reviews = gh("api", f"{base}/pulls/{issue['number']}/reviews")
         inline = gh("api", f"{base}/pulls/{issue['number']}/comments", "-X", "GET", "-f", f"since={since}")
-        people = sorted({*people, *others(reviews, me, since, "submitted_at"), *others(inline, me, since, "created_at")})
-    if people:
-        lines.append("comments by " + ", ".join(people))
+        new += [(r, "submitted_at") for r in by_others(reviews, me, since, "submitted_at")]
+        new += [(c, "created_at") for c in by_others(inline, me, since, "created_at")]
+    if new:
+        lines.append("comments by " + ", ".join(sorted({c["user"]["login"] for c, _ in new})))
+        posts += [post(c["user"]["login"], c[key], c.get("body")) for c, key in new]
     if issue["state"] == "closed" and (issue.get("closed_at") or "") > since:
         merged = (issue.get("pull_request") or {}).get("merged_at")
         lines.append("merged" if merged else "closed")
-    return {"url": issue["html_url"], "kind": kind, "title": issue["title"], "news": lines} if lines else None
+    if not lines:
+        return None
+    return {"url": issue["html_url"], "kind": kind, "title": issue["title"], "news": lines, "posts": latest(posts)}
 
 
 def discussion_news(q: str, me: str, since: str) -> list[dict]:
@@ -118,18 +131,18 @@ def discussion_news(q: str, me: str, since: str) -> list[dict]:
     for d in found["data"]["search"]["nodes"]:
         if not d:
             continue
-        lines = []
+        lines, posts = [], []
         author = (d.get("author") or {}).get("login")
         if d["createdAt"] > since and author != me:
             lines.append(f"new discussion by {author}")
-        posts = d["comments"]["nodes"] + [r for c in d["comments"]["nodes"] for r in c["replies"]["nodes"]]
-        people = sorted(
-            {p["author"]["login"] for p in posts if p["createdAt"] > since and p.get("author") and p["author"]["login"] != me}
-        )
-        if people:
-            lines.append("comments by " + ", ".join(people))
+            posts.append(post(author or "ghost", d["createdAt"], d["body"]))
+        replies = d["comments"]["nodes"] + [r for c in d["comments"]["nodes"] for r in c["replies"]["nodes"]]
+        new = [r for r in replies if r["createdAt"] > since and r.get("author") and r["author"]["login"] != me]
+        if new:
+            lines.append("comments by " + ", ".join(sorted({r["author"]["login"] for r in new})))
+            posts += [post(r["author"]["login"], r["createdAt"], r["body"]) for r in new]
         if lines:
-            news.append({"url": d["url"], "kind": "discussion", "title": d["title"], "news": lines})
+            news.append({"url": d["url"], "kind": "discussion", "title": d["title"], "news": lines, "posts": latest(posts)})
     return news
 
 
@@ -176,7 +189,7 @@ def record(entries: list[dict]) -> list[dict]:
                 continue
             kept.append(entry)
             status = "closed" if closed else "noise" if old.get("status") == "noise" else "new"
-            fresh = {k: v for k, v in old.items() if k not in SORTING}
+            fresh = {k: v for k, v in old.items() if k not in (*SORTING, "posts")}
             data[entry["url"]] = {**fresh, **entry, "status": status, "updated": now()}
         write_json(INCOMING, data)
     return kept
@@ -221,6 +234,8 @@ def main() -> None:
         for entry in entries:
             if entry["url"] in found:
                 found[entry["url"]]["news"] += [n for n in entry["news"] if n not in found[entry["url"]]["news"]]
+                old_posts = found[entry["url"]].get("posts", [])
+                found[entry["url"]]["posts"] = latest(old_posts + [p for p in entry.get("posts", []) if p not in old_posts])
                 found[entry["url"]].update({"blocks": entry["blocks"]} if "blocks" in entry else {})
             else:
                 found[entry["url"]] = {**entry, "source": source}

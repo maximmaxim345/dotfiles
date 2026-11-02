@@ -73,12 +73,14 @@
   .nrow.waiting { border-left-color: var(--gray); }
   .nrow.link { cursor: pointer; }
   .nrow.link:hover { background: var(--sunk); }
-  .nrow .t { grid-area: t; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nrow .t { grid-area: t; font-weight: 600; overflow-wrap: anywhere; }
   .nrow .w { grid-area: w; color: var(--ink-2); }
   .nrow .eff { font-weight: 400; color: var(--muted); margin-left: 8px; font-size: 12px; }
   .nrow .m { grid-area: m; display: flex; justify-content: flex-end; gap: 10px; font-size: 12px; white-space: nowrap; }
   .nrow .m a { color: var(--accent); font-family: var(--font); }
   .nrow .draft { margin-top: 4px; }
+  .nrow .post + .post { margin-top: 8px; }
+  .nrow .post .by { font-size: 12px; color: var(--muted); }
   .nrow .draft pre { white-space: pre-wrap; font-family: var(--font); font-size: 12px; background: var(--sunk); border-radius: 6px; padding: 6px 8px; margin: 4px 0; }
   .nrow .act { color: var(--ink); }
   .nrow.group { font-weight: 600; font-size: 12px; color: var(--muted); background: var(--sunk); border-left-color: transparent; padding: 4px 12px; }
@@ -546,6 +548,8 @@ function incomingRow(e) {
     el("div", { class: "t", title: e.title }, el("span", { class: `chip ${cls}`, style: { marginRight: "6px" } }, label), e.title),
     el("div", { class: "w" },
       e.status === "needs-you" && e.action ? el("div", { class: "act" }, e.action) : el("div", {}, (e.news || []).join(", ")),
+      e.posts?.length > 0 && el("details", { class: "draft" }, el("summary", {}, e.posts.length === 1 ? "What they wrote" : `What they wrote (${e.posts.length})`),
+        e.posts.map(p => el("div", { class: "post" }, el("div", { class: "by" }, `${p.by}, ${ago(p.at)} ago`), Object.assign(el("div", { class: "md" }), { innerHTML: markdown(p.text) })))),
       e.draft && el("details", { class: "draft" }, el("summary", {}, "Draft reply"), el("pre", {}, e.draft), copy)),
     el("div", { class: "m" }, el("a", { href: e.url, target: "_blank" }, e.kind), e.link && el("a", { href: e.link, target: "_blank" }, "related"),
       el("a", { href: "#", title: "Hide it until it gets news", onclick: ev => { ev.preventDefault(); post("/api/incoming/dismiss", { url: e.url }, "Hidden"); } }, "hide")));
@@ -555,11 +559,17 @@ function proposalRow(p) {
   const what = { add: `${p.board}: add as ${p.to}`, move: `${p.board}: ${p.from || "no status"} → ${p.to}`, edit: "new description",
     create: `new issue in ${p.repo}${p.parent ? ` under #${p.parent.split("/").pop()}` : ""}${p.board && p.to ? `, on ${p.board} as ${p.to}` : ""}` }[p.action];
   const link = p.url || p.parent;
+  const item = p.url && state.items.find(i => i.issue === p.url);
+  const issue = p.issue && [`${p.issue.state}, last activity ${ago(p.issue.updated)} ago, ${p.issue.comments} comments`,
+    p.issue.assignees.length && `assigned to ${p.issue.assignees.join(", ")}`, p.issue.labels.length && `labels ${p.issue.labels.join(", ")}`].filter(Boolean).join(", ");
   return el("div", { class: "nrow waiting" },
     el("label", { class: "t", title: p.title }, box, " ", codeText(p.title)),
     el("div", { class: "w" }, `${what}, ${p.why}`, p.state === "approved" && " (applying)", p.error && el("div", { style: { color: "var(--red)" } }, p.error),
+      issue && el("details", { class: "draft" }, el("summary", {}, "About the issue"), el("div", { class: "post" }, el("div", { class: "by" }, issue),
+        p.issue.text && Object.assign(el("div", { class: "md" }), { innerHTML: markdown(p.issue.text) }))),
       p.body && el("details", { class: "draft" }, el("summary", {}, p.action === "edit" ? "New description" : "Issue text"), Object.assign(el("div", { class: "md" }), { innerHTML: markdown(p.body) }))),
-    el("div", { class: "m" }, isOld(p.at, OLD_MINUTES) && el("span", { class: "chip hot", title: "Proposed this long ago" }, ago(p.at)), link && el("a", { href: link, target: "_blank" }, "open")));
+    el("div", { class: "m" }, isOld(p.at, OLD_MINUTES) && el("span", { class: "chip hot", title: "Proposed this long ago" }, ago(p.at)),
+      item && el("a", { href: "#", title: item.title, onclick: ev => { ev.preventDefault(); openDrawer(item.id); } }, "item"), link && el("a", { href: link, target: "_blank" }, "open")));
 }
 function renderIncoming() {
   const order = ["needs-you", "new", "waiting"];

@@ -19,6 +19,7 @@ BACKLOG = DESK / "backlog"
 PROPOSALS = DESK / "state" / "proposals.json"
 EARLY = {"triage", "later", "next"}
 STALE_DAYS = 14
+BODY_CHARS = 600
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
 from server import locked, write_json  # noqa: E402
@@ -76,6 +77,18 @@ def content_state(url: str, cache: dict) -> dict:
     return cache[url]
 
 
+def issue_context(issue: dict) -> dict:
+    body = (issue.get("body") or "").strip()
+    return {
+        "state": issue["state"],
+        "updated": issue["updated_at"],
+        "comments": issue["comments"],
+        "assignees": [a["login"] for a in issue.get("assignees") or []],
+        "labels": [label["name"] for label in issue.get("labels") or []],
+        "text": body[:BODY_CHARS] + ("…" if len(body) > BODY_CHARS else ""),
+    }
+
+
 def html_url(api_url: str) -> str:
     return api_url.replace("https://api.github.com/repos/", "https://github.com/")
 
@@ -119,7 +132,7 @@ def propose_board(board: str, me: str, active: set[str], top: set[str], cache: d
             continue
         issue = content_state(url, cache)
         merged = (issue.get("pull_request") or {}).get("merged_at")
-        common = {"item": item["id"], "from": item.get("status")}
+        common = {"item": item["id"], "from": item.get("status"), "issue": issue_context(issue)}
         if issue["state"] == "closed":
             why = "its PR merged" if merged else "its issue is closed"
             found.append(proposal(board, "move", url, item["title"], names["done"], why, **common))
@@ -193,7 +206,7 @@ def save(new: dict) -> None:
 def suggest(args: argparse.Namespace) -> None:
     extra = checked_fields(args.board, args.status, args.field)
     issue = content_state(args.url, {})
-    save(proposal(args.board, "add", args.url, issue["title"], args.status, args.why, fields=extra))
+    save(proposal(args.board, "add", args.url, issue["title"], args.status, args.why, fields=extra, issue=issue_context(issue)))
 
 
 def draft(args: argparse.Namespace) -> None:

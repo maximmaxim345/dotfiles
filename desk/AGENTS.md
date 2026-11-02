@@ -122,8 +122,10 @@ Events are hints. Act on the items' current state, since I may have changed them
 - `archive`: I cleared these done or dropped items from the board. Archive each of their threads that isn't archived yet, as above.
 - `space`: I turned a space on or off, or moved an effort to another space. Do "Spaces".
 - `apply`: I approved project board changes. Run `bin/project-sync apply` and reply with what it printed, one line per change.
+- `dismiss`: I dismissed the project board changes with these `ids` in `state/proposals.json`. A change belongs to the effort of the item whose `issue` is its URL, or of the item in its `backlog` for a new issue, or to the effort whose `status.md` `Issue:` line names it.
+- `hide`: I hid the Incoming entry with this `url` in `state/incoming.json`. It belongs to the entry's `effort`.
 
-An event with `"by": "manager"` is that effort's manager acting: handle it, but leave it out of the message to that manager. When an event touches items of an effort with a manager, send that manager one message per wake-up that lists them: started (with the thread), paused, done, dropped, archived, my comment, or a task's note.
+An event with `"by": "manager"` is that effort's manager acting: handle it, but leave it out of the message to that manager. When an event touches items, board changes or Incoming entries of an effort with a manager, send that manager one message per wake-up that lists them: started (with the thread), paused, done, dropped, archived, my comment, a task's note, a dismissed board change or a hidden Incoming entry. A manager whose question these answer clears it (see "Managers" step 3).
 
 Reply in one line per handled event. Leave compaction checks out of replies, and give times in my local time only.
 

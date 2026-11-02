@@ -341,6 +341,7 @@ class Handler(BaseHTTPRequestHandler):
                     incoming = json.loads(INCOMING.read_text())
                     incoming[body["url"]]["status"] = "dismissed"
                     write_json(INCOMING, incoming)
+                log_event({"type": "hide", "url": body["url"]})
             elif self.path == "/api/proposals":
                 if body["decision"] not in ("approve", "dismiss"):
                     raise ValueError(body["decision"])
@@ -351,8 +352,8 @@ class Handler(BaseHTTPRequestHandler):
                         p["state"] = "approved" if body["decision"] == "approve" else "dismissed"
                         p.pop("error", None)
                     write_json(PROPOSALS, proposals)
-                if chosen and body["decision"] == "approve":
-                    log_event({"type": "apply", "ids": [p["id"] for p in chosen]})
+                if chosen:
+                    log_event({"type": "apply" if body["decision"] == "approve" else "dismiss", "ids": [p["id"] for p in chosen]})
             elif self.path == "/api/autostart":
                 known = {e["slug"] for e in efforts()}
                 if body["mode"] not in AUTOSTART_MODES:

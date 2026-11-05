@@ -16,9 +16,15 @@ from pathlib import Path
 DESK = Path.home() / "desk"
 CONFIG = DESK / "watch.json"
 BACKLOG = DESK / "backlog"
+EFFORTS = DESK / "efforts"
 PROPOSALS = DESK / "state" / "proposals.json"
 EARLY = {"triage", "later", "next"}
 STALE_DAYS = 14
+OUTDATED_DAYS = 3
+ISSUE_URL = r"https://github\.com/[^/\s]+/[^/\s]+/issues/\d+"
+REFERENCE = re.compile(
+    r"https://github\.com/([\w.-]+)/([\w.-]+)/(?:issues|pull)/(\d+)|\b([\w.-]+)/([\w.-]+)#(\d+)|(?<![\w/])#(\d+)"
+)
 BODY_CHARS = 600
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
@@ -93,15 +99,50 @@ def html_url(api_url: str) -> str:
     return api_url.replace("https://api.github.com/repos/", "https://github.com/")
 
 
-def active_issues(cache: dict) -> tuple[set[str], set[str], list[dict]]:
-    """Return the issues started items work on with their parents, the ones a board card stands for, and items without one."""
-    active, top, missing = set(), set(), []
+def efforts() -> dict[str, dict]:
+    """Map each effort to the repos its Scope names on a board's account, that board, and its parent issue."""
+    owners = {b.split("/")[0]: b for b in boards()}
+    found = {}
+    for status in sorted(EFFORTS.glob("*/status.md")):
+        lines = status.read_text().splitlines()
+        scope = next((line for line in lines if line.startswith("Scope:")), "")
+        issue = next((re.search(ISSUE_URL, line) for line in lines if line.startswith("Issue:")), None)
+        repos = [r.rstrip(".") for r in re.findall(r"\b[\w.-]+/[\w.-]+", scope) if r.split("/")[0] in owners]
+        board = owners[repos[0].split("/")[0]] if repos else None
+        found[status.parent.name] = {"repos": repos, "board": board, "issue": issue.group(0) if issue else None}
+    return found
+
+
+def closing_issue(item: dict) -> str | None:
+    for pr in item.get("prs") or ([item["pr"]] if item.get("pr") else []):
+        refs = gh("pr", "view", pr, "--json", "closingIssuesReferences")["closingIssuesReferences"]
+        if refs:
+            return refs[0]["url"]
+    return None
+
+
+def active_issues(cache: dict, by_effort: dict[str, dict]) -> tuple[set[str], set[str], list[dict], dict[str, set[str]]]:
+    """Return the active issues, the ones board cards stand for, unlinked items, and parentless efforts' issues."""
+    active, top, missing, parentless = set(), set(), [], {}
     for path in sorted(BACKLOG.glob("*.json")):
         item = json.loads(path.read_text())
         if item["status"] != "started":
             continue
+        effort = by_effort.get(item.get("effort") or "") or {}
+        if effort.get("issue"):
+            active.add(effort["issue"])
+            top.add(effort["issue"])
+        elif not item.get("issue"):
+            try:
+                item["issue"] = closing_issue(item)
+            except (RuntimeError, KeyError) as err:
+                print(f"error {item['id']}: can't read its PR: {err}")
+            if item.get("issue"):
+                write_json(path, item)
+        linked = parentless.setdefault(item["effort"], set()) if effort.get("board") and not effort["issue"] else set()
         if not item.get("issue"):
-            missing.append(item)
+            if not effort.get("board"):
+                missing.append(item)
             continue
         try:
             parent = content_state(item["issue"], cache).get("parent_issue_url")
@@ -111,8 +152,45 @@ def active_issues(cache: dict) -> tuple[set[str], set[str], list[dict]]:
         active.add(item["issue"])
         if parent:
             active.add(html_url(parent))
-        top.add(html_url(parent) if parent else item["issue"])
-    return active, top, missing
+        if not effort.get("issue"):
+            top.add(html_url(parent) if parent else item["issue"])
+        linked.add(html_url(parent) if parent else item["issue"])
+    return active, top, missing, parentless
+
+
+def utc(stamp: str) -> datetime.datetime:
+    return datetime.datetime.fromisoformat(stamp.replace("Z", "+00:00")).astimezone(datetime.timezone.utc)
+
+
+def outdated(effort: dict, edits: list[dict], cache: dict) -> list[str]:
+    """Say how an open parent issue's checklist and effort moved on since the issue or its last proposed edit changed."""
+    issue = content_state(effort["issue"], cache)
+    if issue["state"] == "closed":
+        return []
+    since = max([utc(issue["updated_at"]), *(utc(p["at"]) for p in edits)])
+    owner, repo = re.match(r"https://github\.com/([^/]+)/([^/]+)/", effort["issue"]).groups()
+    closed = []
+    for line in (issue.get("body") or "").splitlines():
+        if not re.match(r"\s*[-*] \[ \]", line):
+            continue
+        for m in REFERENCE.finditer(line):
+            full, short, local = m.group(1, 2, 3), m.group(4, 5, 6), (owner, repo, m.group(7))
+            ref_owner, ref_repo, number = next(g for g in (full, short, local) if g[2])
+            try:
+                ref = content_state(f"https://github.com/{ref_owner}/{ref_repo}/issues/{number}", cache)
+            except RuntimeError:
+                continue
+            if ref["state"] == "closed" and utc(ref["closed_at"]) > since:
+                closed.append(f"{ref_owner}/{ref_repo}#{number}")
+    reasons = [f"unchecked but closed or merged: {', '.join(closed)}"] if closed else []
+    if effort["repos"] and (datetime.datetime.now(datetime.timezone.utc) - since).days >= OUTDATED_DAYS:
+        repos = " ".join(f"repo:{r}" for r in effort["repos"])
+        stamp = since.isoformat(timespec="seconds").replace("+00:00", "Z")
+        q = f"{repos} is:pr is:merged merged:>{stamp} -author:app/dependabot -author:app/renovate"
+        merged = gh("api", "-X", "GET", "search/issues", "-f", f"q={q}", "-f", "per_page=1")["total_count"]
+        if merged:
+            reasons.append(f"PRs merged in {', '.join(effort['repos'])} since {stamp[:10]}: {merged}")
+    return reasons
 
 
 def propose_board(board: str, me: str, active: set[str], top: set[str], cache: dict) -> tuple[list[dict], list[str]]:
@@ -151,7 +229,8 @@ def propose_board(board: str, me: str, active: set[str], top: set[str], cache: d
 def propose(args: argparse.Namespace) -> None:
     me = gh("api", "user")["login"]
     cache: dict = {}
-    active, top, missing = active_issues(cache)
+    by_effort = efforts()
+    active, top, missing, parentless = active_issues(cache, by_effort)
     fresh, candidates = [], {}
     for board in boards():
         try:
@@ -177,6 +256,21 @@ def propose(args: argparse.Namespace) -> None:
     for board, urls in candidates.items():
         for url in urls:
             print(f"candidate {board} {url}")
+    drafted = {p.get("effort") for p in kept}
+    for slug, linked in sorted(parentless.items()):
+        if slug not in drafted:
+            print(f"noparent {slug} {by_effort[slug]['board']} {' '.join(sorted(linked))}".rstrip())
+    for slug, effort in sorted(by_effort.items()):
+        edits = [p for p in kept if p["action"] == "edit" and p["url"] == effort["issue"]]
+        if not effort["issue"] or any(p["state"] in ("open", "approved", "failed") for p in edits):
+            continue
+        try:
+            reasons = outdated(effort, edits, cache)
+        except (RuntimeError, KeyError, ValueError) as err:
+            print(f"error {slug}: can't check its issue {effort['issue']}: {err}")
+            continue
+        if reasons:
+            print(f"outdated {slug} {effort['issue']}: {' and '.join(reasons)}")
     for item in missing:
         print(f"noissue {item['id']} {item['title']}")
 
@@ -218,15 +312,24 @@ def draft(args: argparse.Namespace) -> None:
         sys.exit(f"--parent must be an issue URL, not {args.parent}")
     if args.item and not (BACKLOG / f"{args.item}.json").exists():
         sys.exit(f"no backlog item {args.item}")
+    if args.effort and not (EFFORTS / args.effort / "status.md").exists():
+        sys.exit(f"no effort {args.effort}")
     extra = checked_fields(args.board, args.status, args.field) if args.board else {}
     body = sys.stdin.read().strip()
-    found = {"repo": args.repo, "body": body, "parent": args.parent, "backlog": args.item, "fields": extra}
+    found = {"repo": args.repo, "body": body, "parent": args.parent, "backlog": args.item, "effort": args.effort, "fields": extra}
     save(proposal(args.board or "", "create", None, args.title, args.status, args.why, **found))
 
 
 def edit(args: argparse.Namespace) -> None:
     issue = content_state(args.url, {})
     save(proposal("", "edit", args.url, issue["title"], None, args.why, body=sys.stdin.read().strip()))
+
+
+def checked(args: argparse.Namespace) -> None:
+    with locked(PROPOSALS):
+        proposals = json.loads(PROPOSALS.read_text()) if PROPOSALS.exists() else []
+        kept = [p for p in proposals if not (p["state"] == "checked" and p["url"] == args.url)]
+        write_json(PROPOSALS, [*kept, {**proposal("", "edit", args.url, "", None, "checked"), "state": "checked"}])
 
 
 def dismiss(args: argparse.Namespace) -> None:
@@ -308,6 +411,11 @@ def create_issue(p: dict) -> None:
         item = json.loads(path.read_text())
         item["issue"] = p["url"]
         write_json(path, item)
+    if p.get("effort"):
+        status = EFFORTS / p["effort"] / "status.md"
+        lines = [line for line in status.read_text().splitlines() if not line.startswith("Issue:")]
+        at = next((i + 1 for i, line in enumerate(lines) if line.startswith("Scope:")), len(lines))
+        status.write_text("\n".join([*lines[:at], f"Issue: {p['url']}", *lines[at:]]) + "\n")
 
 
 def apply(args: argparse.Namespace) -> None:
@@ -340,7 +448,8 @@ def apply(args: argparse.Namespace) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("propose", help="refresh the proposed moves and print them with candidates to add").set_defaults(func=propose)
+    p_propose = sub.add_parser("propose", help="refresh the proposed moves and print what needs a link or an edit")
+    p_propose.set_defaults(func=propose)
     p_suggest = sub.add_parser("suggest", help="propose adding an issue or PR to a board")
     p_suggest.add_argument("--board", required=True, help="owner/number, as in watch.json")
     p_suggest.add_argument("--url", required=True)
@@ -355,6 +464,7 @@ def main() -> None:
     p_draft.add_argument("--title", required=True)
     p_draft.add_argument("--parent", help="the parent issue URL, to file it as a sub-issue")
     p_draft.add_argument("--item", help="the backlog item to link the new issue to")
+    p_draft.add_argument("--effort", help="the effort whose parent issue this is, to add it as its Issue line")
     p_draft.add_argument("--board", help="owner/number, to add it to a board")
     p_draft.add_argument("--status", help="its status on the board")
     p_draft.add_argument("--field", action="append", help="another single-select field as Name=Value, repeatable")
@@ -364,6 +474,9 @@ def main() -> None:
     p_edit.add_argument("--url", required=True)
     p_edit.add_argument("--why", required=True, help="one line")
     p_edit.set_defaults(func=edit)
+    p_checked = sub.add_parser("checked", help="mark a parent issue as still right, so outdated counts from now")
+    p_checked.add_argument("url")
+    p_checked.set_defaults(func=checked)
     p_dismiss = sub.add_parser("dismiss", help="drop open proposals that my notes in watch.json rule out")
     p_dismiss.add_argument("ids", nargs="+")
     p_dismiss.set_defaults(func=dismiss)

@@ -23,6 +23,11 @@ live on every device without re-running anything.
 | `skills/ma-device-test/` | Tests Music Assistant changes on my real speakers, locally or on a remote instance |
 | `skills/blast-radius/` | Finds what a change breaks outside its diff, adapted with permission from [MarvinSchenkel/ai-agent-instructions](https://github.com/MarvinSchenkel/ai-agent-instructions) |
 | `skills/open-pr/`, `skills/review-changes/` | PR and review workflow skills, each linked into `~/.claude/skills/` |
+| `skills/babysit/` | Watches my PR until CI is green and the review bots have nothing open, fixing and replying within a fixed scope |
+| `skills/lab-gate/` | Runs a Music Assistant server PR through the end-to-end test lab, for the areas it touches |
+| `skills/manager/` | Runs a session as the coordinator of a group of task sessions |
+| `skills/second-opinion/` | Has reviewers from other models check a change, picked with their effort in a popup |
+| `skills/architecture/` | Draws how a change fits together, with new, changed and removed parts marked |
 | `skills/desk/` | Hands a T3 thread to the desk or pauses it there, and moves Claude desktop sessions to T3 Code threads, linked into `~/.claude/skills/` |
 
 Not to be confused with the repository root `CLAUDE.md`, which is a symlink to

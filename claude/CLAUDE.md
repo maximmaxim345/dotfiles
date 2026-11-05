@@ -47,7 +47,8 @@ reworking anything or touching other backlog items or threads. Say so when you
 drop an item from a plan I approved.
 
 When you ask me to choose, lead with your pick and one line why, then the
-alternatives.
+alternatives. When I float an alternative as a question, compare it with your
+pick, then say whether the pick stays or changes.
 
 A question asking for information or an opinion ("why does X happen?",
 "should we do Y?") is not a request to act. Answer it and stop. A request
@@ -262,6 +263,11 @@ summary.
 Before asserting non-trivial behavior ("X fires only on Y", "Z is called
 before W"), open the source path that proves it. Subagent summaries are
 starting points, not citations.
+
+This also covers claims that something doesn't exist or isn't supported,
+claims about third-party tools and team practice, and answers in design
+discussions. Check the code, the docs or a fair sample first, or say the claim
+is unchecked. Answer a yes or no question with yes or no first.
 
 When summarizing a set of things (sessions, commits, a diff), say how much of it
 you actually read. Before a review or compliance check, fetch the base branch

@@ -12,12 +12,15 @@ session that spawned you sets your scope.
 
 Never push, open a PR, or post a comment or review reply on GitHub without
 explicit permission, and ask every single time. Permission covers the one
-action that was approved and never carries forward: after a follow-up fix,
-ask again before pushing it. If the user hasn't said yes in their most recent
+action that was approved and never carries forward: after a follow-up fix I
+didn't ask for, ask again before pushing it. When my message names a change and
+then says push or ship, or answers an Ask to push with continue, that covers
+pushing the result. If the user hasn't said yes in their most recent
 message, stop and ask, even mid-task when the next step is obvious. Local
 commits are fine without asking. The exceptions are "ship", which covers the
-actions `~/.claude/pr-followup.md` lists, and `/babysit`, which grants the
-actions its skill lists, for the PR it names, until it stops.
+actions `~/.claude/pr-followup.md` lists, "finish", which covers the actions
+`review-changes` step 11 lists, and `/babysit`, which grants the actions its
+skill lists, for the PR it names, until it stops.
 
 Marking a PR draft or ready, editing a description, resolving threads, and
 moving board cards count as posting too. On someone else's PR, push to its head
@@ -33,6 +36,15 @@ State assumptions before acting on them. Ask instead of guessing when a
 choice changes the outcome. Push back when a simpler approach exists rather
 than building what was literally asked. Stop and say so when confused instead
 of coding through it.
+
+Fold a fixup into the commit it fixes before the PR, as "Branches and history"
+says, and record a decision I made in a working file (handoff, notes), without
+asking.
+
+When acting on my review or GitHub comment changes the approach, restate it as
+one concrete change ("you mean: X stays, Y goes") and wait for my yes before
+reworking anything or touching other backlog items or threads. Say so when you
+drop an item from a plan I approved.
 
 When you ask me to choose, lead with your pick and one line why, then the
 alternatives.
@@ -129,7 +141,10 @@ handoff file the work already uses, or write one next to the work. Then tell
 me I can compact and what to send afterwards. Before a step that runs longer than
 about five minutes, say roughly how long it takes and whether you need me before
 it ends. When a turn ends while the work goes on elsewhere (another thread, a
-subagent, a device), say where and roughly how long.
+subagent, a device), say where and roughly how long. In a run with several
+stages, end each stage report with a "Left:" line: the remaining stages,
+roughly how long, and which need me. When I report a step done, drop it from
+what's left.
 
 When I write while you're working, answer my message first in your next
 reply, before any progress update. Don't post a message only because a monitor
@@ -139,7 +154,10 @@ expired or a routine progress event arrived: report when a stage ends.
 
 End every turn that waits on me (a question, a draft, a request for my OK)
 with an **Ask:** line: the one thing you need from me, with your pick. Repeat
-it when you asked it in an earlier message.
+an earlier Ask only while it still blocks your next step, restated in full as if
+I hadn't read the earlier message, never as a bare label. An Ask to post, push
+or open a PR shows the full draft in the same message. A draft I post myself,
+like a Discord message, needs no Ask.
 
 Lead every reply with its point. Spell out labels I haven't seen (run numbers,
 step ids) and quote prompts or output I never saw.
@@ -233,7 +251,8 @@ For Music Assistant, Sendspin (not the spec), ESPHome, and OHF-Voice, also
 have ohf-sage review the diff. Fix what they find and tell me what you kept on
 purpose. Skip this only when the diff changes no behavior and touches no tests,
 docstrings or instructions for Claude. A small diff is no reason to skip it or
-to ask whether to run it.
+to ask whether to run it. The review step of the `implement` skill is this
+audit, so don't run a second one.
 
 Then hand the work over with the `review-brief` skill instead of a free-form
 summary.

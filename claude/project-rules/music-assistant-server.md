@@ -8,6 +8,9 @@
 - Don't reword existing strings only for terminology, since translations go through Lokalise.
 - Use Music Assistant vocabulary in fields and text ("user", not "operator"), and keep model fields provider-neutral.
 - Code against the released library API (for example `aiosendspin`), not a local checkout or name-matching stopgap.
+- The dependency review check clears with the `dependencies-reviewed` label. Ask before adding it, and never post `/approve-dependencies`.
+- A run with the C++ sendspin-cli (`~/projects/music-assistant/sendspin-cpp-cli`) counts as a real device test, also when Bot-MArley asks about hardware testing.
+- Before drafting a bug-fix PR, search music-assistant/support, open and closed, and read the matching reports in full, logs included. List matches in chat with full URLs, and leave them out of the PR unless I say to add them.
 - Before debugging frontend behavior, check which frontend version the server pins.
 - When a test or reproduction needs real streaming providers, players, or library data, start the server with the `ma-dev` skill.
 - Users read the docs at music-assistant/music-assistant.io (`~/projects/music-assistant/music-assistant.io`). When a change alters what users see, set up or configure, ask for a companion PR that updates them as "Companion PRs" in `~/desk/TASK.md` says, targeting the main or beta branch as its `CONTRIBUTING.md` says.

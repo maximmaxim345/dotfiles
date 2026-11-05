@@ -53,6 +53,7 @@ ENTRIES: List[Tuple[str, str, str]] = [
     ("skills/desk", "skills/desk", "old_skill_desk"),
     ("skills/babysit", "skills/babysit", "old_skill_babysit"),
     ("skills/lab-gate", "skills/lab-gate", "old_skill_lab_gate"),
+    ("skills/second-opinion", "skills/second-opinion", "old_skill_second_opinion"),
 ]
 # Entries dropped from ENTRIES, whose links existing installs still have (target, config key for the backup)
 REMOVED: List[Tuple[str, str]] = [

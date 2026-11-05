@@ -16,8 +16,10 @@ from before the watcher was on are old, so skip threads that are resolved or
 outdated.
 
 To request another Copilot review, run
-`gh pr edit <n> --repo <owner/repo> --add-reviewer @copilot`. This counts as
-posting, so ask first like a push.
+`gh pr edit <n> --repo <owner/repo> --add-reviewer @copilot`. To request a
+Bot-MArley review, which only answers in `music-assistant` repos, run
+`gh pr comment <n> --repo <owner/repo> --body '@Bot-MArley review'`. Both
+count as posting, so ask first like a push.
 
 "Ship" from me, as the answer to a ship question or on its own, covers all of
 these for the PR at once: push, mark it ready when it's a draft, post the

@@ -96,7 +96,6 @@ autoload -Uz _zinit
 # Auto-remove broken completion symlinks before compinit
 rm -f -- "$HOME"/.local/share/zinit/completions/*(N-@)
 zinit ice depth=1
-zinit ice lucid wait='0' atinit='zi creinstall -q'
 
 # Load plugins with zinit
 zinit light-mode for \

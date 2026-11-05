@@ -10,7 +10,8 @@ the situation.
 - No bold.
 - No em or en dashes.
 - Links go in a list under a short lead-in ("Superseded by:", "Related:"),
-  one per line.
+  one per line. In replies to a user's issue and in Discord messages, links go
+  inline in the sentence instead.
 - State opinions in first person with the reason ("I think X, since Y").
 - Don't use "genuinely", "notably", or "essentially".
 - Use plain, common words and the host project's vocabulary. If a word needs
@@ -22,11 +23,12 @@ the situation.
   ask.
 - Take every number and claim from the full source, never a partial read.
 - First drafts of comments, replies and messages for other people are one or
-  two sentences. PR descriptions follow the length rules in
+  two sentences, and one when replying in an ongoing Discord or issue thread. PR descriptions follow the length rules in
   `~/.claude/pr-guidelines.md`. Show one version.
 - Show each draft (title, description, reply, message) as formatted text in
   chat, under a short label and ended by a horizontal rule, so I see it as it
-  will render. Use a fenced code block only when I ask for one to copy.
+  will render. Use a fenced code block only for Discord messages or when I ask
+  for one to copy.
 - Before showing a draft, check it against this list and the PR rules in
   `~/.claude/pr-guidelines.md` (length, a title that claims no more than the
   change does) and fix what fails.
@@ -79,6 +81,36 @@ Good catch! Adjusted it with 889ceab.
 
 ```
 Yes, that's what I meant, your wording is clearer. Applied it, thanks!
+```
+
+Conceding a reviewer's point:
+
+```
+Hmm, yeah. I was assuming the existing field already covered this, but the spec never said so.
+So I went ahead and added it as a requirement. Thanks for catching that!
+```
+
+```
+Hmm, good point. I'll think about this a bit more and open a separate issue or PR.
+```
+
+## Replying to a user's issue
+
+```
+Thanks for the report! Unfortunately, I couldn't reproduce this on the latest beta. Could you turn on debug logging for the provider, try to reproduce this again and attach the log?
+```
+
+```
+Thanks for the report! A fixed id can't come back, since it's now tied to the player's identity. If you keep the settings folder on a persistent volume, the player keeps its identity across restarts. Does that cover your use case?
+```
+
+## Discord messages
+
+Show each message in its own fenced code block, ready to copy, with its character count, and keep it under 2000 characters. Write PRs and issues as `[#123](<full URL>)` and leave out headings from the report a message answers.
+
+```
+I agree these are implementation work rather than spec gaps. A few notes where it touches the spec:
+- With [#123](<https://github.com/owner/repo/pull/123>) a server at capacity can leave the field out. Let me know if that doesn't work for your setup.
 ```
 
 ## Asking a reporter for more info

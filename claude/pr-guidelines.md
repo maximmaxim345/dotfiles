@@ -41,6 +41,9 @@ Example:
 ### Medium/Large PRs
 Start with a summary sentence. Only add `#` sections if there are truly distinct areas of change worth separating. Don't create a section for every sentence.
 
+### Hand tests
+When you or I tried the change by hand on a device or client, end the description with one sentence naming what was tested and the result. This sentence is not a test plan section, and with a template it goes after the filled sections.
+
 ### Repo templates
 If the repo has a PR template, use it. Fill in its sections rather than replacing it with free-form body.
 

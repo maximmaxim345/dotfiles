@@ -189,7 +189,7 @@ def record(entries: list[dict]) -> list[dict]:
                 continue
             kept.append(entry)
             status = "closed" if closed else "noise" if old.get("status") == "noise" else "new"
-            fresh = {k: v for k, v in old.items() if k not in (*SORTING, "posts")}
+            fresh = {k: v for k, v in old.items() if k not in (*SORTING, "posts", "snoozed")}
             data[entry["url"]] = {**fresh, **entry, "status": status, "updated": now()}
         write_json(INCOMING, data)
     return kept

@@ -47,6 +47,14 @@ Running this command is not a go-ahead to post. Nothing goes to GitHub until I a
 10. When I say the review is done, remove the worktree if you made one, or switch `./` back to the branch it was on. Then list the comments I rewrote and ask whether to add any of them to `~/.claude/writing-examples.md`.
 11. To take over the PR, fix the findings as local commits on the PR branch and link the PR to this thread (`link_pull_request` in T3). Then list everything left in one message: the push command to `headRepositoryOwner` and `headRefName`, approving its CI run when it comes from a fork, resolving the threads the fixes settle, drafted replies to the open threads, backlog items for points left for later when the desk is in use, the approval comment in the "Approving a PR" voice of the writing examples, the squash merge, and switching `./` back. One "finish" from me covers all of it.
 
+Before I approve a PR, test it once: in step 11 before the list, or, when To post is empty, in place of step 8's Ask, then continue with step 11. Ask with a popup (AskUserQuestion) which test to run. Offer up to three that fit the repo, your pick first, and "No test" last. Skip the popup when none fits:
+- the repo's tests for the changed code
+- the test lab, by following `~/.claude/skills/lab-gate/SKILL.md`, for Music Assistant server PRs. It tests the pushed head, so when step 11 made local fixes, add it to the list after the push instead.
+- a dev server through `ma-dev`, so I can check the changed behavior myself
+- `/ma-device-test`, for playback, sync or grouping on real speakers
+
+After the test's own report, sum up the result in one line, and treat a failure like a To post finding.
+
 When I ask about the review's state, read the PR with `gh` first. When it merged or closed before the comments were posted, file the To post findings as one backlog item when the desk is in use, or list them otherwise, and do step 10 without waiting for me to say the review is done.
 
 ## Local mode
@@ -55,7 +63,7 @@ Review the changes in `./` against its merge base with the default branch, inclu
 - Instead of steps 1 to 3, fetch the default branch, find the base with `git merge-base HEAD origin/<default>`, and diff `./` against it. Also review the untracked files that `git ls-files --others --exclude-standard` lists. Read the repo's project rules, and for Sendspin, the spec at `origin/main`.
 - Run steps 4 to 7 as written, with small meaning a small diff and without the PR Guide, which needs a PR. For the linter check in step 7, run the repo's linters on the changed files in check-only mode. Skip a tool that can only fix files in place.
 - The results file is `review-local.md` at the root of the checkout, with the same rules as in step 8. In step 8, describe each finding with a suggested fix instead of a comment for someone else. Don't change any code until I ask.
-- Skip steps 9 to 11, and leave the Ask out of the card.
+- Skip steps 9 to 11 and the test popup, and leave the Ask out of the card.
 
 ## Review comment style
 

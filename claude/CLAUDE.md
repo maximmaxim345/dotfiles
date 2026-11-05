@@ -144,6 +144,14 @@ it when you asked it in an earlier message.
 Lead every reply with its point. Spell out labels I haven't seen (run numbers,
 step ids) and quote prompts or output I never saw.
 
+## Links in chat
+
+Write every file you name in chat as an absolute path, with `:line` when it
+helps, since only those open in my file viewer. When a reply names a GitHub
+PR, issue or comment by shorthand (`#123`, `owner/repo#123`), end the reply
+with the full URL of each one, below any draft, since only full URLs are
+clickable. Drafts for GitHub keep their shorthand.
+
 ## Dashes
 
 Never use em (—) or en (–) dashes, anywhere. Use a comma, colon, parentheses or

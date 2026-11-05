@@ -33,7 +33,7 @@ A few short lines:
 
 Cover every changed file in one answer, in reading order: entry points and data shapes first, then the code that uses them, tests last. Within a file, go through the changes from top to bottom, in the order they appear in the code, so I can read along. Read the current code rather than relying on what you remember from the session. For each file:
 
-- `path`, then a one-line TLDR, then what changed and why, in a short paragraph.
+- the absolute path, then a one-line TLDR, then what changed and why, in a short paragraph.
 - Each new name, field, event or case in plain words: what it is, when it happens and what triggers it.
 - Why this approach over the obvious alternative, when the choice isn't clear from the code.
 - For removals, what was kept and why.

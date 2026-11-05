@@ -462,7 +462,7 @@ function renderStats() {
   const stat = (n, label, hot, target) => n ? el("span", { class: `stat${hot ? " hot" : ""}${target ? " jump" : ""}`, onclick: target ? () => $(target).scrollIntoView({ behavior: "smooth" }) : null }, el("b", {}, String(n)), ` ${label}`) : null;
   const listen = el("span", { class: "stat", title: state.listening ? "The desk reacts to Start, captures, comments and pauses within a minute." : "Run ./dotfiles.py install desk_listener in ~/dotfiles. Until then the desk only acts when you ask it." },
     el("span", { class: "dot", style: { background: state.listening ? "var(--green)" : "var(--gray)" } }), state.listening ? "desk listening" : "desk not listening");
-  $("stats").replaceChildren(...[stat(needs, "need you", true, "needsWrap"), stat((state.incoming || []).filter(e => e.status !== "waiting" && spaceShown(e.effort)).length, "incoming", true, "incomingWrap"), stat(count(["new"]), "inbox"), stat(count(["next"]), "next"), stat(count(["requested"]), "starting", true), stat(items.filter(i => i.status === "started" && columnOf(i) === "started").length, "in progress"), stat(items.filter(i => columnOf(i) === "review").length, "in review"), listen].filter(Boolean));
+  $("stats").replaceChildren(...[stat(needs, "need you", true, "needsWrap"), stat((state.incoming || []).filter(e => ["new", "needs-you"].includes(e.status) && spaceShown(e.effort)).length, "incoming", true, "incomingWrap"), stat(count(["new"]), "inbox"), stat(count(["next"]), "next"), stat(count(["requested"]), "starting", true), stat(items.filter(i => i.status === "started" && columnOf(i) === "started").length, "in progress"), stat(items.filter(i => columnOf(i) === "review").length, "in review"), listen].filter(Boolean));
   $("stats").prepend(...(needs ? [] : [el("span", { class: "stat" }, "nothing needs you")]));
 }
 
@@ -557,13 +557,22 @@ function chatFold(key, chat, hint, send) {
     const text = textarea.value.trim();
     if (!text) return;
     textarea.blur();
-    await send(text);
     delete ui.chatDrafts[key];
+    try { await send(text); } catch (err) { ui.chatDrafts[key] = text; throw err; }
     toast(state.listening ? "Sent. The desk answers in a minute." : "Sent. The desk answers on its next sweep.");
   }) }, "Send");
   return fold(key, chat?.length ? `Chat (${chat.length})` : "Ask the desk", el("div", { class: "chat" }, (chat || []).map(commentEl), textarea, sendBtn));
 }
-const INCOMING_BADGE = { "needs-you": ["hot", "needs you"], waiting: ["", "waiting for user"], new: ["new", "new"] };
+const INCOMING_BADGE = { "needs-you": ["hot", "needs you"], waiting: ["", "waiting for user"], new: ["new", "new"], filed: ["ok", "filed"],
+  duplicate: ["", "duplicate"], noise: ["", "nothing to do"], closed: ["", "closed"] };
+function localDate(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+function snoozeLink(e, label, days) {
+  return el("a", { href: "#", title: "Hide it until then", onclick: ev => {
+    ev.preventDefault();
+    const until = new Date(); until.setDate(until.getDate() + days(until.getDay()));
+    post("/api/incoming/snooze", { url: e.url, until: localDate(until) }, `Snoozed until ${localDate(until)}`);
+  } }, label);
+}
 function incomingRow(e) {
   const [cls, label] = INCOMING_BADGE[e.status];
   const copy = el("button", { class: "btn ghost", onclick: async () => { await navigator.clipboard.writeText(e.draft); toast("Reply copied"); } }, "Copy");
@@ -576,7 +585,9 @@ function incomingRow(e) {
       e.draft && fold(`${e.url} draft`, "Draft reply", el("pre", {}, e.draft), copy),
       chatFold(`${e.url} chat`, e.chat, '"start a review"', text => post("/api/incoming/chat", { url: e.url, text }))),
     el("div", { class: "m" }, el("a", { href: e.url, target: "_blank" }, e.kind), e.link && el("a", { href: e.link, target: "_blank" }, "related"),
-      el("a", { href: "#", title: "Hide it until it gets news", onclick: ev => { ev.preventDefault(); post("/api/incoming/dismiss", { url: e.url }, "Hidden"); } }, "hide")));
+      e.item && state.items.some(i => i.id === e.item) && el("a", { href: "#", onclick: ev => { ev.preventDefault(); openDrawer(e.item); } }, "item"),
+      snoozeLink(e, "tomorrow", () => 1), snoozeLink(e, "next week", weekday => (8 - weekday) % 7 || 7),
+      el("a", { href: "#", title: "Hide it until it gets news", onclick: ev => { ev.preventDefault(); if (confirm(`Hide "${e.title}" until it gets news?`)) post("/api/incoming/dismiss", { url: e.url }, "Hidden"); } }, "hide")));
 }
 function proposalRow(p) {
   const box = el("input", { type: "checkbox", checked: ui.picked.has(p.id), disabled: p.state === "approved", onchange: ev => { ev.target.checked ? ui.picked.add(p.id) : ui.picked.delete(p.id); renderIncoming(); } });
@@ -597,7 +608,7 @@ function proposalRow(p) {
       item && el("a", { href: "#", title: item.title, onclick: ev => { ev.preventDefault(); openDrawer(item.id); } }, "item"), link && el("a", { href: link, target: "_blank" }, "open")));
 }
 function renderIncoming() {
-  const order = ["needs-you", "new", "waiting"];
+  const order = ["needs-you", "new", "waiting", "filed", "duplicate", "noise", "closed"];
   const entries = (state.incoming || []).filter(e => spaceShown(e.effort) && (!ui.effort || (e.effort || "") === (ui.effort === "-" ? "" : ui.effort)))
     .sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status) || b.updated.localeCompare(a.updated));
   const parts = [];
@@ -929,7 +940,7 @@ document.addEventListener("keydown", e => {
 });
 
 async function refresh() {
-  if (ui.drag || ui.capture || document.activeElement?.closest(".drawer, .chat")) return;
+  if (ui.drag || ui.capture || document.activeElement?.closest(".drawer") || document.activeElement?.matches(".chat textarea")) return;
   const data = await api("/api/state");
   const json = JSON.stringify(data);
   if (json !== lastJson) setState(data);

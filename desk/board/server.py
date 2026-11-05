@@ -35,6 +35,7 @@ SPACES = STATE / "spaces.json"
 DEFAULT_SPACE = "work"
 SPACE_NAME = re.compile(r"[a-z0-9][a-z0-9-]{0,30}")
 SHOWN_INCOMING = {"new", "needs-you", "waiting"}
+CHAT_SHOWN_FOR = datetime.timedelta(days=1)
 SHOWN_PROPOSALS = {"open", "approved", "failed"}
 SETTABLE_STATUSES = {"open", "next", "requested", "done", "dropped"}
 CLOSED_STATUSES = {"done", "dropped"}
@@ -151,6 +152,19 @@ def all_items() -> dict[str, dict]:
     return {p.stem: json.loads(p.read_text()) for p in sorted(BACKLOG.glob("*.json"))}
 
 
+def incoming_shown(entry: dict) -> bool:
+    """Show open entries unless snoozed, and others except dismissed for a day after the last chat message."""
+    now = datetime.datetime.now()
+    if entry.get("snoozed", "") > now.date().isoformat():
+        return False
+    if entry["status"] in SHOWN_INCOMING:
+        return True
+    chat = entry.get("chat")
+    if entry["status"] == "dismissed" or not chat:
+        return False
+    return datetime.datetime.fromisoformat(chat[-1]["at"]) > now - CHAT_SHOWN_FOR
+
+
 def load_state() -> dict:
     items = list(all_items().values())
     threads = json.loads(THREADS.read_text()) if THREADS.exists() else None
@@ -162,7 +176,7 @@ def load_state() -> dict:
         "efforts": efforts(),
         "repos": repos(),
         "listening": listening(),
-        "incoming": [e for e in incoming.values() if e["status"] in SHOWN_INCOMING],
+        "incoming": [e for e in incoming.values() if incoming_shown(e)],
         "proposals": [p for p in proposals if p["state"] in SHOWN_PROPOSALS],
         "autostart": autostart_setting(),
         "spaces": spaces_setting(),
@@ -342,6 +356,12 @@ class Handler(BaseHTTPRequestHandler):
                     incoming[body["url"]]["status"] = "dismissed"
                     write_json(INCOMING, incoming)
                 log_event({"type": "hide", "url": body["url"]})
+            elif self.path == "/api/incoming/snooze":
+                until = datetime.date.fromisoformat(body["until"]).isoformat()
+                with locked(INCOMING):
+                    incoming = json.loads(INCOMING.read_text())
+                    incoming[body["url"]]["snoozed"] = until
+                    write_json(INCOMING, incoming)
             elif self.path == "/api/incoming/chat":
                 with locked(INCOMING):
                     incoming = json.loads(INCOMING.read_text())

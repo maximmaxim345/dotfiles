@@ -567,7 +567,7 @@ const INCOMING_BADGE = { "needs-you": ["hot", "needs you"], waiting: ["", "waiti
   duplicate: ["", "duplicate"], noise: ["", "nothing to do"], closed: ["", "closed"] };
 function localDate(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 function snoozeLink(e, label, days) {
-  return el("a", { href: "#", title: "Hide it until then", onclick: ev => {
+  return el("a", { href: "#", title: "Hide it until then or until it gets news", onclick: ev => {
     ev.preventDefault();
     const until = new Date(); until.setDate(until.getDate() + days(until.getDay()));
     post("/api/incoming/snooze", { url: e.url, until: localDate(until) }, `Snoozed until ${localDate(until)}`);

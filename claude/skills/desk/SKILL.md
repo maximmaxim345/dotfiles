@@ -11,7 +11,7 @@ The desk (`~/desk`, see its `AGENTS.md`) tracks work as backlog items on its boa
 
 ## Modes
 
-- `help`: show the "Phrases" section from `~/desk/TASK.md` as it is, and stop. Skip the board check above.
+- `help`: show the "Phrases" section from `~/desk/TASK.md` and `~/.claude/skills/desk/help.md` as they are. Then add "For this thread": up to three of those phrases or commands that fit where this thread is now, each with one line why, or say none fits. Stop there, and skip the board check above.
 - Nothing: hand this thread to the desk (see "Hand over this thread"). It shows on the board as started, or keeps its paused status when it already has an item, and the desk sweeps it like the threads it started.
 - `later`: hand it over paused with `--status open` and no note. Start on the board resumes this thread.
 - `later <when>`, like `later next week`, `later in 2 days` or `later friday`: hand it over paused with `--blocked-by 'until <yyyy-mm-dd>'`, the day it names worked out with `date`. Next week is the coming Monday. The desk's morning sweep clears the blocker on that day and resumes this thread.

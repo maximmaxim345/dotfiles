@@ -45,7 +45,7 @@ What I say in a task thread, and what it does. `/desk help` shows this list.
 - `/desk this belongs to spec-group`: hand it over in that effort.
 - `/desk check the CI again after the rebase`: any other words are my comment on the item, which the desk reads and acts on.
 - `/desk move`, `/desk move 2 and 3 into spec-cleanup`, `/desk move all`, `/desk move archive`: move Claude desktop sessions to T3 Code threads.
-- `/desk help`: show this list.
+- `/desk help`: show this list and the review and ship phrases, with suggestions for this thread.
 
 ## Working with the manager
 

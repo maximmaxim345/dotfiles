@@ -10,7 +10,7 @@ When your app has a PR watcher (see below), watch the PR with
 it. Without one, check the PR when I ask. On review
 comments, label each one, fix the valid ones as local commits, draft the replies
 in chat, and ask whether to ship (push, post the replies, resolve those threads
-and re-request Copilot). On a CI failure, fix it locally and ask the same. On a
+and re-request the review bots). On a CI failure, fix it locally and ask the same. On a
 merge conflict, report it and ask before merging or rebasing. Comments re-sent
 from before the watcher was on are old, so skip threads that are resolved or
 outdated.
@@ -23,8 +23,9 @@ count as posting, so ask first like a push.
 
 "Ship" from me, as the answer to a ship question or on its own, covers all of
 these for the PR at once: push, mark it ready when it's a draft, post the
-replies I approved and resolve their threads, request a Copilot review unless
-I say without, and watch it.
+replies I approved and resolve their threads, request a new review from each
+review bot that reviewed it before, the way `~/.claude/skills/babysit/SKILL.md`
+says, or from Copilot when none did, unless I say without, and watch it.
 
 "Merge it" means squash: `gh pr merge <n> --repo <owner/repo> --squash`. Add
 `--auto` while checks still run, when the repo allows auto-merge. On a branch

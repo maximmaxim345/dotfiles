@@ -160,6 +160,10 @@ I hadn't read the earlier message, never as a bare label. An Ask to post, push
 or open a PR shows the full draft in the same message. A draft I post myself,
 like a Discord message, needs no Ask.
 
+When the permission system blocks a step, make your pick "retry with my OK"
+and name the exact command. Handing the command to me to run is only the
+alternative.
+
 Lead every reply with its point. Spell out labels I haven't seen (run numbers,
 step ids) and quote prompts or output I never saw.
 

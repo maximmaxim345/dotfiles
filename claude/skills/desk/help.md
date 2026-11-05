@@ -5,7 +5,7 @@ What I can say in any thread, and what it does.
 - "ship": push, mark the PR ready, post the approved replies and resolve their threads, ask each bot that reviewed before to review again (Bot-MArley with `@Bot-MArley recheck`), or Copilot when none did, and keep watching the PR.
 - "continue", in answer to a question about pushing: push.
 - "local commits", in answer to a review of someone else's PR: fix the findings as commits on their PR branch instead of drafting a pending review.
-- "finish", after local commits: push to the contributor's branch, approve their CI run when it comes from a fork, resolve the fixed threads, post the replies, file backlog items for points left for later, approve in my voice, squash merge, and switch back. Approving and merging each show a permission prompt.
+- "finish", after local commits: push to the contributor's branch, approve their CI run when it comes from a fork, resolve the fixed threads, post the replies, file backlog items for points left for later, approve in my voice, squash merge, and switch back.
 - `/review-changes <PR>`, or "start a review" in the board's Incoming chat: review someone else's PR, and ask how to test it before I approve it.
 - `/review-brief`: brief me on the whole branch before I review it.
 - `/architecture [PR or range]`: a diagram of how the change fits together, when its structure changed.

@@ -20,6 +20,7 @@ ENDED = {"closed", "merged"}
 POSTS_KEPT = 5
 POST_CHARS = 600
 SORTING = ("action", "draft", "link", "item")
+BOARD_NEWS = ("added to the ", "moved on the ")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
 from server import locked, write_json  # noqa: E402
@@ -189,7 +190,10 @@ def record(entries: list[dict]) -> list[dict]:
                 continue
             kept.append(entry)
             status = "closed" if closed else "noise" if old.get("status") == "noise" else "new"
-            fresh = {k: v for k, v in old.items() if k not in (*SORTING, "posts", "snoozed")}
+            # Board moves keep a snooze, since approved desk proposals move cards too.
+            board_only = all(n.startswith(BOARD_NEWS) for n in entry["news"])
+            dropped = (*SORTING, "posts") if board_only else (*SORTING, "posts", "snoozed")
+            fresh = {k: v for k, v in old.items() if k not in dropped}
             data[entry["url"]] = {**fresh, **entry, "status": status, "updated": now()}
         write_json(INCOMING, data)
     return kept

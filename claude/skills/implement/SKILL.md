@@ -27,6 +27,7 @@ Then present a plan:
 - the tests, each with the realistic regression it would catch
 - what "done" means and how you'll verify it
 - whether this should be more than one PR
+- when it adds a command or skill, how I'd use it: example calls, what happens without arguments, and each constraint I stated, in one line each
 
 For Music Assistant, Sendspin (except the spec), ESPHome, and OHF-Voice work, run the plan past ohf-sage before presenting it when it involves a real design choice, and include what it cites.
 
@@ -46,6 +47,7 @@ Then test the change yourself the way I would, so I only do what needs me:
 - When the change depends on a platform or Python version, run the relevant tests on those too, in a container when needed.
 - For Music Assistant changes I would try in the app, start a server with the `ma-dev` skill and try the change there, on its demo Sendspin players when it involves players or playback. For frontend changes, also take screenshots of the changed screens as its "Frontend" part says.
 - Ask me before testing on real speakers. For hand tests only I can do, set everything up first and give me numbered steps.
+- For device or test rig sessions, plan the smallest set of runs that answers the question and name the result that ends testing. Ask before adding a run longer than about 10 minutes.
 
 ## 4. Review with fresh context
 

@@ -7,12 +7,12 @@ argument-hint: "[base ref, commit range or PR URL]"
 I'm about to review this branch's changes myself, and I may not remember what we did. Brief me in chat. Start with these lines, about the non-test changes, and put nothing before them:
 
 - TLDR: what behaves differently before and after this change, in one or two plain sentences. For a visible change, show it with an example, such as a log line, a UI string or a setting.
-- TLDR why: why the change is needed. For a bug fix, the symptom it solves as a user sees it.
+- TLDR why: why the change is needed. For a bug fix, the numbered steps a user takes to hit the bug, then one line each for before and after.
 - Kind: a pure bug fix, a behavior change, or breaking. When the change behaves differently per mode or setting (such as strict and lenient), say what changes in each.
 - Worst case: the worst thing this could regress, and in what scenario.
 - Tested: what you ran and on what (tests, a dev server, demo players, screenshots), then what is untested. For each hand test only I can do, say whether it blocks shipping.
 
-Then a "Decide" list with each choice that is mine to make: your pick and one line why. Include choices you made yourself that I might not expect, such as overriding a reviewer or keeping something a later change made unnecessary. Leave out what I always do anyway, such as reviewing or approving the push. Leave the list out when there is nothing to decide.
+Then a "Decide" list with each choice that is mine to make: your pick and one line why. Include choices you made yourself that I might not expect, such as overriding a reviewer or keeping something a later change made unnecessary, and each workaround (such as UI text that steers users around a limitation, or a new hook with a single user) with whether it would pass maintainer review. Leave out what I always do anyway, such as reviewing or approving the push. Leave the list out when there is nothing to decide.
 
 Arguments: `$ARGUMENTS`. Compare against that base ref or PR, or cover only that commit range (`A..B`), otherwise against the merge base with the repo's default branch, taken from upstream when `origin` is my fork. Fetch the base first and name the commit you compare against. Include uncommitted and untracked files. Cover the whole branch, including commits from earlier sessions or other work, unless I ask for less.
 
@@ -35,13 +35,14 @@ Cover every changed file in one answer, in reading order: entry points and data 
 
 - the absolute path, then a one-line TLDR, then what changed and why, in a short paragraph.
 - Each new name, field, event or case in plain words: what it is, when it happens and what triggers it.
+- For each changed function, its callers as `path:line` and the user action that reaches it, and a one-line definition of each existing field the change relies on.
 - Why this approach over the obvious alternative, when the choice isn't clear from the code.
 - For removals, what was kept and why.
 - For tests, which behavior each new test checks.
 
 ## 3. Critical pass
 
-When the session already reviewed the diff and fixed what it found (as `implement` step 4 does), start with what was fixed, each with its label, and what was kept on purpose, with the reason. Count kept theoretical findings in one line instead of listing them. Read the diff again as a skeptical reviewer, not its author, for anything that review missed. List only real, specific findings, each labeled as a user-visible bug or reachable but rare. Leave out theoretical ones. Look for:
+When the session already reviewed the diff and fixed what it found (as `implement` step 4 does), start with what was fixed, each with its label, and what was kept on purpose, with the reason. Count kept theoretical findings in one line instead of listing them. When no such review ran, read the diff as a skeptical reviewer, not its author. List only real, specific findings, each labeled as a user-visible bug or reachable but rare. Leave out theoretical ones. Look for:
 
 - edge cases the change adds or misses, such as empty or missing input, ordering, concurrency, and old peers or old data
 - tests that only retest existing behavior or would pass without the change

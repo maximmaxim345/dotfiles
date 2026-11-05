@@ -1,10 +1,10 @@
 ---
 name: review-brief
-description: Brief me before I review this session's changes (TLDR, decisions, recap, file-by-file walkthrough, critical pass). Use it whenever you hand finished work over for my review.
+description: Brief me before I review this branch's changes (TLDR, decisions, recap, file-by-file walkthrough, critical pass). Use it whenever you hand finished work over for my review.
 argument-hint: "[base ref, commit range or PR URL]"
 ---
 
-I'm about to review this session's changes myself, and I may not remember what we did. Brief me in chat. Start with these lines, about the non-test changes, and put nothing before them:
+I'm about to review this branch's changes myself, and I may not remember what we did. Brief me in chat. Start with these lines, about the non-test changes, and put nothing before them:
 
 - TLDR: what behaves differently before and after this change, in one or two plain sentences. For a visible change, show it with an example, such as a log line, a UI string or a setting.
 - TLDR why: why the change is needed. For a bug fix, the symptom it solves as a user sees it.
@@ -14,7 +14,7 @@ I'm about to review this session's changes myself, and I may not remember what w
 
 Then a "Decide" list with each choice that is mine to make: your pick and one line why. Include choices you made yourself that I might not expect, such as overriding a reviewer or keeping something a later change made unnecessary. Leave out what I always do anyway, such as reviewing or approving the push. Leave the list out when there is nothing to decide.
 
-Arguments: `$ARGUMENTS`. Compare against that base ref or PR, or cover only that commit range (`A..B`), otherwise against the merge base with the repo's default branch, taken from upstream when `origin` is my fork. Fetch the base first and name the commit you compare against. Include uncommitted and untracked files. Cover only what this session changed: when the branch also has commits from other work, list them in one line and leave them out of the parts below.
+Arguments: `$ARGUMENTS`. Compare against that base ref or PR, or cover only that commit range (`A..B`), otherwise against the merge base with the repo's default branch, taken from upstream when `origin` is my fork. Fetch the base first and name the commit you compare against. Include uncommitted and untracked files. Cover the whole branch, including commits from earlier sessions or other work, unless I ask for less.
 
 When the diff is under about 20 changed lines, follow the "Decide" list with one line per changed file, the folder, branch and commit range, and the critical pass findings, and leave out the rest.
 

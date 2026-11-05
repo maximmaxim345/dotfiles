@@ -18,7 +18,7 @@ Arguments: `$ARGUMENTS`. Compare against that base ref or PR, or cover only that
 
 When the diff is under about 20 changed lines, follow the "Decide" list with one line per changed file, the folder, branch and commit range, and the critical pass findings, and leave out the rest.
 
-Write for someone who saw none of the session: no thread ids, finding numbers or names we made up, no bold, and each fact once.
+Write every code reference, also inside a file's own section and for tests, as an absolute `path:line` in backticks. Write for someone who saw none of the session: no thread ids, finding numbers or names we made up, no bold, and each fact once.
 
 ## 1. Recap
 
@@ -35,7 +35,7 @@ Cover every changed file in one answer, in reading order: entry points and data 
 
 - the absolute path, then a one-line TLDR, then what changed and why, in a short paragraph.
 - Each new name, field, event or case in plain words: what it is, when it happens and what triggers it.
-- For each changed function, its callers as `path:line` and the user action that reaches it, and a one-line definition of each existing field the change relies on.
+- For each changed function, its callers as absolute `path:line` and the user action that reaches it, and a one-line definition of each existing field the change relies on.
 - Why this approach over the obvious alternative, when the choice isn't clear from the code.
 - For removals, what was kept and why.
 - For tests, which behavior each new test checks.

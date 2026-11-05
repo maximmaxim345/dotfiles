@@ -37,7 +37,7 @@ Running this command is not a go-ahead to post. Nothing goes to GitHub until I a
    ```
    PR <full URL> (<author>): what it does in one line. <N> lines, <M> files, <size>. Sage: ran or skipped.
    Guide: ready in the PR Guide tab, still writing, or not available.
-   To post (<count>): each finding as path:line and its draft comment.
+   To post (<count>): each finding as its absolute path:line and its draft comment.
    Lower priority <count>, dismissed <count> (in <results file>). Base <commit>, read <share of the diff>.
    ```
    End with an Ask between fixing the To post findings as local commits on the PR branch (step 11) and creating a pending review (step 9). Pick local commits for Sendspin and Music Assistant PRs, and the pending review otherwise and for desk review items. "Local commits" from me covers every To post finding. When I edit or reject a comment, update the file and post the changed entries again.

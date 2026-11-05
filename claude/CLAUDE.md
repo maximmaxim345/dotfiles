@@ -171,10 +171,12 @@ step ids) and quote prompts or output I never saw.
 
 Write every file you name in chat as an absolute path in backticks, with
 `:line` when it helps, like `/Users/maximr/dotfiles/df/ui.py:12`. T3 opens only
-paths in code formatting, and resolves bare file names against the wrong folder. When a reply names a GitHub
+paths in code formatting, and resolves bare file names against the wrong folder.
+This covers every line reference, also right after the file was named: write
+`/Users/maximr/dotfiles/df/ui.py:40`, never "line 40" or `ui.py:40`. When a reply names a GitHub
 PR, issue or comment by shorthand (`#123`, `owner/repo#123`), end the reply
 with the full URL of each one, below any draft, since only full URLs are
-clickable. Drafts for GitHub keep their shorthand.
+clickable. Drafts for GitHub keep their shorthand and repo-relative paths.
 
 ## Dashes
 

@@ -32,6 +32,8 @@ REFRESH_EVERY = 45 * 60
 PRS_EVERY = 3 * 60 * 60
 IDLE_EVERY = 60
 RESEND_AFTER = 30 * 60
+WAKE_GAP = 60
+last_wake = 0.0
 
 
 def size() -> int:
@@ -114,7 +116,6 @@ def next_wake(offset: int, quiet: int) -> tuple[list[str], int]:
                 return wanted, offset
         elif time.time() - idle_checked >= IDLE_EVERY:
             idle_checked = time.time()
-            wake_desk()
             idle = idle_threads()
             if idle:
                 return idle.splitlines(), offset
@@ -124,6 +125,7 @@ def next_wake(offset: int, quiet: int) -> tuple[list[str], int]:
         elif prs_due():
             PRS_CHECKED.write_text(str(time.time()))
             return ["prs"], offset
+        wake_desk()
         time.sleep(1)
 
 
@@ -143,11 +145,13 @@ def desk_thread() -> str | None:
 
 
 def wake_desk() -> None:
-    """Message the desk thread when queued lines wait and it wasn't told yet, or was told long ago."""
-    if not WAKE.exists() or not WAKE.read_text().strip():
+    """Message the desk thread at most once a minute when lines wait that it wasn't told about or was told about long ago."""
+    global last_wake
+    if time.time() - last_wake < WAKE_GAP or not WAKE.exists() or not WAKE.read_text().strip():
         return
     if WAKE_SENT.exists() and time.time() - float(WAKE_SENT.read_text()) < RESEND_AFTER:
         return
+    last_wake = time.time()
     try:
         thread = desk_thread()
         if thread is None:
@@ -162,7 +166,7 @@ def wake_desk() -> None:
     if result.returncode:
         print(f"could not wake the desk: {result.stderr.strip()}", file=sys.stderr)
         return
-    WAKE_SENT.write_text(str(time.time()))
+    WAKE_SENT.write_text(str(last_wake))
 
 
 def serve(quiet: int) -> None:

@@ -38,6 +38,7 @@ Go through the commits oldest first, in one answer, with uncommitted changes as 
 - For a behavior commit, the hunks that need my eyes, each as a fenced `diff` block copied unchanged from `git show`, with its absolute `path:line` and one line on why it needs me. These are changes to a contract (models, commands, events, stored data, migrations, settings, text users see), a choice between approaches, ordering or concurrency, and anything a reviewer disagreed with. When a hunk runs past about 40 lines, trim its unchanged context lines first. Give the rest of the commit one line per file.
 - For docs, and for text that instructs agents like a skill or a rules file, the changed text as `diff` blocks.
 - For each hunk you show: each new name, field, event or case in plain words (what it is, when it happens and what triggers it), its caller and the user action that reaches it, a one-line definition of each existing field it relies on, and why this approach over the obvious alternative when the code doesn't show it.
+- For each behavior you say a commit changes, its proof: the test, device run or recording that shows it, the command you ran, and whether the test fails without the change. Write "none" when nothing proves it and "not checked" for what you didn't run.
 - For removals, what was kept and why.
 - For tests, which behavior each new test checks.
 

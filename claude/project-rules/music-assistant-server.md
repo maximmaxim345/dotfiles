@@ -16,3 +16,20 @@
 - Users read the docs at music-assistant/music-assistant.io (`~/projects/music-assistant/music-assistant.io`). When a change alters what users see, set up or configure, ask for a companion PR that updates them as "Companion PRs" in `~/desk/TASK.md` says, targeting the main or beta branch as its `CONTRIBUTING.md` says.
 - PRs: fill the template as-is. Keep the "Related issue" header and leave it empty when there's no issue, never the placeholder. Tick exactly one "Types of changes" box (it picks the release-notes section), and the checklist boxes as `pr-guidelines.md` says. The title becomes the changelog line. Don't add `#` sections inside the description of a small PR.
 - To measure playback offset with a mic (browsers, phones, native players, bad network), follow `~/projects/music-assistant/sendspin-sync-measure/AGENTS.md`.
+
+## Models, commands and events
+
+These also apply in the models repo and to what the frontend and the app read. A reviewer checks each one, also for anything marked as kept on purpose.
+
+- Every field, enum value, event and command is set by the server and read by at least one client, and every value of a field is one the shipping server can produce. Cut the rest. Before cutting a field as unread, read the code that consumes the object, not only a search for its name.
+- A name says what the thing is, and one word names one concept across names, values and texts.
+- No duplicate models. Reuse the model that already groups the fields, and when two models look alike, their docstrings say how they differ.
+- No field that repeats another field or a value a client can derive.
+- A known shape gets a type: no `dict[str, Any]` and no magic keys mixed into a map.
+- A bool where a two-value enum adds nothing.
+- A field or value too niche for the shared model stays out of it.
+- Something only a later PR uses ships with that PR.
+- A deprecated field is marked the same way everywhere, with the same removal note.
+- Every event documents its `object_id` and data.
+- Every comment and docstring matches what the code does today. Open the code each one describes, also in another repo, instead of checking only its style.
+- Follow upstream precedent: where upstream adds the same kind of thing without a workaround for old clients, do the same.

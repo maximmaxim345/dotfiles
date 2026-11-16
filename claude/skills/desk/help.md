@@ -8,7 +8,7 @@ What I can say in any thread, and what it does.
 - "finish", after local commits: push to the contributor's branch, approve their CI run when it comes from a fork, resolve the fixed threads, post the replies, file backlog items for points left for later, approve in my voice, squash merge, and switch back.
 - `/review-changes <PR>`, or "start a review" in the board's Incoming chat: review someone else's PR, and ask how to test it before I approve it.
 - `/review-brief`: brief me on the whole branch before I review it.
-- `/architecture [PR or range]`: a diagram of how the change fits together, when its structure changed.
+- `/architecture [PR, range or plan]`: a diagram of how the change fits together, when its structure changed.
 - `/second-opinion [PR or range]`: popups pick reviewers from other models and the effort for each, then it says which reviewer found what.
 - `/blast-radius`: what a change could break outside its diff.
 - `/open-pr`: commit, push and open the PR, with a popup for the mode and the bot review (none, Copilot, or Bot-MArley in `music-assistant` repos).

@@ -28,6 +28,7 @@ Then present a plan:
 - what "done" means and how you'll verify it
 - whether this should be more than one PR
 - when other code gets built against the change (models, commands, events, stored data, or anything another repo uses), the contract as one file kept out of git (add it to the file `git rev-parse --git-path info/exclude` names when nothing ignores it), linked in the plan: each model with its fields and types, each value with a descriptive name, and which side owns each piece of logic
+- for a choice about where a feature lives in the UI or how a page is structured, an HTML mockup of your pick and of the closest alternative, with a screenshot of each that I can pass on
 - when it adds a command or skill, how I'd use it: example calls, what happens without arguments, and each constraint I stated, in one line each
 
 For Music Assistant, Sendspin (except the spec), ESPHome, and OHF-Voice work, run the plan past ohf-sage before presenting it when it involves a real design choice, and include what it cites. For a contract, also ask it what maintainers would object to.

@@ -22,14 +22,14 @@ An effort is a body of work with one goal, spread over several tasks and often s
 
 - Desk: one pinned thread. Sweeps, refreshes (see "Refresh"), triages the backlog, keeps the board current and reacts to the board (see "Listening"). It does little coding itself. Never settle it.
 - Effort manager: a `manager - <effort>` thread for a large effort. Plans, writes briefs, starts task threads and keeps the effort's `status.md`. It starts a task when I ask. When one of its tasks sends follow-up work with my approval in my words or a companion item (see "Companion PRs" in `TASK.md`), or another manager sends work with my approval quoted, it first adds to the item's `brief` anything sent along with it, then starts it. When the work should wait (it builds on unmerged work other than its companion's, or overlaps a running task), it leaves the item unstarted with a comment saying why, and with `blockedBy` when it waits on another item, and I start it later from the board. Work another manager sends without my approval becomes a backlog item in its effort. Each task thread it starts gets a backlog item that holds its brief: add one with `bin/backlog add` before the launch when the task has none, launch with the message from "Starting threads", then set the item `started` with the thread id. A running task thread of its effort without an item gets one with `bin/backlog adopt`. The desk tells it about my actions on its effort's items (see "Listening"), and on each turn it also adds threads the desk started for its effort (backlog items with a `thread` missing from its task table) to that table. It marks its effort's next startable items as desk picks (`suggested`, with a one-line reason) in plan order, and follows "Managers" below. Small efforts have no manager and the desk covers them. In the rules below, "a manager" means the effort's manager, or the desk when the effort has none. `bin/backlog adopt` and `bin/backlog move` create a new effort's folder and a `status.md` with empty sections when they name an effort that doesn't exist yet. Whoever covers the effort fills it in on the next turn or sweep.
-- Morning routine: weekdays at 9:00, a scheduled run inside the desk thread that does the sweep, and on Thursdays also "Stale check". When `bin/desk-wait --check` fails, it tells me in one line to run `./dotfiles.py install desk_listener` in `~/dotfiles`. In each sweep it also checks `list_scheduled_tasks` for this project. When no task does the sweep, it creates one with `schedule_task`, bound to its own thread, with the prompt "Morning sweep: read ~/desk/AGENTS.md again in full, since it may have changed, then run the sweep from it and reply with what needs me.", and tells me in one line. The sweep's reply starts with the first line `bin/autostart` prints.
+- Morning routine: weekdays at 9:00, a scheduled run inside the desk thread that does the sweep and "Stale check". When `bin/desk-wait --check` fails, it tells me in one line to run `./dotfiles.py install desk_listener` in `~/dotfiles`. In each sweep it also checks `list_scheduled_tasks` for this project. When no task does the sweep, it creates one with `schedule_task`, bound to its own thread, with the prompt "Morning sweep: read ~/desk/AGENTS.md again in full, since it may have changed, then run the sweep from it and reply with what needs me.", and tells me in one line. The sweep's reply starts with the first line `bin/autostart` prints.
 
 ## Managers
 
 At the end of every turn, a manager:
 1. Turns follow-ups and open decisions that are work into backlog items, since only items reach my board. A promise to file them later doesn't count.
 2. Updates "Resume here" and the task table in its `status.md` when they changed.
-3. When the turn asks me something only its thread can answer, sets the question on its own item with `bin/backlog ask --thread <its id> "<the question in one line>"` and pins itself with `t3_thread_organize`. A choice the board lets me make is no such question: approving or dismissing project board changes, hiding Incoming entries, and starting, pausing, finishing or dropping items. It puts those on the board instead (as proposals, Incoming entries, `suggested` on items to start, or a manager comment on items it would drop) and names its picks in its reply. When it asks nothing else, clears the question with `--clear`, unpins itself and settles itself, which T3 applies when the turn ends, except on a turn it compacts itself (step 5), since the queued `/compact` cancels the settle.
+3. When the turn asks me something only its thread can answer, sets the question on its own item with `bin/backlog ask --thread <its id> "<the question in one line>"` and pins itself with `t3_thread_organize`. A choice the board lets me make is no such question: approving or dismissing project board changes, hiding Incoming entries, and starting, pausing, finishing or dropping items. It puts those on the board instead (as proposals, Incoming entries, `suggested` on items to start, or a manager comment on items it would drop) and names its picks once, in the reply that puts them there, never in an Ask or a later reply, since the board keeps showing them. When it asks nothing else, clears the question with `--clear`, unpins itself and settles itself, which T3 applies when the turn ends, except on a turn it compacts itself (step 5), since the queued `/compact` cancels the settle.
 4. Opens http://127.0.0.1:8765/?effort=<effort> with `preview_open` when `preview_status` lists no tab on that page, whoever opened it. Each turn after a wake-up is a new agent session, so tabs of earlier turns don't count as its own.
 5. Compacts itself as "Compacting" says, when about 20 of its turns came since it started or was last compacted.
 
@@ -82,7 +82,7 @@ Base every state on threads, git and `gh`, never on memory, and fix `status.md` 
 
 ## Refresh
 
-On weekdays from 8:00 to 20:00, the listener queues `refresh` when the last refresh was 45 minutes ago or more. A refresh is a short sweep that keeps the board's thread lists and Incoming current: do sweep steps 1, 2, 4, 5, 7 and 8, read PRs only through `bin/pr-check`, and do "Watching" and "Spaces". Reply in one line for the threads, plus one line per entry you set to needs-you, and stay silent when nothing changed.
+On weekdays from 8:00 to 20:00, the listener queues `refresh` when the last refresh was 45 minutes ago or more. A refresh is a short sweep that keeps the board's thread lists and Incoming current: do sweep steps 1, 2, 4, 5, 7 and 8, read PRs only through `bin/pr-check`, and do "Watching" and "Spaces". Reply once, when it's done: one line for the threads, plus one line per entry you set to needs-you, and stay silent when nothing changed. Leave out questions other threads asked me, since their threads and the board show them.
 
 ## Starting threads
 
@@ -189,11 +189,14 @@ Reply in one line with the threads you put away or brought back, and stay silent
 
 ## Stale check
 
-On Thursdays, list in the sweep's reply, one line each, what has waited too long:
-- questions (`asks`) open for more than two days;
+In each morning sweep, list in the reply, one line each with its age, what has waited on me for more than three days:
+- questions (`asks`), by `asks.at`;
+- Incoming entries with status needs-you, by `updated`;
+- open project board proposals, by `at`.
+
+On Thursdays, also list:
 - started items whose open PR has no reviewer requested and no review after three days;
-- blockers older than a week, by the comment that added them or the item's date;
-- project board proposals open for more than two days.
+- blockers older than a week, by the comment that added them or the item's date.
 
 The board shows old questions under "Getting old" and marks old proposals with their age itself.
 

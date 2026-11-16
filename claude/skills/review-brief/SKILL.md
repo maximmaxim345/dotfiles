@@ -1,7 +1,7 @@
 ---
 name: review-brief
-description: Brief me before I review this branch's changes (TLDR, decisions, recap, file-by-file walkthrough, critical pass). Use it whenever you hand finished work over for my review.
-argument-hint: "[base ref, commit range or PR URL]"
+description: Brief me before I review this branch's changes (TLDR, decisions, recap, commit-by-commit walkthrough, critical pass). Use it whenever you hand finished work over for my review.
+argument-hint: "[base ref, commit range or PR URL] [full]"
 ---
 
 I'm about to review this branch's changes myself, and I may not remember what we did. Brief me in chat. Start with these lines, about the non-test changes, and put nothing before them:
@@ -14,11 +14,11 @@ I'm about to review this branch's changes myself, and I may not remember what we
 
 Then a "Decide" list with each choice that is mine to make: your pick and one line why. Include choices you made yourself that I might not expect, such as overriding a reviewer or keeping something a later change made unnecessary, and each workaround (such as UI text that steers users around a limitation, or a new hook with a single user) with whether it would pass maintainer review. Leave out what I always do anyway, such as reviewing or approving the push. Leave the list out when there is nothing to decide.
 
-Arguments: `$ARGUMENTS`. Compare against that base ref or PR, or cover only that commit range (`A..B`), otherwise against the merge base with the repo's default branch, taken from upstream when `origin` is my fork. Fetch the base first and name the commit you compare against. Include uncommitted and untracked files. Cover the whole branch, including commits from earlier sessions or other work, unless I ask for less.
+Arguments: `$ARGUMENTS`. Compare against that base ref or PR, or cover only that commit range (`A..B`), otherwise against the merge base with the repo's default branch, taken from upstream when `origin` is my fork. Fetch the base first and name the commit you compare against. Include uncommitted and untracked files. Cover the whole branch, including commits from earlier sessions or other work, unless I ask for less. `full` shows every hunk in section 2.
 
-When the diff is under about 20 changed lines, follow the "Decide" list with one line per changed file, the folder, branch and commit range, and the critical pass findings, and leave out the rest.
+When the diff is under about 20 changed lines, follow the "Decide" list with one line per changed file and its hunks as `diff` blocks, the folder, branch and commit range, and the critical pass findings, and leave out the rest.
 
-Write every code reference, also inside a file's own section and for tests, as an absolute `path:line` in backticks. Write for someone who saw none of the session: no thread ids, finding numbers or names we made up, no bold, and each fact once.
+Write every code reference, also inside a commit's own entry and for tests, as an absolute `path:line` in backticks. Write for someone who saw none of the session: no thread ids, finding numbers or names we made up, no bold, and each fact once.
 
 ## 1. Recap
 
@@ -29,14 +29,15 @@ A few short lines:
 - PR reviewer comments still unresolved, when the branch has a PR. Find it with `gh pr view` when no PR was given, and read both its comments and its inline review threads (`gh api graphql` on `pullRequest.reviewThreads`, whose `isResolved` says which are open).
 - The absolute folder path, the branch, the commit range and the base commit you compared against, on one line.
 
-## 2. File by file
+## 2. Commit by commit
 
-Cover every changed file in one answer, in reading order: entry points and data shapes first, then the code that uses them, tests last. Within a file, go through the changes from top to bottom, in the order they appear in the code, so I can read along. Read the current code rather than relying on what you remember from the session. For each file:
+Go through the commits oldest first, in one answer, with uncommitted changes as one more entry at the end. Show each `fixup!` commit inside the entry of the commit it fixes, right after it. Read the current code rather than relying on what you remember from the session. For each commit:
 
-- the absolute path, then a one-line TLDR, then what changed and why, in a short paragraph.
-- Each new name, field, event or case in plain words: what it is, when it happens and what triggers it.
-- For each changed function, its callers as absolute `path:line` and the user action that reaches it, and a one-line definition of each existing field the change relies on.
-- Why this approach over the obvious alternative, when the choice isn't clear from the code.
+- its short hash and subject, then its kind: refactor, behavior, tests or docs. A commit that mixes a refactor with a behavior change counts as behavior, and say which part is which.
+- For a refactor, what moved from where to where, and the lines that changed apart from the move. Take those from `~/.claude/skills/review-brief/unmatched_lines.py <commit>`, which prints the lines git doesn't count as part of a moved block: removed lines (`-`) with their place before the commit, added lines (`+`), and under `~` each place where one moved block follows another, which is where lines changed order. Show those and nothing else of the commit.
+- For a behavior commit, the hunks that need my eyes, each as a fenced `diff` block copied unchanged from `git show`, with its absolute `path:line` and one line on why it needs me. These are changes to a contract (models, commands, events, stored data, migrations, settings, text users see), a choice between approaches, ordering or concurrency, and anything a reviewer disagreed with. When a hunk runs past about 40 lines, trim its unchanged context lines first. Give the rest of the commit one line per file.
+- For docs, and for text that instructs agents like a skill or a rules file, the changed text as `diff` blocks.
+- For each hunk you show: each new name, field, event or case in plain words (what it is, when it happens and what triggers it), its caller and the user action that reaches it, a one-line definition of each existing field it relies on, and why this approach over the obvious alternative when the code doesn't show it.
 - For removals, what was kept and why.
 - For tests, which behavior each new test checks.
 

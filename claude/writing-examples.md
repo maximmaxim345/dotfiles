@@ -34,6 +34,8 @@ the situation.
   change does) and fix what fails.
 - When I hand you my draft, keep its structure and wording and only fix what's
   wrong.
+- Never attribute words or a stance to me or anyone else that they didn't
+  write. When someone's exact point matters, quote it.
 
 ## Approving a PR
 

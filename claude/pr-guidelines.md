@@ -69,18 +69,4 @@ Tick each checklist box that holds:
 
 ## Creating PRs
 
-When asked to create a PR, always use `-w`:
-```
-gh pr create -w --title "..." --body "..."
-```
-The `-w` flag opens the PR in the browser for review before publishing.
-
-`-w` does not create the PR. It opens the create form prefilled with your title
-and body. The user reviews and publishes from there. So after running it, the
-PR will not yet exist in `gh pr view` or `gh pr list` and that is expected and
-correct. Do not treat the missing PR as a failure, do not retry without `-w`,
-and do not publish it yourself.
-
-If the user asks for a draft PR, still use `-w` (not `--draft`) and tell them to
-select the draft option in the browser form. The only exceptions are in `/open-pr` (`draft` and `ready` modes and the
-no-browser fallback), which run without `-w` after the user approves the title and body.
+Create PRs only through `/open-pr`, which shows the title and body for approval first.

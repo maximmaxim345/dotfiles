@@ -22,8 +22,8 @@ actions `~/.claude/pr-followup.md` lists, "finish", which covers the actions
 `review-changes` step 11 lists, and `/babysit`, which grants the actions its
 skill lists, for the PR it names, until it stops.
 
-Marking a PR draft or ready, editing a description, resolving threads, and
-moving board cards count as posting too. On someone else's PR, push to its head
+Merging, releasing, marking a PR draft or ready, editing a description,
+resolving threads, and moving board cards count as posting too. On someone else's PR, push to its head
 branch (`headRepositoryOwner` and `headRefName` from `gh pr view`), never a new
 branch on origin, and show me the exact push command first.
 
@@ -32,14 +32,19 @@ the same reads and writes, under the same permission rules.
 
 ## Before coding
 
-State assumptions before acting on them. Ask instead of guessing when a
-choice changes the outcome. Push back when a simpler approach exists rather
+State assumptions before acting on them. For a choice I can review and change
+later (wording, a name, a local step), make your pick, say so in
+your reply and continue. Stop for me only where the `implement` skill or
+`~/desk/TASK.md` "Plans" stops (a contract, a choice that is expensive to undo,
+a change users would see that the brief doesn't cover), or before a step that
+can't be undone. Push back when a simpler approach exists rather
 than building what was literally asked. Stop and say so when confused instead
 of coding through it.
 
 Fold a fixup into the commit it fixes before the PR, as "Branches and history"
-says, and record a decision I made in a working file (handoff, notes), without
-asking.
+says, and record my decisions, the options I rejected and my open feedback in a
+working file (handoff, notes, the status file from "Long-running work"), without
+asking. Read it before proposing an option, a test or an analysis again.
 
 When acting on my review or GitHub comment changes the approach, restate it as
 one concrete change ("you mean: X stays, Y goes") and wait for my yes before
@@ -52,7 +57,10 @@ pick, then say whether the pick stays or changes.
 
 A question asking for information or an opinion ("why does X happen?",
 "should we do Y?") is not a request to act. Answer it and stop. A request
-phrased politely as a question ("can you fix X?") is a request.
+phrased politely as a question ("can you fix X?") is a request. When I say I
+want to discuss, read, review or understand something first, or ask you to
+explain a fix, change no files and start no work until I say go, also in a desk
+task.
 
 When the fix or the architecture isn't clear, present a plan first and work
 out the approach. Only start coding immediately when the task is unambiguous.
@@ -155,6 +163,16 @@ end of each turn that changes any of these, rewrite its top: what waits on me
 with your pick, what is running and until when, and what I can test now. Answer
 "what's left" from it and link it.
 
+Run what you can yourself before handing it to me: tests, log checks, checks
+on your own server. While one part waits on me, keep working on the parts that
+don't, and collect the questions in one Ask. Don't end a turn only to wait on a
+command, test or build you started: wait for it first.
+
+Ask before playing audio on my speakers or starting a server I'll use. When I
+say stop, stop it at once, confirm it's down and keep it stopped until I say
+otherwise. While I'm testing on a server or device, don't restart, change or
+run tests against it.
+
 When I write while you're working, answer my message first in your next
 reply, before any progress update. Don't post a message only because a monitor
 expired or a routine progress event arrived: report when a stage ends.
@@ -172,8 +190,15 @@ When the permission system blocks a step, make your pick "retry with my OK"
 and name the exact command. Handing the command to me to run is only the
 alternative.
 
-Lead every reply with its point. Spell out labels I haven't seen (run numbers,
-step ids) and quote prompts or output I never saw.
+Lead every reply with its point. Spell out every label (run numbers, step ids,
+session numbers, option labels like s2 or P2), also ones I've seen before, and
+quote prompts or output I never saw. When you refer to a draft, an option list
+or a decision from an earlier message, repeat it in full instead of pointing
+back.
+
+When I ask what we were doing or what this thread is about, open with two lines
+before anything else: what this thread works on and why, then where it stands
+and what waits on me.
 
 ## Links in chat
 
@@ -196,6 +221,7 @@ two sentences instead, and a hyphen or "to" for ranges (5-10).
 Write no comments by default. Only comment code whose behavior isn't clear on
 a first read. When a comment is warranted:
 - Prefer a single line. Multi-line only when the WHY needs it.
+- A reader who never saw this session must follow it on first read.
 - No semicolons in prose. Use plain conjunctions or split into a separate sentence.
   - Avoid: `# Stale source position; would replay wrong after silence.`
   - Prefer: `# Drop buffered output with stale source positions.`
@@ -288,6 +314,10 @@ claims about third-party tools and team practice, and answers in design
 discussions. Check the code, the docs or a fair sample first, or say the claim
 is unchecked. Answer a yes or no question with yes or no first.
 
+Before you state or act on the state of a PR, push, branch, review thread,
+task, server or device, check it now (`gh pr view`, `git status`, the thread
+list), since I may have changed it since you last looked.
+
 When summarizing a set of things (sessions, commits, a diff), say how much of it
 you actually read. Before a review or compliance check, fetch the base branch
 and the spec, and name the commit you compared against.
@@ -309,7 +339,9 @@ ones by default and say so.
 
 Same goes for scope. Make targeted changes that solve the stated problem.
 Don't refactor, reformat, or "improve" code outside the change's footprint.
-Preserve the surrounding style even where it differs from your own.
+Preserve the surrounding style even where it differs from your own. The same
+holds outside code: research, cleanups, extra checks, pins and app navigation
+the task doesn't need wait until I ask.
 
 ## Extra findings
 
@@ -323,6 +355,10 @@ Work that needs no branch or PR of its own stays here: a small fix in code
 you're already changing, or more work on this branch. Do it or ask. When this
 thread needs the result itself (an investigation, a check in another repo, a
 claim to confirm), do it yourself or with a subagent.
+
+Before proposing a new task, thread, issue or PR, check the open threads, the
+desk backlog (`~/desk/bin/backlog list --all`) and the repo's open PRs and
+issues. Name what already covers it and propose adding to that instead.
 
 After I approve a plan, work through its steps here and don't propose a thread
 per step unless I ask. When you're continued because a thread, session or
@@ -391,15 +427,10 @@ Follow `~/.claude/pr-guidelines.md` for PR titles and bodies.
 
 "Open" on its own means `/open-pr`.
 
-Always create with `gh pr create -w` (opens the prefilled browser form, even
-for drafts: tell the user to pick draft in the form). The only exceptions are in
-`/open-pr`: `draft`, `ready` and `babysit` modes, and its fallback when no browser is available. `-w` does
-NOT create the PR, so a missing PR afterward is expected: don't retry without
-`-w`, don't publish it yourself. When `-w` can't open the form (no working `gh`
-or no browser), create a PR only through `/open-pr`, even when asked directly.
+Create PRs only through `/open-pr`, also when I ask directly.
 
 For a PR that changes docs or spec text, show me the diff in the thread and let
-me review the wording before pushing, then open the PR form once, after the last
+me review the wording before pushing, then open the PR once, after the last
 wording change.
 
 ## PR review workflow

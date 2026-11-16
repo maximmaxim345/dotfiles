@@ -75,6 +75,7 @@ its upstream when `origin` is my fork), read its
 file in `~/.claude/project-rules/`:
 - `music-assistant/server`: `music-assistant-server.md`
 - `music-assistant/frontend`: `music-assistant-frontend.md`
+- `music-assistant/models`: the "Models, commands and events" section of `music-assistant-server.md`
 - `Sendspin/aiosendspin`: `aiosendspin.md`
 - `Sendspin/sendspin-js`: `sendspin-js.md`
 - `Sendspin/spec`: `sendspin-spec.md`

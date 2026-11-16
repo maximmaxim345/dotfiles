@@ -196,7 +196,8 @@ quote prompts or output I never saw. When you refer to a draft, an option list
 or a decision from an earlier message, repeat it in full instead of pointing
 back.
 
-When I ask what we were doing or what this thread is about, open with two lines
+When I ask what we were doing or what this thread is about, or a hook says the
+thread was quiet for an hour or more, open with two lines
 before anything else: what this thread works on and why, then where it stands
 and what waits on me.
 

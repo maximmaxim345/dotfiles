@@ -55,6 +55,11 @@ ENTRIES: List[Tuple[str, str, str]] = [
     ("skills/lab-gate", "skills/lab-gate", "old_skill_lab_gate"),
     ("skills/second-opinion", "skills/second-opinion", "old_skill_second_opinion"),
     ("skills/architecture", "skills/architecture", "old_skill_architecture"),
+    ("hooks/recap-after-break.py", "hooks/recap-after-break.py", "old_hook_recap_after_break"),
+]
+# Hooks registered in settings.json (event, command)
+HOOKS: List[Tuple[str, str]] = [
+    ("UserPromptSubmit", f"python3 {claude_path / 'hooks' / 'recap-after-break.py'}"),
 ]
 # Entries dropped from ENTRIES, whose links existing installs still have (target, config key for the backup)
 REMOVED: List[Tuple[str, str]] = [
@@ -163,16 +168,56 @@ def disallow_desk(config: ModuleConfig) -> None:
     config.unset("allowed_desk")
 
 
+def hook_commands(settings: dict, event: str) -> List[str]:
+    return [h.get("command") for group in settings.get("hooks", {}).get(event, []) for h in group.get("hooks", [])]
+
+
+def missing_hooks() -> List[Tuple[str, str]]:
+    if not settings_path.is_file():
+        return []
+    settings = json.loads(settings_path.read_text(encoding="utf-8"))
+    return [(event, command) for event, command in HOOKS if command not in hook_commands(settings, event)]
+
+
+def add_hooks() -> None:
+    missing = missing_hooks()
+    if not missing:
+        return
+    settings = json.loads(settings_path.read_text(encoding="utf-8"))
+    for event, command in missing:
+        settings.setdefault("hooks", {}).setdefault(event, []).append({"hooks": [{"type": "command", "command": command}]})
+    settings_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+    print(f"Added {len(missing)} hooks to {settings_path}")
+
+
+def remove_hooks() -> None:
+    if not settings_path.is_file():
+        return
+    settings = json.loads(settings_path.read_text(encoding="utf-8"))
+    hooks = settings.get("hooks", {})
+    for event, command in HOOKS:
+        groups = [g for g in hooks.get(event, []) if [h.get("command") for h in g.get("hooks", [])] != [command]]
+        if groups:
+            hooks[event] = groups
+        else:
+            hooks.pop(event, None)
+    if not hooks:
+        settings.pop("hooks", None)
+    settings_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+
+
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     for source_name, target_name, key in ENTRIES:
         link(source_name, target_name, key, config)
     link_accounts(config)
     allow_desk(config)
+    add_hooks()
     print("Claude Code config installed, run /output-style Plain English once to select the output style")
 
 
 def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
     disallow_desk(config)
+    remove_hooks()
     unlink_removed(config)
     for _, target_name, key in ENTRIES:
         df.restore_backup(claude_path / target_name, config, key)
@@ -190,6 +235,7 @@ def has_update(config: ModuleConfig) -> Union[bool, str]:
         or bool(dangling_account_links(config))
         or bool(missing_account_links())
         or bool(missing_desk_dirs())
+        or bool(missing_hooks())
     )
 
 
@@ -200,3 +246,4 @@ def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
             link(source_name, target_name, key, config)
     link_accounts(config)
     allow_desk(config)
+    add_hooks()

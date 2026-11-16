@@ -29,6 +29,7 @@ live on every device without re-running anything.
 | `skills/second-opinion/` | Has reviewers from other models check a change, picked with their effort in a popup |
 | `skills/architecture/` | Draws how a change fits together, with new, changed and removed parts marked |
 | `skills/desk/` | Hands a T3 thread to the desk or pauses it there, and moves Claude desktop sessions to T3 Code threads, linked into `~/.claude/skills/` |
+| `hooks/recap-after-break.py` | A `UserPromptSubmit` hook that asks for a two-line recap when a thread was quiet for an hour or more. The module links it into `~/.claude/hooks/` and registers it in `settings.json` |
 
 Not to be confused with the repository root `CLAUDE.md`, which is a symlink to
 `AGENTS.md` and describes this repo as a project. The file here is the global

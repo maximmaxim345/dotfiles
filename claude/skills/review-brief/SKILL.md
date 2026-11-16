@@ -16,6 +16,8 @@ Then a "Decide" list with each choice that is mine to make: your pick and one li
 
 Arguments: `$ARGUMENTS`. Compare against that base ref or PR, or cover only that commit range (`A..B`), otherwise against the merge base with the repo's default branch, taken from upstream when `origin` is my fork. Fetch the base first and name the commit you compare against. Include uncommitted and untracked files. Cover the whole branch, including commits from earlier sessions or other work, unless I ask for less. `full` shows every hunk in section 2.
 
+When I already reviewed the branch, cover only the commits since that review, unless I ask for more: for each, the commit it fixes, the comment it answers and its hunks as `diff` blocks. Leave out everything else, except what a fix changed in the top lines, and the line with the folder, branch and range.
+
 When the diff is under about 20 changed lines, follow the "Decide" list with one line per changed file and its hunks as `diff` blocks, the folder, branch and commit range, and the critical pass findings, and leave out the rest.
 
 Write every code reference, also inside a commit's own entry and for tests, as an absolute `path:line` in backticks. Write for someone who saw none of the session: no thread ids, finding numbers or names we made up, no bold, and each fact once.

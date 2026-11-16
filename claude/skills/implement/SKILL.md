@@ -54,6 +54,8 @@ Then test the change yourself the way I would, so I only do what needs me:
 
 ## 4. Review with fresh context
 
+On a branch I call a prototype, skip this step and step 5, and hand over as "Before handing over" in my CLAUDE.md says.
+
 Launch these in parallel, passing the diff (`git diff <base>...HEAD`), the changed paths, and the approved plan, but not your own reasoning:
 - A review subagent that checks correctness, audits the diff as "Before handing over" in my CLAUDE.md says and against the project rules, and reads it as the `review-brief` skill's "Critical pass" says.
 - ohf-sage, for the projects listed in step 2.

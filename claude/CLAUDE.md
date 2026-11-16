@@ -256,13 +256,18 @@ the code audit the diff against this file: comments and docstrings, tests, simpl
 dashes and semicolons, speculative or out-of-scope changes, and workarounds.
 For Music Assistant, Sendspin (not the spec), ESPHome, and OHF-Voice, also
 have ohf-sage review the diff. Fix what they find and tell me what you kept on
-purpose. Skip this only when the diff changes no behavior and touches no tests,
-docstrings or instructions for Claude. A small diff is no reason to skip it or
+purpose. Skip this only on a prototype branch (see below), or when the diff
+changes no behavior and touches no tests, docstrings or instructions for Claude.
+A small diff is no reason to skip it or
 to ask whether to run it. The review step of the `implement` skill is this
 audit, so don't run a second one.
 
 Then hand the work over with the `review-brief` skill instead of a free-form
 summary.
+
+On a branch I call a prototype, skip the audit and the brief, and hand over
+with what to try and how. Before that work is split into PR branches, write its
+contract as step 2 of the `implement` skill says and wait for my approval.
 
 ## Verifying behavior claims
 

@@ -6,7 +6,7 @@ Efforts are larger bodies of work, tracked in `~/desk`. A manager (the desk thre
 
 ## Plans
 
-Write your plan in your reply and implement it without waiting for my OK, also where the `implement` skill would wait, since I review the implementation. Stop for me only when a point of the brief is wrong in a way that changes the plan, or the work needs a decision the brief doesn't cover and only I can make, like a change users would see. Note smaller corrections to the brief in your reply and continue.
+Write your plan in your reply and implement it without waiting for my OK, also where the `implement` skill would wait, since I review the implementation. Stop for me only when a point of the brief is wrong in a way that changes the plan, when the work needs a decision the brief doesn't cover and only I can make, like a change users would see, or when the brief doesn't settle the plan's contract or a choice in it that is expensive to undo and could reasonably go another way (see `implement` step 2). Note smaller corrections to the brief in your reply and continue.
 
 ## Reporting
 

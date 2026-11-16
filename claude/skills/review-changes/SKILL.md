@@ -43,6 +43,7 @@ Running this command is not a go-ahead to post. Nothing goes to GitHub until I a
    To post (<count>): each finding as its absolute path:line, the hunk it is about as a `diff` block, and its draft comment.
    Lower priority <count>, dismissed <count> (in <results file>). Base <commit>, read <share of the diff>.
    ```
+   Follow each path:line in the card with a link to that line in the PR's diff view, as the `review-brief` skill says.
    End with an Ask between fixing the To post findings as local commits on the PR branch (step 11) and creating a pending review (step 9). Pick local commits for Sendspin and Music Assistant PRs, and the pending review otherwise and for desk review items. "Local commits" from me covers every To post finding. When I edit or reject a comment, update the file and post the changed entries again.
 9. For the pending review path, continue only when my latest message is an explicit go-ahead. Create a pending review with the approved comments, on `headRefOid`, with `side` set to `RIGHT`. Leave out `event`, so the review stays pending and only I can see it:
    `gh api repos/<owner>/<repo>/pulls/<number>/reviews -X POST --input <file>`

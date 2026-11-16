@@ -20,7 +20,7 @@ When I already reviewed the branch, cover only the commits since that review, un
 
 When the diff is under about 20 changed lines, follow the "Decide" list with one line per changed file and its hunks as `diff` blocks, the folder, branch and commit range, and the critical pass findings, and leave out the rest.
 
-Write every code reference, also inside a commit's own entry and for tests, as an absolute `path:line` in backticks. Write for someone who saw none of the session: no thread ids, finding numbers or names we made up, no bold, and each fact once.
+Write every code reference, also inside a commit's own entry and for tests, as an absolute `path:line` in backticks. When the branch has a PR, follow each changed-line reference with a link to that line in the PR's diff view, `<PR URL>/files#diff-<sha256 of the repo-relative path>R<line>` (`L<line>` for a removed line), since the file path opens the whole file instead of the diff. Write for someone who saw none of the session: no thread ids, finding numbers or names we made up, no bold, and each fact once.
 
 ## 1. Recap
 

@@ -68,6 +68,10 @@ Start it only when the task touches the frontend or I pass `frontend`. The built
 
 The server's `.vscode/launch.json` is tracked and runs on `~/.musicassistant`, so don't edit it. When I want to debug on the copy, or after `setup`, tell me to add `"--data-dir", "${workspaceFolder}/.claude/ma-data", "--cache-dir", "${workspaceFolder}/.claude/ma-data/.cache"` to the "Music Assistant: Server" arguments myself.
 
+## While I test
+
+When you hand me a change to test by hand, first get it into the server you started and restart it, without asking. When the change touches an app that is installed on a connected phone, reinstall it too. Then say in one line what is ready to test and where.
+
 ## Hand back
 
 Say what's running, on which web, stream and Sendspin ports and data folder, and how to stop it. After `setup`, say what was prepared instead.

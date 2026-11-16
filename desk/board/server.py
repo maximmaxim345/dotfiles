@@ -153,7 +153,7 @@ def all_items() -> dict[str, dict]:
 
 
 def incoming_shown(entry: dict) -> bool:
-    """Show open entries unless snoozed, and others except dismissed for a day after the last chat message."""
+    """Show open entries unless snoozed, and others except dismissed while my chat waits or a day after its answer."""
     now = datetime.datetime.now()
     if entry.get("snoozed", "") > now.date().isoformat():
         return False
@@ -162,7 +162,7 @@ def incoming_shown(entry: dict) -> bool:
     chat = entry.get("chat")
     if entry["status"] == "dismissed" or not chat:
         return False
-    return datetime.datetime.fromisoformat(chat[-1]["at"]) > now - CHAT_SHOWN_FOR
+    return chat[-1]["by"] == "me" or datetime.datetime.fromisoformat(chat[-1]["at"]) > now - CHAT_SHOWN_FOR
 
 
 def load_state() -> dict:

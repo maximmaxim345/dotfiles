@@ -462,7 +462,7 @@ function renderStats() {
   const stat = (n, label, hot, target) => n ? el("span", { class: `stat${hot ? " hot" : ""}${target ? " jump" : ""}`, onclick: target ? () => $(target).scrollIntoView({ behavior: "smooth" }) : null }, el("b", {}, String(n)), ` ${label}`) : null;
   const listen = el("span", { class: "stat", title: state.listening ? "The desk reacts to Start, captures, comments and pauses within a minute." : "Run ./dotfiles.py install desk_listener in ~/dotfiles. Until then the desk only acts when you ask it." },
     el("span", { class: "dot", style: { background: state.listening ? "var(--green)" : "var(--gray)" } }), state.listening ? "desk listening" : "desk not listening");
-  $("stats").replaceChildren(...[stat(needs, "need you", true, "needsWrap"), stat((state.incoming || []).filter(e => ["new", "needs-you"].includes(e.status) && spaceShown(e.effort)).length, "incoming", true, "incomingWrap"), stat(count(["new"]), "inbox"), stat(count(["next"]), "next"), stat(count(["requested"]), "starting", true), stat(items.filter(i => i.status === "started" && columnOf(i) === "started").length, "in progress"), stat(items.filter(i => columnOf(i) === "review").length, "in review"), listen].filter(Boolean));
+  $("stats").replaceChildren(...[stat(needs, "need you", true, "needsWrap"), stat((state.incoming || []).filter(e => ["new", "needs-you"].includes(shownStatus(e)) && spaceShown(e.effort)).length, "incoming", true, "incomingWrap"), stat(count(["new"]), "inbox"), stat(count(["next"]), "next"), stat(count(["requested"]), "starting", true), stat(items.filter(i => i.status === "started" && columnOf(i) === "started").length, "in progress"), stat(items.filter(i => columnOf(i) === "review").length, "in review"), listen].filter(Boolean));
   $("stats").prepend(...(needs ? [] : [el("span", { class: "stat" }, "nothing needs you")]));
 }
 
@@ -563,8 +563,10 @@ function chatFold(key, chat, hint, send) {
   }) }, "Send");
   return fold(key, chat?.length ? `Chat (${chat.length})` : "Ask the desk", el("div", { class: "chat" }, (chat || []).map(commentEl), textarea, sendBtn));
 }
-const INCOMING_BADGE = { "needs-you": ["hot", "needs you"], waiting: ["", "waiting for user"], new: ["new", "new"], filed: ["ok", "filed"],
+const INCOMING_BADGE = { "needs-you": ["hot", "needs you"], sent: ["", "sent, waiting for the desk"], waiting: ["", "waiting for user"], new: ["new", "new"], filed: ["ok", "filed"],
   duplicate: ["", "duplicate"], noise: ["", "nothing to do"], closed: ["", "closed"] };
+const deskOwes = x => x.chat?.at(-1)?.by === "me";
+const shownStatus = e => deskOwes(e) ? "sent" : e.status;
 function localDate(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 function snoozeLink(e, label, days) {
   return el("a", { href: "#", title: "Hide it until then or until it gets news", onclick: ev => {
@@ -574,12 +576,12 @@ function snoozeLink(e, label, days) {
   } }, label);
 }
 function incomingRow(e) {
-  const [cls, label] = INCOMING_BADGE[e.status];
+  const [cls, label] = INCOMING_BADGE[shownStatus(e)];
   const copy = el("button", { class: "btn ghost", onclick: async () => { await navigator.clipboard.writeText(e.draft); toast("Reply copied"); } }, "Copy");
-  return el("div", { class: `nrow${e.status === "needs-you" ? "" : " waiting"}` },
+  return el("div", { class: `nrow${shownStatus(e) === "needs-you" ? "" : " waiting"}` },
     el("div", { class: "t", title: e.title }, el("span", { class: `chip ${cls}`, style: { marginRight: "6px" } }, label), e.title),
     el("div", { class: "w" },
-      e.status === "needs-you" && e.action ? el("div", { class: "act" }, e.action) : el("div", {}, (e.news || []).join(", ")),
+      shownStatus(e) === "needs-you" && e.action ? el("div", { class: "act" }, e.action) : el("div", {}, (e.news || []).join(", ")),
       e.posts?.length > 0 && fold(`${e.url} posts`, e.posts.length === 1 ? "What they wrote" : `What they wrote (${e.posts.length})`,
         e.posts.map(p => el("div", { class: "post" }, el("div", { class: "by" }, `${p.by}, ${ago(p.at)} ago`), Object.assign(el("div", { class: "md" }), { innerHTML: markdown(p.text) })))),
       e.draft && fold(`${e.url} draft`, "Draft reply", el("pre", {}, e.draft), copy),
@@ -599,7 +601,7 @@ function proposalRow(p) {
     p.issue.assignees.length && `assigned to ${p.issue.assignees.join(", ")}`, p.issue.labels.length && `labels ${p.issue.labels.join(", ")}`].filter(Boolean).join(", ");
   return el("div", { class: "nrow waiting" },
     el("label", { class: "t", title: p.title }, box, " ", codeText(p.title)),
-    el("div", { class: "w" }, `${what}, ${p.why}`, p.state === "approved" && " (applying)", p.error && el("div", { style: { color: "var(--red)" } }, p.error),
+    el("div", { class: "w" }, `${what}, ${p.why}`, p.state === "approved" && " (applying)", deskOwes(p) && " (sent, waiting for the desk)", p.error && el("div", { style: { color: "var(--red)" } }, p.error),
       issue && fold(`${p.id} issue`, "About the issue", el("div", { class: "post" }, el("div", { class: "by" }, issue),
         p.issue.text && Object.assign(el("div", { class: "md" }), { innerHTML: markdown(p.issue.text) }))),
       p.body && fold(`${p.id} body`, p.action === "edit" ? "New description" : "Issue text", Object.assign(el("div", { class: "md" }), { innerHTML: markdown(p.body) })),
@@ -608,9 +610,9 @@ function proposalRow(p) {
       item && el("a", { href: "#", title: item.title, onclick: ev => { ev.preventDefault(); openDrawer(item.id); } }, "item"), link && el("a", { href: link, target: "_blank" }, "open")));
 }
 function renderIncoming() {
-  const order = ["needs-you", "new", "waiting", "filed", "duplicate", "noise", "closed"];
+  const order = ["needs-you", "new", "sent", "waiting", "filed", "duplicate", "noise", "closed"];
   const entries = (state.incoming || []).filter(e => spaceShown(e.effort) && (!ui.effort || (e.effort || "") === (ui.effort === "-" ? "" : ui.effort)))
-    .sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status) || b.updated.localeCompare(a.updated));
+    .sort((a, b) => order.indexOf(shownStatus(a)) - order.indexOf(shownStatus(b)) || b.updated.localeCompare(a.updated));
   const parts = [];
   if (entries.length) {
     parts.push(el("div", { class: "section-title" }, "Incoming", el("span", { style: { fontWeight: 400, textTransform: "none", letterSpacing: 0 } }, "· from GitHub, nothing gets posted")));

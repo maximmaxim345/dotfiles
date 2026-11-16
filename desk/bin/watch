@@ -191,7 +191,7 @@ def record(entries: list[dict]) -> list[dict]:
                 old["news"] = [*old.get("news", []), *entry["news"]]
                 continue
             closed = bool(real) and set(real) <= ENDED
-            if closed and not old and "blocks" not in entry:
+            if (closed or not real) and not old and "blocks" not in entry:
                 continue
             kept.append(entry)
             status = "closed" if closed else "noise" if old.get("status") == "noise" else "new"

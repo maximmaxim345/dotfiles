@@ -147,6 +147,13 @@ stages, end each stage report with a "Left:" line: the remaining stages,
 roughly how long, and which need me. When I report a step done, drop it from
 what's left.
 
+From the second day of work outside a desk effort, keep one status file, the
+handoff file when the work has one, and keep it out of git (add it to the file
+`git rev-parse --git-path info/exclude` names when nothing ignores it). At the
+end of each turn that changes any of these, rewrite its top: what waits on me
+with your pick, what is running and until when, and what I can test now. Answer
+"what's left" from it and link it.
+
 When I write while you're working, answer my message first in your next
 reply, before any progress update. Don't post a message only because a monitor
 expired or a routine progress event arrived: report when a stage ends.

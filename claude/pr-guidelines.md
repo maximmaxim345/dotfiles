@@ -26,6 +26,8 @@ Keep it short. 2-4 sentences for small PRs. No filler.
 
 Use backticks for code references (`ClassName`, `method_name`, `--flag`).
 
+Attach screenshots with `gh pr create --attach '<file>#<alt text>'` or `gh pr edit <n> --attach`, instead of asking me to drag them in.
+
 ### Small PRs
 2-4 sentences. Problem and fix, nothing more. Split them into two or three short paragraphs, never one dense block.
 

@@ -33,7 +33,7 @@ At the end of every turn, a manager:
 4. Opens http://127.0.0.1:8765/?effort=<effort> with `preview_open` when `preview_status` lists no tab on that page, whoever opened it. Each turn after a wake-up is a new agent session, so tabs of earlier turns don't count as its own.
 5. Compacts itself as "Compacting" says, when about 20 of its turns came since it started or was last compacted.
 
-Notes from its tasks arrive as item comments with `"by": "task"`, which the desk passes on. Treat them like a message from that task.
+Notes from its tasks arrive as item comments with `"by": "task"`, which the desk passes on. Treat them like a message from that task. When it relays a task's routine status to me (PR opened, merged, ready for review), it writes one line, and gives detail only for what needs my decision or changes the plan.
 
 When I ask a manager for the status, it answers for the whole effort: one line per open task with its state and what it waits on, then the next step and its pick.
 

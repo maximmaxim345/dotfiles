@@ -11,3 +11,6 @@
 - When a turn changes spec text or asks to push, include the full current PR title and description before the Ask line.
 - The spec is pre-1.0. Don't hold PRs to compatibility or version-bump rules. A behavior change still ends its PR description with a "Breaking changes" section that says whether clients, servers or both must update, and which first.
 - Flag wording only when it changes the meaning or leaves an ambiguity a real implementer would hit.
+- Leave per-connection scope implied. Don't add "on the same connection" to a rule.
+- Dynamic pairing code is the primary pairing method, ahead of static code and pairing PSK. Never call a dynamic-flow rule low-impact.
+- Clients see no paused state. A paused group is `playback_state: 'stopped'` with metadata and artwork kept, so don't propose pause rules for clients.

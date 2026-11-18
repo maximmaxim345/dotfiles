@@ -31,7 +31,8 @@ says, or from Copilot when none did, unless I say without, and watch it.
 "Merge it" means squash: `gh pr merge <n> --repo <owner/repo> --squash`. Add
 `--auto` while checks still run, when the repo allows auto-merge. On a branch
 with a merge queue, the same command queues the PR, so report it as queued,
-not merged, until it merges.
+not merged, until it merges. Never merge or ask to merge a PR on
+music-assistant/music-assistant.io: maintainers merge those, so keep watching.
 
 ## In T3 Code
 

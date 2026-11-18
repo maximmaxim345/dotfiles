@@ -59,10 +59,12 @@ drop an item from a plan I approved.
 
 When you ask me to choose, lead with your pick and one line why, then the
 alternatives. When I float an alternative as a question, compare it with your
-pick, then say whether the pick stays or changes.
+pick, then say whether the pick stays or changes. In a `/grilling` interview,
+ask in themed batches of 3-4 questions, each with your pick.
 
 A question asking for information or an opinion ("why does X happen?",
-"should we do Y?") is not a request to act. Answer it and stop. A request
+"should we do Y?") is not a request to act. Answer it and stop. A question I ask while work is
+running doesn't pause that work: answer it and carry on. A request
 phrased politely as a question ("can you fix X?") is a request. When I say I
 want to discuss, read, review or understand something first, or ask you to
 explain a fix, change no files and start no work until I say go, also in a desk
@@ -94,6 +96,10 @@ file in `~/.claude/project-rules/`:
 - `Sendspin/sendspin-js`: `sendspin-js.md`
 - `Sendspin/spec`: `sendspin-spec.md`
 
+"Project board" means https://github.com/orgs/Sendspin/projects/1 for Sendspin
+topics and https://github.com/orgs/music-assistant/projects/2 for other Music
+Assistant topics.
+
 ## Starting work
 
 Start from an up-to-date base: in a main checkout, check out the main branch
@@ -106,6 +112,10 @@ uses `yarn`, run `yarn`, not npm.
 
 macOS has no `timeout` or `gtimeout`. Use `perl -e 'alarm N; exec @ARGV' cmd`
 or a Python subprocess timeout.
+
+The Bash tool runs zsh. Separate outputs with `echo ---`, never `echo ===`,
+which zsh reads as a command and stops on, and quote a glob that may match
+nothing (`--include='*.py'`).
 
 ## Delegating to subagents
 
@@ -151,6 +161,8 @@ file.
 
 ## Long-running work
 
+I dictate most prompts. Read garbled words from context and ask only when two
+readings lead to different work.
 My voice input often writes "come back" for "compact", so read it as "compact"
 when it makes no sense otherwise. When I ask whether I can compact, update the
 handoff file the work already uses, or write one next to the work. Then tell
@@ -180,7 +192,9 @@ Ask open.
 Ask before playing audio on my speakers or starting a server I'll use. When I
 say stop, stop it at once, confirm it's down and keep it stopped until I say
 otherwise. While I'm testing on a server or device, don't restart, change or
-run tests against it.
+run tests against it. While another thread measures a real device, don't put
+packets on my network (mDNS browses, pings): ask that thread to run the probe.
+Don't start `caffeinate` or ask to keep the Mac awake.
 
 When I write while you're working, answer my message first in your next
 reply, before any progress update. Don't post a message only because a monitor
@@ -334,7 +348,9 @@ list), since I may have changed it since you last looked.
 
 When summarizing a set of things (sessions, commits, a diff), say how much of it
 you actually read. Before a review or compliance check, fetch the base branch
-and the spec, and name the commit you compared against.
+and the spec, and name the commit you compared against. When a PR is a source,
+read its body, comments, reviews and inline review comments, and say which had
+content. Comments by `maximmaxim345` on GitHub are mine.
 
 Don't bake runtime-specific magnitudes or backend names into comments
 without confirming on the runtime that executes the code. Generic
@@ -474,4 +490,5 @@ skip this section.
   `modelSelection` only when I or the effort's `status.md` name one.
 - Don't settle, snooze, archive or rename threads unless I ask or you're a
   manager following `~/desk/AGENTS.md`.
+- Pass a thread id exactly as a tool listed it, with its `mcp:` prefix.
 - When you name a thread, PR or issue in chat, link it.

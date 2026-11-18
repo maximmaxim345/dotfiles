@@ -29,6 +29,8 @@ the situation.
   chat, under a short label and ended by a horizontal rule, so I see it as it
   will render. Use a fenced code block only for Discord messages or when I ask
   for one to copy.
+- In review comments, put each sentence on its own line and prefer a question
+  to a verdict. For a decision, write "Should we X? If yes ... If no ...".
 - Before showing a draft, check it against this list and the PR rules in
   `~/.claude/pr-guidelines.md` (length, a title that claims no more than the
   change does) and fix what fails.

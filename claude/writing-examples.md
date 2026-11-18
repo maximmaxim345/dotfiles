@@ -36,6 +36,42 @@ the situation.
   wrong.
 - Never attribute words or a stance to me or anyone else that they didn't
   write. When someone's exact point matters, quote it.
+- Never state a release plan, a date or a commitment I didn't make, and don't
+  write as if an unreleased version exists ("when the next beta releases", not
+  "on the next beta").
+- When the change picks one design over others we discussed, say in a sentence
+  or two why each of the others doesn't work.
+- Claim exactly what happens and no more, also in a description's body. For a
+  breaking change, give the effect in practice first and the technical caveat
+  second.
+  - Avoid: "a second server can't start Sendspin at all"
+  - Prefer: "a second server on the same host starts without Sendspin"
+- Give the technical reason that holds in this repo, never a project's stance
+  or another project's decision.
+  - Avoid: "we don't plan to support PDM/DSD in Sendspin"
+  - Prefer: "a Sendspin server has no way to know whether a player's DAC
+    accepts DoP"
+- On a PR, say what that PR's code does, not what implementations do in
+  general.
+- Name the client, device or tool a change was tested with. A throwaway script
+  is "a Python script", not "a simulated device".
+- Name what a user can install or see (the nightly, the next beta, a setting's
+  label), never a branch or an internal name.
+- Give a spec requirement its exact strength (MUST, SHOULD or common practice),
+  and link the spec section inline when it's the reason to decline a request.
+- Write a claim about someone else's work that isn't verified as "I think".
+- No thanks or praise in a comment that closes or rejects.
+- Say what a step, a test or an extra point is for ("Measure five rooms with a
+  calibrated mic, to know that the correction makes them sound better"), and
+  name a step by what happens in it.
+- A reference to a time or a state names its event ("has not connected since
+  the server started", not "offline since the start").
+- Section labels end with a colon ("Problem:").
+- Before drafting a reply to someone's issue or report, tell me in a few lines
+  what they asked, whether their own fix or diagnosis is right, which release
+  has or will have the fix, and whether the issue can be closed.
+- When a text I didn't write is out of date, rewrite it from the current state
+  instead of patching it.
 
 ## Approving a PR
 

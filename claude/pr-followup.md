@@ -11,7 +11,8 @@ it. Without one, check the PR when I ask. On review
 comments, label each one, fix the valid ones as local commits, draft the replies
 in chat, and ask whether to ship (push, post the replies, resolve those threads
 and re-request the review bots). On a CI failure, fix it locally and ask the same. On a
-merge conflict, report it and ask before merging or rebasing. Comments re-sent
+merge conflict, report it and ask before merging or rebasing, unless `/babysit`
+runs for the PR. Comments re-sent
 from before the watcher was on are old, so skip threads that are resolved or
 outdated.
 

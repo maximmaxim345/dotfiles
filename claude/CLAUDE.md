@@ -15,12 +15,16 @@ explicit permission, and ask every single time. Permission covers the one
 action that was approved and never carries forward: after a follow-up fix I
 didn't ask for, ask again before pushing it. When my message names a change and
 then says push or ship, or answers an Ask to push with continue, that covers
-pushing the result. If the user hasn't said yes in their most recent
+pushing the result. "Go" as the answer to an Ask, or an answer that accepts its
+picks, covers every action that Ask named, and nothing else. If the user hasn't said yes in their most recent
 message, stop and ask, even mid-task when the next step is obvious. Local
 commits are fine without asking. The exceptions are "ship", which covers the
 actions `~/.claude/pr-followup.md` lists, "finish", which covers the actions
-`review-changes` step 11 lists, and `/babysit`, which grants the actions its
-skill lists, for the PR it names, until it stops.
+`review-changes` step 11 lists, `/babysit`, which grants the actions its
+skill lists, for the PR it names, until it merges or closes or I say stop, the `merge` mode of
+`/open-pr`, which also marks that PR ready and merges it once babysit stops
+clean, and the `start_note` field the board writes on a desk item, which covers
+what `implement` step 5 lists, once.
 
 Merging, releasing, marking a PR draft or ready, editing a description,
 resolving threads, and moving board cards count as posting too. On someone else's PR, push to its head
@@ -39,7 +43,9 @@ your reply and continue. Stop for me only where the `implement` skill or
 a change users would see that the brief doesn't cover), or before a step that
 can't be undone. Push back when a simpler approach exists rather
 than building what was literally asked. Stop and say so when confused instead
-of coding through it.
+of coding through it. Don't ask before a step these rules or a skill already
+require, such as folding fixups, running the handover audit, or writing or
+redoing a brief: do it.
 
 Fold a fixup into the commit it fixes before the PR, as "Branches and history"
 says, and record my decisions, the options I rejected and my open feedback in a
@@ -168,6 +174,9 @@ on your own server. While one part waits on me, keep working on the parts that
 don't, and collect the questions in one Ask. Don't end a turn only to wait on a
 command, test or build you started: wait for it first.
 
+An open Ask never blocks other work I asked for. Do that work and keep the
+Ask open.
+
 Ask before playing audio on my speakers or starting a server I'll use. When I
 say stop, stop it at once, confirm it's down and keep it stopped until I say
 otherwise. While I'm testing on a server or device, don't restart, change or
@@ -183,7 +192,10 @@ End every turn that waits on me (a question, a draft, a request for my OK)
 with an **Ask:** line: the one thing you need from me, with your pick. Repeat
 an earlier Ask only while it still blocks your next step, restated in full as if
 I hadn't read the earlier message, never as a bare label. An Ask to post, push
-or open a PR shows the full draft in the same message. A draft I post myself,
+or open a PR shows the full draft in the same message. When I answer with a
+question about something else, answer it and name the open Ask in one sentence,
+without showing an unchanged draft or list again. After I correct a draft, show
+only the draft that changed. A draft I post myself,
 like a Discord message, needs no Ask.
 
 When the permission system blocks a step, make your pick "retry with my OK"
@@ -192,7 +204,8 @@ alternative.
 
 Lead every reply with its point. Spell out every label (run numbers, step ids,
 session numbers, option labels like s2 or P2), also ones I've seen before, and
-quote prompts or output I never saw. When you refer to a draft, an option list
+quote prompts or output I never saw. Use one name for one thing within a
+thread, and explain a term from the code or a rules file the first time. When you refer to a draft, an option list
 or a decision from an earlier message, repeat it in full instead of pointing
 back.
 
@@ -437,6 +450,10 @@ wording change.
 ## PR review workflow
 
 When I ask for a review of someone's PR or of my local changes, follow `/review-changes`.
+
+When I ask for a second opinion in plain words, or a desk item's start note
+asks for one, follow `~/.claude/skills/second-opinion/SKILL.md` without its
+popups.
 
 ## After a PR is published
 

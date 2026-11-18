@@ -15,6 +15,8 @@ import time
 from pathlib import Path
 
 STATE = Path.home() / "desk" / "state"
+BACKLOG = STATE.parent / "backlog"
+THREADS = STATE / "threads.json"
 EVENTS = STATE / "events.jsonl"
 OFFSET = STATE / "events.offset"
 LISTENER = STATE / "listener.pid"
@@ -86,7 +88,8 @@ def autostart_on() -> bool:
 def actionable(event: dict) -> bool:
     if event.get("by") == "desk" or event["type"] == "comment" and event.get("by") == "manager":
         return False
-    if event["type"] in ("capture", "comment", "archive", "adopt", "apply", "dismiss", "hide", "chat", "autostart", "space"):
+    board_actions = ("capture", "comment", "archive", "adopt", "apply", "dismiss", "hide", "chat", "answer", "autostart", "space")
+    if event["type"] in board_actions:
         return True
     if event["type"] == "status":
         return any(
@@ -94,6 +97,29 @@ def actionable(event: dict) -> bool:
             for c in event["changes"]
         )
     return False
+
+
+def send(thread: str, message: str) -> str | None:
+    """Send a message to a T3 thread and return the error, if any."""
+    try:
+        command = [str(T3 / "bin" / "t3"), "thread", "send", thread, message]
+        result = subprocess.run(command, capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.TimeoutExpired) as err:
+        return str(err)
+    return result.stderr.strip() or f"exit {result.returncode}" if result.returncode else None
+
+
+def relayed(event: dict) -> bool:
+    """Pass a task's note straight to its effort's manager, so the desk needs no turn for it."""
+    if event["type"] != "comment" or event.get("by") != "task":
+        return False
+    try:
+        item = json.loads((BACKLOG / f"{event['id']}.json").read_text())
+        manager = json.loads(THREADS.read_text())["managers"][item["effort"]]
+        note = next(c["text"] for c in reversed(item["comments"]) if c["by"] == "task")
+    except (OSError, ValueError, KeyError, StopIteration):
+        return False
+    return send(manager, f"Note from the task on {item['id']} ({item['title']}), passed on unchanged: {note}") is None
 
 
 def next_wake(offset: int, quiet: int) -> tuple[list[str], int]:
@@ -111,7 +137,7 @@ def next_wake(offset: int, quiet: int) -> tuple[list[str], int]:
                 events = [json.loads(line) for line in f.read(seen - offset).splitlines() if line]
             offset = seen
             OFFSET.write_text(str(offset))
-            wanted = [json.dumps(e) for e in events if actionable(e)]
+            wanted = [json.dumps(e) for e in events if actionable(e) and not relayed(e)]
             if wanted:
                 return wanted, offset
         elif time.time() - idle_checked >= IDLE_EVERY:
@@ -157,14 +183,12 @@ def wake_desk() -> None:
         if thread is None:
             print("no desk thread found", file=sys.stderr)
             return
-        result = subprocess.run(
-            [str(T3 / "bin" / "t3"), "thread", "send", thread, WAKE_MESSAGE], capture_output=True, text=True, timeout=60
-        )
-    except (sqlite3.Error, OSError, subprocess.TimeoutExpired) as err:
+    except sqlite3.Error as err:
         print(f"could not wake the desk: {err}", file=sys.stderr)
         return
-    if result.returncode:
-        print(f"could not wake the desk: {result.stderr.strip()}", file=sys.stderr)
+    error = send(thread, WAKE_MESSAGE)
+    if error:
+        print(f"could not wake the desk: {error}", file=sys.stderr)
         return
     WAKE_SENT.write_text(str(last_wake))
 

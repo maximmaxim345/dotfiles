@@ -8,6 +8,10 @@ Efforts are larger bodies of work, tracked in `~/desk`. A manager (the desk thre
 
 Write your plan in your reply and implement it without waiting for my OK, also where the `implement` skill would wait, since I review the implementation. Stop for me only when a point of the brief is wrong in a way that changes the plan, when the work needs a decision the brief doesn't cover and only I can make, like a change users would see, or when the brief doesn't settle the plan's contract or a choice in it that is expensive to undo and could reasonably go another way (see `implement` step 2). Note smaller corrections to the brief in your reply and continue.
 
+## Start note
+
+When I start an item on the board with a note, the board writes it to your item's `start_note`: `text` in my words, plus `draft_pr`, `babysit` and `second_opinion` when I ticked them. Read it with the brief, at launch and each time the desk resumes you. It counts like a message from me in this thread. `draft_pr` allows the draft PR `implement` step 5 describes, once, `babysit` opens it in babysit mode, and `second_opinion` asks for the second opinion `implement` step 4 names. Without one, nothing changes.
+
 ## Reporting
 
 - List extra findings in the first few lines of your final report, each labeled as a user-visible bug, reachable but rare, or theoretical, and each item you stop on or reject, with the reason.
@@ -67,6 +71,8 @@ Partner threads message each other directly (`t3_thread_send` in T3, SendMessage
 End every turn that waits on me with the Ask line "Replies that wait on me" in my CLAUDE.md asks for.
 
 Before a turn ends with a question, a draft other than one I post myself, or a request for my OK, run `~/desk/bin/backlog ask --thread <your id> "<the question in one line>"`, which shows it on my board and needs no OK from me. Skip it while I'm active in the thread (my last message is less than 10 minutes old), since I see the question there. Your id comes from `t3_thread_configuration`. The command fails when your thread has no backlog item, and then the inbox is enough. Once I've answered, run it with `--clear`.
+
+I can also answer on the board. The desk then tells you to read your item's `answer`: its `text` is my reply, in my words, to the question in its `to`, and it counts like a message from me in this thread. `go` accepts your picks and covers the actions that question named, once. When the item has no `answer`, or its `to` isn't the question you last asked, ask again instead of acting. Run `--clear` after you've read it.
 
 ## Desktop app
 

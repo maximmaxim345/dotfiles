@@ -255,6 +255,7 @@
     <label>Label <select id="fLabel">
       <option value="">any</option><option>user-visible bug</option><option>reachable but rare</option><option>theoretical</option>
     </select></label>
+    <label>Thread <select id="fThread"><option value="">any</option><option value="yes">has a thread</option><option value="no">no thread</option></select></label>
     <button class="btn ghost" id="clearFilters" hidden>Clear filters</button>
     <span class="grow"></span>
     <button class="btn ghost" id="collapseAll">Collapse all</button>
@@ -290,8 +291,8 @@ const COMMENT_ICON = () => { const s = document.createElementNS("http://www.w3.o
 const store = JSON.parse(localStorage.getItem("desk-board") || "{}");
 const ui = {
   groupBy: store.groupBy || "effort", laneSort: store.laneSort || "activity", collapsed: new Set(store.collapsed || []), doneDays: store.doneDays || 7,
-  picked: new Set(), q: "", effort: new URLSearchParams(location.search).get("effort") || "", space: "", repo: "", label: "", selected: new Set(), openId: null, expanded: new Set(), drag: null,
-  folds: new Set(), chatDrafts: {},
+  picked: new Set(), q: "", effort: new URLSearchParams(location.search).get("effort") || "", space: "", repo: "", label: "", thread: "", selected: new Set(), openId: null, expanded: new Set(), drag: null,
+  folds: new Set(), chatDrafts: {}, startNotes: {},
 };
 let state = { items: [], threads: null, efforts: [], repos: [] };
 let lastJson = "";
@@ -359,7 +360,10 @@ async function api(path, body) {
 }
 async function post(path, body, msg) { setState(await api(path, body)); if (msg) toast(msg); }
 function guard(fn) { return async e => { const node = e.currentTarget; node.disabled = true; try { await fn(e); } finally { node.disabled = false; } }; }
-function setState(data) { state = data; lastJson = JSON.stringify(data); render(); }
+function setState(data) {
+  for (const id of Object.keys(ui.startNotes)) if (!["new", "open", "next"].includes(data.items.find(i => i.id === id)?.status)) delete ui.startNotes[id];
+  state = data; lastJson = JSON.stringify(data); render();
+}
 
 function age(date) {
   const d = Math.floor((Date.now() - new Date(date).getTime()) / 86400000);
@@ -420,6 +424,8 @@ function threadState(id) {
   }
   return null;
 }
+const answerMsg = () => state.listening ? "Sent. The desk passes it to the thread in a minute." : "Sent. The desk passes it on at its next sweep.";
+const answer = (id, text, to) => post("/api/answer", { id, text, to }, answerMsg());
 const startMsg = () => state.listening ? "Starting. The desk launches it in a moment." : "Marked to start. The desk isn't listening, so type \"go\" in the desk thread.";
 function spaceOf(effort) { return state.spaces?.efforts?.[effort || ""] || "work"; }
 function spaceShown(effort) {
@@ -440,6 +446,7 @@ function matches(item) {
   if (ui.effort && (item.effort || "") !== (ui.effort === "-" ? "" : ui.effort)) return false;
   if (ui.repo && (item.repo || "") !== (ui.repo === "-" ? "" : ui.repo)) return false;
   if (ui.label && item.label !== ui.label) return false;
+  if (ui.thread && !!item.thread !== (ui.thread === "yes")) return false;
   if (ui.q) {
     const hay = [item.title, item.summary, item.brief, item.repo, item.effort, item.kind, ...item.comments.map(c => c.text)].join(" ").toLowerCase();
     if (!ui.q.toLowerCase().split(/\s+/).every(w => hay.includes(w))) return false;
@@ -450,9 +457,10 @@ function matches(item) {
 
 function needsList() {
   const snoozed = (state.threads?.snoozed || []).map(z => z.thread);
-  const own = state.items.filter(i => i.needs && i.status === "requested" || i.asks && i.status === "started" && !snoozed.includes(i.thread));
-  return [...own.map(i => ({ thread: i.thread, title: i.title, why: i.asks ? i.asks.text : i.needs, at: i.asks?.at, pr: i.pr, item: i.id, effort: i.effort })),
-    ...(state.threads?.needsYou || []).filter(n => !own.some(i => i.thread && i.thread === n.thread))].filter(n => spaceShown(n.effort));
+  const own = state.items.filter(i => i.needs && i.status === "requested" || i.asks && !i.answer && i.status === "started" && !snoozed.includes(i.thread));
+  const covered = n => own.some(i => i.thread && i.thread === n.thread) || state.items.some(i => i.answer && i.thread === n.thread && i.asks?.text === n.why);
+  return [...own.map(i => ({ thread: i.thread, title: i.title, why: i.asks ? i.asks.text : i.needs, at: i.asks?.at, pr: i.pr, item: i.id, effort: i.effort, ask: !!i.asks })),
+    ...(state.threads?.needsYou || []).filter(n => !covered(n))].filter(n => spaceShown(n.effort));
 }
 
 function renderStats() {
@@ -475,7 +483,7 @@ function renderFilters() {
   opts($("fRepo"), "all", state.repos.map(r => [r, r]), ui.repo);
   $("groupBy").value = ui.groupBy;
   $("laneSort").value = ui.laneSort;
-  $("clearFilters").hidden = !(ui.q || ui.effort || ui.space || ui.repo || ui.label);
+  $("clearFilters").hidden = !(ui.q || ui.effort || ui.space || ui.repo || ui.label || ui.thread);
 }
 
 function renderSpaces() {
@@ -521,6 +529,7 @@ function threadRow(t, waiting) {
       !ui.effort && t.effort && !isManager(t.thread) && el("span", { class: "eff" }, effortTitle(t.effort))),
     el("div", { class: "w" }, t.until ? `until ${t.until}` : t.why || ""),
     el("div", { class: "m" }, t.at && el("span", { class: `chip${isOld(t.at, 60) ? " hot" : ""}`, title: "Asked this long ago" }, ago(t.at)), t.pr && el("a", { href: t.pr, target: "_blank" }, "PR"),
+      t.ask && el("a", { href: "#", title: "Accept the thread's pick and let it do what the question names", onclick: guard(async e => { e.preventDefault(); e.stopPropagation(); if (confirm(`Answer "go" to:\n\n${t.why}`)) await answer(t.item, "go", t.why); }) }, "go"),
       t.thread && state.threads?.environment && threadLink(t.thread, "open")));
 }
 
@@ -660,7 +669,7 @@ function card(item) {
       !CLOSED.includes(item.status) && openBlockers(item).length ? el("span", { class: "chip blocked", title: "Blocked by: " + openBlockers(item).map(b => b.text).join(", ") }, "blocked") : null,
       ["open", "next"].includes(item.status) && item.thread && el("span", { class: "chip", title: "Has a thread. Starting it again picks that thread up." }, "paused"),
       item.status === "requested" && el("span", { class: "chip hot", title: item.needs || "" }, item.needs ? "needs you" : "starting"),
-      item.status === "started" && item.asks && el("span", { class: "chip hot", title: item.asks.text }, "asks you"),
+      item.status === "started" && item.asks && el("span", { class: `chip${item.answer ? "" : " hot"}`, title: item.asks.text }, item.answer ? "answered" : "asks you"),
       item.status === "started" && !item.asks && (th => th && el("span", { class: `chip ${th.cls}`, title: th.why }, th.why && th.label === "waiting" ? `waiting: ${th.why}` : th.label === "snoozed" ? `snoozed ${th.why}` : th.label))(threadState(item.thread)),
       item.repo && el("span", { class: "chip" }, item.repo),
       ui.groupBy !== "effort" && item.effort && el("span", { class: "chip effort" }, effortTitle(item.effort)),
@@ -814,7 +823,28 @@ function renderDrawer() {
   const locked = ["started", "done"].includes(item.status);
   const blocked = openBlockers(item);
   const actions = [];
-  if (["new", "open", "next"].includes(item.status)) actions.push(button("primary", "Start", () => post("/api/status", { ids: [item.id], status: "requested" }, startMsg()), { disabled: blocked.length > 0, title: blocked.length ? "Blocked" : "" }));
+  const startable = ["new", "open", "next"].includes(item.status);
+  const note = ui.startNotes[item.id] ||= { text: "" };
+  const grant = (key, label, title) => el("label", { title }, el("input", { type: "checkbox", checked: !!note[key], onchange: e => { note[key] = e.target.checked; } }), " ", label);
+  const noteBox = el("textarea", { rows: 2, placeholder: "Note for this start, like how far it may go or what to check first", oninput: e => { note.text = e.target.value; } });
+  noteBox.value = note.text;
+  const startNote = startable && el("div", { class: "glance-sec" }, el("div", { class: "block-title" }, "When started"), noteBox,
+    el("div", { style: { display: "flex", gap: "14px", flexWrap: "wrap", marginTop: "6px", fontSize: "13px" } },
+      grant("draft_pr", "may open a draft PR", "After its own review, the thread pushes the branch and opens a draft PR without asking"),
+      grant("babysit", "babysit the PR", "It also fixes failing checks and review bot findings on that PR"),
+      grant("second_opinion", "second opinion first", "GPT-6.2 Sol reviews the change before the brief")));
+  const replyKey = `answer:${item.id}`;
+  const replyBox = el("textarea", { rows: 2, placeholder: "Or answer in your own words. ⌘↵ sends.", oninput: e => { ui.chatDrafts[replyKey] = e.target.value; },
+    onkeydown: e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) replyBtn.click(); } });
+  replyBox.value = ui.chatDrafts[replyKey] || "";
+  const replyBtn = button("", "Send", async () => {
+    const text = replyBox.value.trim();
+    if (!text) return;
+    replyBox.blur();
+    delete ui.chatDrafts[replyKey];
+    try { await answer(item.id, text, item.asks.text); } catch (err) { ui.chatDrafts[replyKey] = text; throw err; }
+  });
+  if (startable) actions.push(button("primary", "Start", () => post("/api/status", { ids: [item.id], status: "requested", note }, startMsg()), { disabled: blocked.length > 0, title: blocked.length ? "Blocked" : "" }));
   if (["new", "open"].includes(item.status)) actions.push(button("", "Next", () => setStatus("next")));
   if (["next", "requested"].includes(item.status)) actions.push(button("", "To backlog", () => setStatus("open")));
   if (item.status === "requested" && item.needs) actions.push(button("primary", "Start again", () => post("/api/status", { ids: [item.id], status: "requested" }, startMsg())));
@@ -870,6 +900,11 @@ function renderDrawer() {
           el("div", { class: "glance" },
             item.needs && el("div", { class: "ask" }, el("b", {}, "Needs you: "), item.needs),
             item.asks && item.status === "started" && el("div", { class: "ask" }, el("b", {}, "Asks you: "), item.asks.text, " ", el("span", { class: `chip${isOld(item.asks.at, 60) ? " hot" : ""}` }, ago(item.asks.at))),
+            item.asks && item.status === "started" && (item.answer
+              ? el("div", {}, el("b", {}, "You answered: "), item.answer.text, " ", el("span", { class: "chip" }, `${ago(item.answer.at)} ago, waiting for the thread`))
+              : el("div", {}, button("primary", "Go", () => answer(item.id, "go", item.asks.text), { title: "Accept the thread's pick and let it do what the question names" }), replyBox, replyBtn)),
+            item.start_note && el("div", {}, el("b", {}, "Start note: "), [item.start_note.text, item.start_note.draft_pr && "may open a draft PR", item.start_note.babysit && "babysit", item.start_note.second_opinion && "second opinion first"].filter(Boolean).join(" · ")),
+            startNote,
             !item.asks && th && el("div", {}, el("b", {}, "State: "), `${th.label}${th.why ? ": " + th.why : ""}`),
             prs.length > 0 && el("div", {}, el("b", {}, prs.length > 1 ? "PRs: " : "PR: "), prs.map((pr, n) => [n ? ", " : "", el("a", { href: pr, target: "_blank" }, pr.replace("https://github.com/", ""))])),
             item.issue && el("div", {}, el("b", {}, "Issue: "), el("a", { href: item.issue, target: "_blank" }, item.issue.replace("https://github.com/", ""))),
@@ -929,7 +964,8 @@ $("fSpace").addEventListener("change", e => { ui.space = e.target.value; render(
 $("fEffort").addEventListener("change", e => { ui.effort = e.target.value; render(); });
 $("fRepo").addEventListener("change", e => { ui.repo = e.target.value; render(); });
 $("fLabel").addEventListener("change", e => { ui.label = e.target.value; render(); });
-$("clearFilters").addEventListener("click", () => { ui.q = ui.effort = ui.space = ui.repo = ui.label = ""; $("q").value = ""; $("fLabel").value = ""; render(); });
+$("fThread").addEventListener("change", e => { ui.thread = e.target.value; render(); });
+$("clearFilters").addEventListener("click", () => { ui.q = ui.effort = ui.space = ui.repo = ui.label = ui.thread = ""; $("q").value = ""; $("fLabel").value = ""; $("fThread").value = ""; render(); });
 $("captureBtn").addEventListener("click", () => { ui.capture = true; render(); });
 $("collapseAll").addEventListener("click", () => { document.querySelectorAll(".lane[data-key]").forEach(l => ui.collapsed.add(`${ui.groupBy}:${l.dataset.key}`)); save(); render(); });
 $("expandAll").addEventListener("click", () => { ui.collapsed.clear(); save(); render(); });

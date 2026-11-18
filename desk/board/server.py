@@ -39,6 +39,7 @@ CHAT_SHOWN_FOR = datetime.timedelta(days=1)
 SHOWN_PROPOSALS = {"open", "approved", "failed"}
 SETTABLE_STATUSES = {"open", "next", "requested", "done", "dropped"}
 CLOSED_STATUSES = {"done", "dropped"}
+START_GRANTS = ("draft_pr", "babysit", "second_opinion")
 
 
 def write_json(path: Path, data: dict) -> None:
@@ -193,6 +194,7 @@ def apply_status(item: dict, status: str) -> None:
     item["status"] = status
     item.pop("needs", None)
     item.pop("asks", None)
+    item.pop("answer", None)
     item["done"] = datetime.date.today().isoformat() if status in CLOSED_STATUSES else None
     if status not in CLOSED_STATUSES:
         item.pop("archived", None)
@@ -202,7 +204,18 @@ def apply_status(item: dict, status: str) -> None:
         item.pop("suggested", None)
 
 
-def set_status(ids: list[str], status: str) -> None:
+def start_note(note: dict | None) -> dict | None:
+    """The note and grants I gave on the board when starting an item."""
+    text = (note or {}).get("text", "").strip()
+    grants = {key: True for key in START_GRANTS if (note or {}).get(key)}
+    if "babysit" in grants:
+        grants["draft_pr"] = True
+    if not text and not grants:
+        return None
+    return {"text": text, **grants, "at": datetime.datetime.now().astimezone().isoformat(timespec="seconds")}
+
+
+def set_status(ids: list[str], status: str, note: dict | None = None) -> None:
     if status not in SETTABLE_STATUSES:
         raise ValueError(status)
     items = all_items()
@@ -211,6 +224,7 @@ def set_status(ids: list[str], status: str) -> None:
         if status == "requested" and open_blockers(items[item_id], items):
             raise ValueError(f"blocked: {items[item_id]['title']}")
     changes = []
+    saved_note = start_note(note)
     next_rank = max((i.get("rank") or 0 for i in items.values() if i["status"] == "next"), default=0)
     for item_id in ids:
         item = items[item_id]
@@ -220,6 +234,10 @@ def set_status(ids: list[str], status: str) -> None:
         if old == status and not retry or old == "done" or status not in allowed:
             continue
         apply_status(item, status)
+        if status == "requested" and old != "requested":
+            item.pop("start_note", None)
+            if saved_note:
+                item["start_note"] = saved_note
         if status == "next":
             next_rank += 1
             item["rank"] = next_rank
@@ -313,7 +331,7 @@ class Handler(BaseHTTPRequestHandler):
                 write_json(path, item)
                 log_event({"type": "comment", "id": body["id"]})
             elif self.path == "/api/status":
-                set_status(body["ids"], body["status"])
+                set_status(body["ids"], body["status"], body.get("note"))
             elif self.path == "/api/ask":
                 item = next(
                     (i for i in all_items().values() if i["thread"] == body["thread"] and i["status"] not in CLOSED_STATUSES),
@@ -321,6 +339,7 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 if item is None:
                     raise FileNotFoundError(f"no open item for thread {body['thread']}")
+                item.pop("answer", None)
                 if body.get("text"):
                     item["asks"] = {
                         "text": body["text"],
@@ -329,6 +348,20 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     item.pop("asks", None)
                 write_json(item_path(item["id"]), item)
+            elif self.path == "/api/answer":
+                path = item_path(body["id"])
+                item = json.loads(path.read_text())
+                if not item.get("asks") or not body["text"].strip():
+                    raise ValueError("no open question to answer")
+                if body["to"] != item["asks"]["text"]:
+                    raise ValueError("the question changed, read it again")
+                item["answer"] = {
+                    "text": body["text"].strip(),
+                    "to": item["asks"]["text"],
+                    "at": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+                }
+                write_json(path, item)
+                log_event({"type": "answer", "id": body["id"]})
             elif self.path == "/api/adopt":
                 item_path(body["id"])
                 log_event({"type": "adopt", "id": body["id"]})

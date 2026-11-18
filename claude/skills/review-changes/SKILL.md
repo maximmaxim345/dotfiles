@@ -68,6 +68,7 @@ Review the changes in `./` against its merge base with the default branch, inclu
 - Run steps 4 to 7 as written, with small meaning a small diff and without the PR Guide, which needs a PR. For the linter check in step 7, run the repo's linters on the changed files in check-only mode. Skip a tool that can only fix files in place.
 - The results file is `review-local.md` at the root of the checkout, with the same rules as in step 8. In step 8, describe each finding with a suggested fix instead of a comment for someone else. Don't change any code until I ask.
 - Skip steps 9 to 11 and the test popup, and leave the Verdict line and the Ask out of the card.
+- When I have findings fixed, one more round checks only those fixes. A finding that widens the change is listed as an extra finding, not fixed.
 
 ## Review comment style
 

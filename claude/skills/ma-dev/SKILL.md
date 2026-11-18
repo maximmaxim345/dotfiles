@@ -70,10 +70,17 @@ The server's `.vscode/launch.json` is tracked and runs on `~/.musicassistant`, s
 
 ## While I test
 
-When you hand me a change to test by hand, first get it into the server you started and restart it, without asking. When the change touches an app that is installed on a connected phone, reinstall it too. Then say in one line what is ready to test and where.
+When you hand me a change to test by hand, first get it into the server you started and restart it, without asking. When the change touches an app that is installed on a connected phone, reinstall it too. Then say what is ready to test:
+- where: the URL and the ports
+- what runs: the branch and commit of the server, the version or commit of each library it was started with that differs from the released one (such as aiosendspin), and which of my PRs that covers
+- the clicks that trigger each changed behavior, as numbered steps
+- what won't work on this server, and why
+- whether Sendspin discovery is on
+
+When I report a result, read the server log for that moment before you answer.
 
 ## Hand back
 
 Say what's running, on which web, stream and Sendspin ports and data folder, and how to stop it. After `setup`, say what was prepared instead.
 
-Stop the servers and clients you started once I report the test result or approve the push, and say so in one line.
+Keep the servers and clients you started running until I say stop or approve the push, since one result is rarely my last test. Then stop them and say so in one line.

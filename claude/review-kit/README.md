@@ -1,0 +1,170 @@
+# Review kit
+
+`build_review.py` turns a git diff and a small narrative JSON file into one self-contained HTML page. The page inlines its CSS and JavaScript, makes no network requests and works opened straight from disk. It needs Python 3.9 or newer and git 2.40 or newer, nothing else.
+
+The script always takes the diff from `git diff`. You never type code into the narrative: it only points at hunks and adds the text around them.
+
+## Commands
+
+```sh
+KIT=~/.claude/review-kit/build_review.py
+
+# List the hunks with their ids, to write the narrative against
+python3 $KIT review --repo . --base main --list-hunks
+
+# First review: the branch against its merge base with main
+python3 $KIT review --repo . --base main --narrative review.json -o review.html
+
+# An exact range, or the working tree (staged, unstaged and untracked files) on top of HEAD
+python3 $KIT review --range A..B --narrative review.json -o review.html
+python3 $KIT review --base main --uncommitted --narrative review.json -o review.html
+
+# Round two: only what changed since the head Maxim reviewed last
+python3 $KIT review --base main --since <reviewed head sha> --list-hunks
+python3 $KIT review --base main --since <reviewed head sha> --narrative round2.json -o round2.html
+
+# The two smaller pages
+python3 $KIT decisions decisions.json -o decisions.html
+python3 $KIT architecture architecture.json -o architecture.html
+```
+
+`--base REF` compares the head (default `HEAD`, or `--head REF`) with the merge base of `REF` and the head, like a pull request. `--range A..B` compares exactly `A` with `B`.
+
+`--since` takes the head commit of the last reviewed round. Record its sha when Maxim reviews. The script compares the trees of the old and the new head, so it works whether the fixes are separate commits or the history was squashed, amended or rebased. When the branch moved to a new base, the script first replays the old head onto the new base, so changes that came with the new base stay out. If that replay conflicts, the page says so and compares the two heads directly. The old commit must still exist in the repository (rewritten commits stay until git prunes them).
+
+The script exits with an error and a message when a reference in the narrative matches no hunk, or when the diff has a line it cannot read. After writing the page it prints how many hunks the narrative does not mention.
+
+## The review narrative
+
+Every field is optional. An empty object `{}` gives a page with every hunk under "Not mentioned by the author".
+
+```json
+{
+  "title": "One sentence: what behaves differently now.",
+  "repo": "owner/name",
+  "branch": "feat/retry",
+  "summary": "Optional paragraphs. Blank lines split paragraphs, `backticks` mark code.",
+  "tier": "normal",
+  "tier_reason": "Why this tier, in one line.",
+  "meta": ["draft PR 42"],
+  "facts": [{"label": "After your go", "text": "The agent marks the PR ready."}],
+  "decide": [
+    {
+      "title": "Keep the retry loop?",
+      "risk_level": "medium",
+      "undo": "Cheap to reverse",
+      "risk": "What goes wrong if the pick is wrong.",
+      "evidence": "What the pick rests on.",
+      "refs": [{"file": "src/client.py", "lines": "40-52"}],
+      "context": [{"file": "src/store.py", "lines": "10-20", "note": "the caller"}],
+      "pick": "A",
+      "why": "One line why the pick.",
+      "options": [{"text": "Keep it."}, {"text": "Drop it."}, {"id": "C", "text": "Move it."}]
+    }
+  ],
+  "behavior": {
+    "rows": [{"case": "The server restarts.", "before": "The client stays offline.", "after": "The client reconnects."}],
+    "unchanged": "What stays the same that a reader might expect to change."
+  },
+  "groups": [
+    {
+      "title": "Core",
+      "note": "Optional text under the group title.",
+      "hunks": [
+        {"hunk": "h1a2b3c4d", "note": "Why this hunk matters.", "look": "decide 1",
+         "context": [{"file": "src/store.py", "lines": "10-20", "note": "what it calls"}]},
+        {"file": "src/client.py", "lines": "80-95", "note": "The fallback."},
+        "h5e6f7a8b"
+      ]
+    },
+    {"unimportant": true, "reason": "Import order only", "hunks": [{"file": "src/__init__.py"}]}
+  ]
+}
+```
+
+- `tier` is one of `fixup`, `small`, `normal`, `risky`. The script computes the lowest tier from the size of the diff (changed lines outside tests: over 400 is risky, 50 or more is normal, otherwise small, and fixup only in round two at 15 or fewer). The narrative may raise the tier, never lower it. Leave it out to take the computed one.
+- `repo` and `branch` name the page in the browser tab and the top bar. Without them the page takes the repository from the `upstream` or `origin` remote and the branch from `--head` or the end of `--range`, never from the checkout's folder or its current branch.
+- `decide` cards come first on the page, in the order given, so put the riskiest first. `pick` must be one of the option ids, which default to A, B, C. `risk_level` is `low`, `medium` or `high`. `refs` become links that open the hunk, scroll to the lines and mark them. `context` shows unchanged code on the card.
+- `groups` set the reading order. A group is shown in full, or collapsed under its one-line `reason` when `unimportant` is true. A collapsed group takes no `note`: put it on one of its hunks. Every hunk the groups do not place appears in a last group, "Not mentioned by the author". Nothing is dropped.
+
+### Hunk references
+
+A hunk entry is one of:
+
+- a hunk id from `--list-hunks`, as a string or as `{"hunk": "h1a2b3c4d"}`. The id is a hash of the file path and the changed lines, so it stays the same when other hunks change.
+- `{"file": "path", "lines": "80-95"}`: the hunks of that file that overlap those lines, counted in the new version of the file.
+- `{"file": "path"}`: every hunk of that file that no earlier entry placed.
+
+An entry object can add `note` (text above the hunk), `look` (a "Look closely" tag, `true` or a short reason) and `context`. When an entry resolves to several hunks, `note`, `look` and `context` go on the first. A hunk placed twice is shown once, and the later place gets a link to it.
+
+### Context references
+
+`{"file": "path", "lines": "10-20", "note": "optional"}` shows unchanged lines from the head commit (or the working tree with `--uncommitted`) in a panel. Use it for code a reader needs to understand a hunk or a decision.
+
+## The round two narrative
+
+A round two narrative has a `feedback` list and needs `--since`. Hunks here are hunks of the diff since the reviewed head, so list them with the same `--since`.
+
+```json
+{
+  "title": "Two of your three comments changed the code.",
+  "feedback": [
+    {"comment": "should a zero also be skipped?", "where": "app.py:94", "status": "changed",
+     "reply": "Yes, `total` now skips `0` too.", "hunks": [{"file": "app.py", "lines": "94-96"}]},
+    {"comment": "why read OFFSET here?", "where": "app.py:176", "status": "declined",
+     "reply": "It mirrors how callers configure offsets.", "context": [{"file": "app.py", "lines": "174-177"}]}
+  ],
+  "groups": [{"title": "Formatting", "unimportant": true, "reason": "Black reflowed one call", "hunks": ["h0badc0de"]}]
+}
+```
+
+- `comment` is Maxim's comment as he wrote it, `where` the `path:line` it was on.
+- `status` is `changed`, `partly` or `declined`. `reply` says what changed or why nothing did.
+- `hunks` are the changes that answer the comment. `context` shows code that did not change.
+- `groups` and every hunk no feedback item claims appear on top, under "Changes no comment asked for".
+- `decide` and `behavior` work as in a first review.
+
+## What the page does
+
+- Decide cards first, then the before and after table, then the diff in reading order with each note above its hunk.
+- Side by side diff on screens 900 pixels and wider, stacked below that, with word-level highlights inside changed lines. The top bar switches between Auto, Side by side and Stacked.
+- A carriage return shows as a small ␍, and a line without a final newline carries a "No newline at end of file" note, so a change of line endings is visible.
+- Markdown and text files open in a Words view that shows the changed paragraphs with struck and marked words and wraps long lines. A Lines switch shows the usual diff.
+- Wrap lines is off by default, so long lines scroll inside the diff. Side by side, each side scrolls on its own. A shadow on the right edge and a "scroll sideways" note in the hunk header show when lines continue. The choice is remembered in the browser.
+- Each hunk can show up to 100 unchanged lines above and below it, 20 per click, like GitHub.
+- Tapping a line, a word block or the Comment button on a hunk opens a comment box. Round two pages add a Reply button per feedback item. Comments and changed picks stay in the browser's local storage for that diff. Copy comments puts them on the clipboard as plain text with `path:line` references, for pasting into the chat.
+- Light and dark follow the system setting. At phone width only the diff scrolls sideways.
+
+## Decision sheet
+
+```json
+{
+  "title": "Three choices for the cache rework",
+  "intro": "Optional text.",
+  "decisions": [
+    {"title": "Where does the cache live?", "pick": "A", "why": "One owner keeps invalidation in one place.",
+     "detail": "Optional longer text.",
+     "options": [{"text": "In the store."}, {"text": "In each caller."}, {"text": "In a new service."}]}
+  ],
+  "ask": "Optional closing line."
+}
+```
+
+Copy answer puts `go` on the clipboard when every pick is kept, otherwise the changed ones like `2A, 3C`, followed by any notes typed under a decision.
+
+## Architecture page
+
+```json
+{
+  "title": "Move the cache into the store",
+  "summary": "Optional text.",
+  "facts": [{"label": "Undo", "text": "Two-way"}],
+  "sections": [
+    {"title": "Structure", "text": "Optional text.", "svg": "<svg ...>...</svg>",
+     "before": {"title": "Before", "text": "Two caches.", "svg": "<svg ...>...</svg>"},
+     "after": {"title": "After", "text": "One cache.", "svg": "<svg ...>...</svg>"}}
+  ]
+}
+```
+
+`svg` is one inline `<svg>` element of shapes and text. The script rebuilds it from a fixed list of SVG elements and attributes and refuses anything else, such as scripts, event handlers, links, images, `style`, comments, backslashes and references outside the drawing (`url(#arrow)` is fine). Give it a `viewBox` so it scales, and add `class="wide"` to keep a wide diagram readable on a phone (it then scrolls sideways). These classes follow light and dark mode: `box` on a `rect` (with `new`, `chg` or `del`), `edge` on a `path` or `line` (with `new`, `chg`, `del` or `accent`), and `muted` on `text`. Plain `text` uses the page's text color.

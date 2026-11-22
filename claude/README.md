@@ -30,6 +30,7 @@ live on every device without re-running anything.
 | `skills/architecture/` | Draws how a change fits together, with new, changed and removed parts marked |
 | `skills/desk/` | Hands a T3 thread to the desk or pauses it there, and moves Claude desktop sessions to T3 Code threads, linked into `~/.claude/skills/` |
 | `hooks/recap-after-break.py` | A `UserPromptSubmit` hook that asks for a two-line recap when a thread was quiet for an hour or more. The module links it into `~/.claude/hooks/` and registers it in `settings.json` |
+| `hooks/after-compact.py` | A `SessionStart` hook that points a thread back at its status files after a compaction. Linked and registered the same way |
 
 Not to be confused with the repository root `CLAUDE.md`, which is a symlink to
 `AGENTS.md` and describes this repo as a project. The file here is the global

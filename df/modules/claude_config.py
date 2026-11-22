@@ -56,10 +56,12 @@ ENTRIES: List[Tuple[str, str, str]] = [
     ("skills/second-opinion", "skills/second-opinion", "old_skill_second_opinion"),
     ("skills/architecture", "skills/architecture", "old_skill_architecture"),
     ("hooks/recap-after-break.py", "hooks/recap-after-break.py", "old_hook_recap_after_break"),
+    ("hooks/after-compact.py", "hooks/after-compact.py", "old_hook_after_compact"),
 ]
 # Hooks registered in settings.json (event, command)
 HOOKS: List[Tuple[str, str]] = [
     ("UserPromptSubmit", f"python3 {claude_path / 'hooks' / 'recap-after-break.py'}"),
+    ("SessionStart", f"python3 {claude_path / 'hooks' / 'after-compact.py'}"),
 ]
 # Entries dropped from ENTRIES, whose links existing installs still have (target, config key for the backup)
 REMOVED: List[Tuple[str, str]] = [

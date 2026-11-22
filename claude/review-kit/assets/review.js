@@ -417,10 +417,9 @@ function updateCards() {
 }
 
 function copyText() {
-  const parts = [`Review comments on ${KIT.subject}`];
-  for (const card of changedPicks()) {
-    parts.push(`Decide ${card.dataset.call} (${$('h3', card).textContent}): ${page.picks[card.dataset.call]} instead of the pick ${card.dataset.pick}`);
-  }
+  const picks = changedPicks().map(c => c.dataset.call + page.picks[c.dataset.call]);
+  if (!picks.length && !page.comments.length) return 'go\n';
+  const parts = picks.length ? [picks.join(', ')] : [];
   for (const c of page.comments) parts.push(`${c.label}: ${c.text}`);
   return parts.join('\n\n') + '\n';
 }
@@ -430,7 +429,7 @@ function updateBar() {
   const st = $('#status');
   st.classList.remove('ok');
   st.textContent = `${n} comment${n === 1 ? '' : 's'}` + ($('.call') ? `, ${p} changed pick${p === 1 ? '' : 's'}` : '');
-  $('#copy').disabled = !n && !p;
+  $('#copy').textContent = n || p ? 'Copy for chat' : 'Copy go';
   renderTray();
 }
 
@@ -442,7 +441,7 @@ function renderTray(fallbackText) {
   if (fallbackText) {
     html += '<p class="small">Copying was blocked. Select the text below and copy it.</p><textarea readonly></textarea>';
   } else if (!page.comments.length && !changedPicks().length) {
-    html += '<p class="small muted">Nothing yet. Tap a line in the diff to comment on it, or pick a different option on a card.</p>';
+    html += '<p class="small muted">Nothing yet, so Copy go puts "go" on the clipboard. Tap a line in the diff to comment on it, or pick a different option on a card.</p>';
   } else {
     html += '<ul>';
     for (const card of changedPicks()) html += `<li><div class="cmeta">Decide ${card.dataset.call}</div>${esc(page.picks[card.dataset.call])} instead of the pick ${esc(card.dataset.pick)}</li>`;

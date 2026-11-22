@@ -179,7 +179,7 @@ A round two narrative has a `feedback` list and needs `--since`. Hunks here are 
 - Markdown and text files open in a Words view that shows the changed paragraphs with struck and marked words. The source text stays raw. Long lines wrap with a hanging indent under list markers. A Lines switch shows the usual diff. These files show no function line in the hunk header.
 - Wrap lines is off by default, so long lines scroll inside the diff. Side by side, each side scrolls on its own. A shadow on the right edge and a "scroll sideways" note in the hunk header show when lines continue. The choice is remembered in the browser.
 - Each hunk can show up to 100 unchanged lines above and below it, 20 per click, like GitHub.
-- Tapping a line, a word block or the Comment button on a hunk opens a comment box. Round two pages add a Reply button per feedback item. Comments and changed picks stay in the browser's local storage for that diff. Copy comments puts them on the clipboard as plain text with `path:line` references, for pasting into the chat.
+- Tapping a line, a word block or the Comment button on a hunk opens a comment box. Round two pages add a Reply button per feedback item. Comments and changed picks stay in the browser's local storage for that diff. Copy for chat puts the answer on the clipboard for pasting into the chat: `go` when no pick changed and there are no comments, otherwise the changed picks like `2B, 4C` followed by each comment as `path:line: text`.
 - Light and dark follow the system setting. At phone width only the diff scrolls sideways.
 
 ## Decision sheet

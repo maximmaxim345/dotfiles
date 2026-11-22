@@ -36,7 +36,7 @@ TOP_BAR_CONTROLS = (
 BOTTOM_BAR = (
     '<div class="bar" id="bar"><div class="tray" id="tray" hidden></div><div class="bar-in">'
     '<span class="status" id="status"></span><button class="btn" id="show">Show</button>'
-    '<button class="btn primary" id="copy">Copy comments</button></div></div>'
+    '<button class="btn primary" id="copy">Copy for chat</button></div></div>'
 )
 UNCOMMITTED = "uncommitted"
 BLAME_RE = re.compile(r"^([0-9a-f]{40}) \d+ (\d+)(?: \d+)?$")
@@ -800,7 +800,7 @@ def decide_cards(cards: List[Dict[str, Any]], change: Change, linker: Linker, or
     count = f"{len(cards)}, {esc(order)}" if order else str(len(cards))
     return (
         f'<section id="decide"><h2>Decide <span class="count">{count}</span></h2>'
-        f'<p class="sub">Each card has a pick. Pick another option to change it, it goes out with Copy comments.</p>'
+        f'<p class="sub">Each card has a pick. Pick another option to change it, it goes out with Copy for chat.</p>'
         f'<div class="calls">{out}</div></section>'
     )
 
@@ -1048,7 +1048,6 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
     span = f"{(change.reviewed or change.base)[:7]}..{head_label}"
     data = {
         "key": key,
-        "subject": f"{repo} {span}".strip(),
         "hunks": {h.id: h.to_page() for h in change.hunks},
         "commits": [[sha[:7], subject] for sha, subject in change.commits],
     }

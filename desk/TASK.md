@@ -15,14 +15,17 @@ When I start an item on the board with a note, the board writes it to your item'
 ## Reporting
 
 - List extra findings in the first few lines of your final report, each labeled as a user-visible bug, reachable but rare, or theoretical, and each item you stop on or reject, with the reason.
-- File each extra finding that doesn't belong in this change as a backlog item before you end your turn, without asking me first, and give its repo and a one-line TLDR in your reply. Check first that the default branch and `~/desk/bin/backlog list --all` don't already cover it. Write the brief so someone without this conversation can start from it, with the sections "Backlog items" in `~/desk/AGENTS.md` lists, and don't start the work yourself: I or a manager start it.
+- File each extra finding that doesn't belong in this change as a backlog item before you end your turn, without asking me first, and give its repo and a one-line TLDR in your reply. File it only when someone saw the problem or a test or reproduction shows it, and name who or what in `--seen`. Note a finding nobody saw in its effort's findings list instead. Check first that the default branch and `~/desk/bin/backlog list --all` don't already cover it. Write the brief so someone without this conversation can start from it, with the sections "Backlog items" in `~/desk/AGENTS.md` lists, and don't start the work yourself: I or a manager start it.
 
 ```sh
 ~/desk/bin/backlog add --repo <repo name> --title "<imperative title>" \
   --kind <bugfix|feature|review|design|test|docs> \
-  --label "<user-visible bug|reachable but rare|theoretical>" \
+  --label "<user-visible bug|reachable but rare>" \
+  --seen "<failing test, log line, user report, or who asked for it>" \
   --summary "<one or two sentences>" --brief - \
   [--effort <effort slug>]
+~/desk/bin/backlog finding --repo <repo name> "<the finding in one line>" \
+  --source <your thread id> [--effort <effort slug>]
 ```
 
 `--brief -` reads the brief from stdin. `~/desk/bin/backlog add --help` lists the repo names.

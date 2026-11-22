@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Add, list, adopt, move, rename, comment on, unblock, link or set the status of backlog items, or show a question."""
+"""Add, list, adopt, move, rename, comment on, unblock, link or set the status of items, show a question, or note a finding."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from pathlib import Path
 DESK = Path.home() / "desk"
 BACKLOG = DESK / "backlog"
 EFFORTS = DESK / "efforts"
+SHARED_FINDINGS = DESK / "findings.md"
 KINDS = ["bugfix", "feature", "review", "design", "test", "docs"]
 LABELS = ["user-visible bug", "reachable but rare", "theoretical"]
 BOARD = "http://127.0.0.1:8765"
@@ -91,11 +92,23 @@ def post(path: str, body: dict) -> None:
 
 
 def add(args: argparse.Namespace) -> None:
+    if args.label == "theoretical":
+        sys.exit("theoretical findings don't go on the backlog, note it with `bin/backlog finding` instead")
     brief = sys.stdin.read().strip() if args.brief == "-" else args.brief
     missing = [s for s in BRIEF_SECTIONS if not re.search(rf"^##\s+{s}\b", brief, re.M | re.I)]
     if missing:
         print(f"warning: the brief has no {', '.join(missing)} section, see Backlog items in ~/desk/AGENTS.md", file=sys.stderr)
-    print(BACKLOG / f"{create(args, brief)['id']}.json")
+    print(BACKLOG / f"{create(args, brief, seen=args.seen)['id']}.json")
+
+
+def finding(args: argparse.Namespace) -> None:
+    if args.effort and not (EFFORTS / args.effort / "status.md").exists():
+        sys.exit(f"no effort {args.effort}")
+    path = EFFORTS / args.effort / "findings.md" if args.effort else SHARED_FINDINGS
+    text = " ".join(args.text.split())
+    with path.open("a") as f:
+        f.write(f"- {datetime.date.today().isoformat()} {args.repo}: {text} (from {args.source})\n")
+    print(path)
 
 
 def move(args: argparse.Namespace) -> None:
@@ -293,9 +306,21 @@ def main() -> None:
     p_add.add_argument("--label", required=True, choices=LABELS)
     p_add.add_argument("--summary", required=True, help="one or two sentences")
     p_add.add_argument("--brief", required=True, help="evidence and plan, or - to read stdin")
+    p_add.add_argument(
+        "--seen", required=True, help="who or what saw the problem or asked for the work, like a failing test or a user report"
+    )
     p_add.add_argument("--effort", default=None)
     p_add.add_argument("--source", default="unknown", help="thread or session id")
     p_add.set_defaults(func=add)
+
+    p_finding = sub.add_parser("finding", help="note a finding nobody saw in its effort's findings list, not on the backlog")
+    p_finding.add_argument(
+        "--repo", required=True, choices=known_repos, metavar="REPO", help="repo name: " + ", ".join(known_repos)
+    )
+    p_finding.add_argument("text", help="the finding in one line")
+    p_finding.add_argument("--source", required=True, help="the thread or session that found it")
+    p_finding.add_argument("--effort", default=None, help="the effort it belongs to, or none for the shared list")
+    p_finding.set_defaults(func=finding)
 
     p_adopt = sub.add_parser("adopt", help="add a started item for a running T3 thread, or reuse its item")
     p_adopt.add_argument("--title", required=True)

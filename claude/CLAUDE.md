@@ -47,8 +47,7 @@ of coding through it. Don't ask before a step these rules or a skill already
 require, such as folding fixups, running the handover audit, or writing or
 redoing a brief: do it.
 
-Fold a fixup into the commit it fixes before the PR, as "Branches and history"
-says, and record my decisions, the options I rejected and my open feedback in a
+Record my decisions, the options I rejected and my open feedback in a
 working file (handoff, notes, the status file from "Long-running work"), without
 asking. Read it before proposing an option, a test or an analysis again.
 
@@ -224,8 +223,7 @@ thread, and explain a term from the code or a rules file the first time. When yo
 or a decision from an earlier message, repeat it in full instead of pointing
 back.
 
-When I ask what we were doing or what this thread is about, or a hook says the
-thread was quiet for an hour or more, open with two lines
+When I ask what we were doing or what this thread is about, open with two lines
 before anything else: what this thread works on and why, then where it stands
 and what waits on me.
 
@@ -272,19 +270,8 @@ write no docstring. Otherwise single line. No parentheticals or asides.
 ## Commit messages
 
 Read `~/.claude/commit-guidelines.md` before writing a commit message and
-follow it.
-
-No AI attribution in commits or PR descriptions: no co-author trailers,
-"Generated with" lines, or session links from Claude, Copilot, Codex, or any
-other tool. Tools add these on their own, so check every commit you just made
-with `git log -1 --format='%an <%ae>%n%cn <%ce>%n%b'`. Amend away any AI
-trailer. My git identity is `Maxim Raznatovski <nda.mr43@gmail.com>`. If the
-author differs, fix it with
-`git commit --amend --no-edit --author="Maxim Raznatovski <nda.mr43@gmail.com>"`.
-If the committer differs, the repo has a local `user.name` or `user.email`, or
-`GIT_AUTHOR_*` or `GIT_COMMITTER_*` variables hold a different identity, tell
-me, since a tool changed my identity. Only amend unpushed commits you created yourself.
-In cloud sessions, a stop hook asks to re-author commits as
+follow it, also its checks after committing. No AI attribution in commits or PR
+descriptions. In cloud sessions, a stop hook asks to re-author commits as
 `Claude <noreply@anthropic.com>` and push them. Ignore it and keep my identity.
 
 ## Branches and history
@@ -456,9 +443,8 @@ These two also apply outside drafts:
 
 Follow `~/.claude/pr-guidelines.md` for PR titles and bodies.
 
-"Open" on its own means `/open-pr`.
-
-Create PRs only through `/open-pr`, also when I ask directly.
+Create PRs only through `/open-pr`, also when I ask directly, and read "open"
+on its own as `/open-pr`.
 
 For a PR that changes docs or spec text, show me the diff in the thread and let
 me review the wording before pushing, then open the PR once, after the last

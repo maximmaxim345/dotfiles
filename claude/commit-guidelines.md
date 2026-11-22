@@ -9,6 +9,19 @@ The user may have modified files since your last interaction. Base the commit on
 3. Compose a message following the rules below
 4. Commit with `git commit -m "..."`
 
+## After Committing
+
+No AI attribution in commits or PR descriptions: no co-author trailers,
+"Generated with" lines, or session links from Claude, Copilot, Codex, or any
+other tool. Tools add these on their own, so check every commit you just made
+with `git log -1 --format='%an <%ae>%n%cn <%ce>%n%b'`. Amend away any AI
+trailer. My git identity is `Maxim Raznatovski <nda.mr43@gmail.com>`. If the
+author differs, fix it with
+`git commit --amend --no-edit --author="Maxim Raznatovski <nda.mr43@gmail.com>"`.
+If the committer differs, the repo has a local `user.name` or `user.email`, or
+`GIT_AUTHOR_*` or `GIT_COMMITTER_*` variables hold a different identity, tell
+me, since a tool changed my identity. Only amend unpushed commits you created yourself.
+
 ## Format
 
 Default: Conventional Commits. Override only if the current branch's own

@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+"""Print the Claude accounts and the reviewer route that ~/desk/accounts.json maps a repo to."""
+
+from __future__ import annotations
+
+import argparse
+import fnmatch
+import json
+import re
+import sqlite3
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import T3_DB  # noqa: E402
+
+ACCOUNTS = Path.home() / "desk" / "accounts.json"
+GITHUB = re.compile(r"github\.com[:/]([^/]+/[^/]+?)(?:\.git)?/?$")
+
+
+def checkout_of(repo: str) -> Path | None:
+    """The folder of the T3 project with this title, skipping projects whose folder is gone."""
+    if not T3_DB.exists():
+        return None
+    conn = sqlite3.connect(f"file:{T3_DB}?mode=ro", uri=True)
+    try:
+        rows = conn.execute(
+            "SELECT workspace_root FROM projection_projects WHERE deleted_at IS NULL AND title = ?", (repo,)
+        ).fetchall()
+    finally:
+        conn.close()
+    return next((Path(row[0]) for row in rows if Path(row[0]).is_dir()), None)
+
+
+def parent_of(name: str) -> str | None:
+    """The repo a fork was made from, the repo itself when it is no fork, or None when GitHub can't say."""
+    result = subprocess.run(["gh", "repo", "view", name, "--json", "parent"], capture_output=True, text=True)
+    if result.returncode:
+        return None
+    parent = json.loads(result.stdout)["parent"]
+    return f"{parent['owner']['login']}/{parent['name']}" if parent else name
+
+
+def github_name(checkout: Path) -> str | None:
+    """The repo's owner/name on GitHub, taken from `upstream`, else from what `origin` was forked from."""
+    for remote in ("upstream", "origin"):
+        result = subprocess.run(["git", "-C", str(checkout), "remote", "get-url", remote], capture_output=True, text=True)
+        match = GITHUB.search(result.stdout.strip())
+        if result.returncode == 0 and match:
+            return match[1] if remote == "upstream" else parent_of(match[1])
+    return None
+
+
+def pick(config: dict, name: str | None, checkout: Path | None) -> dict:
+    """The first `repos` entry whose pattern matches the GitHub name or the checkout path."""
+    for pattern, entry in config["repos"].items():
+        if pattern.startswith("~/"):
+            hit = checkout is not None and fnmatch.fnmatch(str(checkout), str(Path(pattern).expanduser()))
+        else:
+            hit = name is not None and fnmatch.fnmatch(name.lower(), pattern.lower())
+        if hit:
+            return entry
+    return {"claude": [], "reviewer": None}
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("repo", help="a desk repo name, or a GitHub owner/name")
+    args = parser.parse_args()
+    config = json.loads(ACCOUNTS.read_text()) if ACCOUNTS.exists() else {"repos": {}, "reviewers": {}}
+    checkout = None if "/" in args.repo else checkout_of(args.repo)
+    name = parent_of(args.repo) if "/" in args.repo else github_name(checkout) if checkout else None
+    entry = pick(config, name, checkout)
+    reviewer = config["reviewers"][entry["reviewer"]] if entry["reviewer"] else None
+    print(json.dumps({"github": name, "claude": entry["claude"], "reviewer": reviewer}))
+
+
+if __name__ == "__main__":
+    main()

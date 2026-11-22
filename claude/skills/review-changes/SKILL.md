@@ -38,7 +38,7 @@ Running this command is not a go-ahead to post. Nothing goes to GitHub until I a
    PR <full URL> (<author>): what it does in one line. <N> lines, <M> files, <size>. Sage: ran or skipped.
    Guide: ready in the PR Guide tab, still writing, or not available.
    Verdict: how much I need to read before I approve, like "approve after these two hunks" or "needs a full read because ...".
-   Read these (<count>): the hunks that need me apart from those under To post, each as a `diff` block with its absolute path:line and one line on why, picked as section 2 of the `review-brief` skill picks them for a behavior commit.
+   Read these (<count>): the hunks that need me apart from those under To post, each as a `diff` block with its absolute path:line and one line on why, picked as section 2 of the `review-brief` skill picks the hunks that get a note.
    Commits: only when the PR splits refactors from behavior changes, each commit's kind, and for a refactor the lines that changed apart from the move, as that section says.
    To post (<count>): each finding as its absolute path:line, the hunk it is about as a `diff` block, and its draft comment.
    Lower priority <count>, dismissed <count> (in <results file>). Base <commit>, read <share of the diff>.

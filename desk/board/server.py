@@ -332,17 +332,23 @@ def item_minutes(item: dict) -> int:
     return item.get("minutes") or SIZE_MINUTES.get(item.get("size") or "", SIZE_MINUTES["M"])
 
 
+def answer_times(item: dict) -> Iterator[tuple[str, float]]:
+    """Per answered question of the item: its kind and my minutes from opening it on the board to answering."""
+    for entry in item.get("askLog") or []:
+        end = entry.get("answered") or entry.get("cleared")
+        if not entry.get("opened") or not end:
+            continue
+        minutes = (parse_time(end) - parse_time(entry["opened"])).total_seconds() / 60
+        if 0 <= minutes <= LONGEST_SAMPLE:
+            yield entry.get("kind") or "question", minutes
+
+
 def ask_minutes(items: list[dict]) -> dict[str, dict]:
     """Per ask kind: the default, my measured minutes and the estimate the board uses."""
     samples: dict[str, list[float]] = {kind: [] for kind in ASK_MINUTES}
     for item in items:
-        for entry in item.get("askLog") or []:
-            end = entry.get("answered") or entry.get("cleared")
-            if not entry.get("opened") or not end:
-                continue
-            minutes = (parse_time(end) - parse_time(entry["opened"])).total_seconds() / 60
-            if 0 <= minutes <= LONGEST_SAMPLE:
-                samples.setdefault(entry.get("kind") or "question", []).append(minutes)
+        for kind, minutes in answer_times(item):
+            samples.setdefault(kind, []).append(minutes)
     result = {}
     for kind, found in samples.items():
         found.sort()

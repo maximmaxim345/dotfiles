@@ -63,10 +63,13 @@ On a branch I call a prototype, skip this step and step 5, and hand over as "Bef
 Launch these in parallel, passing the diff (`git diff <base>...HEAD`), the changed paths, and the approved plan, but not your own reasoning:
 - A review subagent that checks correctness, audits the diff as "Before handing over" in my CLAUDE.md says and against the project rules, and reads it as the `review-brief` skill's "Critical pass" says.
 - ohf-sage, for the projects listed in step 2.
+- A reviewer from another model, started as the `second-opinion` skill says, when the change has about 50 or more changed non-test lines, changes a contract (models, commands, events, stored data, migrations, settings, text users see), or touches what the project rules file lists under "Always look closely", however small. Also when the item's start note asks for a second opinion. Skip it for every other change.
 
-Label each finding as a user-visible bug, reachable but rare, or theoretical. Fix bugs and rule violations, each in a `git commit --fixup` of the commit it fixes, and skip theoretical ones. Note what you fixed and what you kept on purpose, with the reason, for the brief. Run a second round only to check those fixes, and no third. A finding that widens the change is an extra finding, not a fix.
+Check each finding against the source yourself and drop what you can't confirm. Label the rest as a user-visible bug, reachable but rare, or theoretical. Fix bugs and rule violations, each in a `git commit --fixup` of the commit it fixes, and skip theoretical ones. A finding that widens the change is an extra finding, not a fix. When two reviewers disagree on a design point, put it in the brief's Decide list instead of fixing it.
 
-When the item's start note asks for a second opinion, run it now as the `second-opinion` skill says for a start note, and treat its findings the same way.
+Review in two rounds at most. In the second, only the reviewers whose findings you fixed check those fixes, and nothing else. What is still open after it goes to the brief's Decide list, with no third round.
+
+For the brief, note one line per reviewer: what it found, what you fixed and what you kept on purpose, with the reason. Put the other model's findings into its line instead of replying as the `second-opinion` skill's step 5 says.
 
 ## 5. Hand over
 

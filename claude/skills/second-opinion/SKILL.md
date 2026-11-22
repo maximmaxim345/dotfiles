@@ -1,13 +1,13 @@
 ---
 name: second-opinion
-description: Have reviewers from other models check the current change, a PR or spec text, picked with their reasoning effort in a popup, or GPT-6.2 Sol at high effort when I ask in plain words. Use when I ask for a second opinion or another model's view, or a desk item's start note asks for one.
+description: Have reviewers from other models check the current change, a PR or spec text, picked with their reasoning effort in a popup, or GPT-6.2 Sol at high effort when I ask in plain words. Use when I ask for a second opinion or another model's view, or a desk item's start note or `implement` step 4 asks for one.
 argument-hint: "[PR URL or number, commit range, or what to check]"
 ---
 
 Target: `$ARGUMENTS`. A PR reviews that PR, a range reviews those commits, and other words name what to check, like a spec proposal in this thread. Empty means the current branch against its merge base with the default branch, uncommitted changes included.
 
 1. Work out the target, fetch its base and note the commit you compare against. For a PR, check out its head as `/review-changes` step 3 says. For Sendspin work, also note the spec commit at `origin/main`.
-2. Pick the reviewers. When I asked in plain words ("do a second opinion") or a desk item's start note asks for one, skip the popups and use one reviewer: GPT-6.2 Sol through OpenCode at high effort. When I typed `/second-opinion`, ask with popups (AskUserQuestion):
+2. Pick the reviewers. When I asked in plain words ("do a second opinion") or a desk item's start note or `implement` step 4 asks for one, skip the popups and use one reviewer: GPT-6.2 Sol through OpenCode at high effort. When I typed `/second-opinion`, ask with popups (AskUserQuestion):
    - First, which reviewers, as a multi-select: GPT-6.2 Sol through OpenCode (your pick, first), GPT-6.2 Astra through OpenCode, a Claude Opus subagent, and "More reviewers". "More reviewers" asks which provider, from the enabled ones `orchestrator_capabilities` lists in T3 (OpenCode alone elsewhere), then, in one popup, which models from each picked provider.
    - Then the reasoning effort for each picked reviewer, one question per reviewer and up to four per popup: medium (your pick), low, high, and "More efforts", which asks again with the other levels that model offers.
 3. Write one brief for all reviewers: the target, the checkout path, the base commit, the project rules file, for Sendspin the spec commit, and what the change is meant to do in one or two sentences. Paste text from this thread, like a spec proposal, in full. Leave out your own findings and conclusions. Each reviewer reads whole files rather than only the hunks, checks the tests first, posts nothing and changes no files, and reports each finding as `path:line`, what's wrong, how to trigger it, and the spec or code line it depends on.

@@ -47,7 +47,7 @@ Go through the commits oldest first, with uncommitted changes as one more entry 
 
 ## 3. Critical pass
 
-When the session already reviewed the diff and fixed what it found (as `implement` step 4 does), start with what was fixed, each with its label, and what was kept on purpose, with the reason. Count kept theoretical findings in one line instead of listing them. Say who reviewed the diff (the review subagent, ohf-sage, a second opinion) and what none of them covered, such as a hand test, and never write that nothing is left to find. When no such review ran, read the diff as a skeptical reviewer, not its author. List only real, specific findings, each labeled as a user-visible bug or reachable but rare. Leave out theoretical ones. Look for:
+When the session already reviewed the diff and fixed what it found (as `implement` step 4 does), start with one line per reviewer (the review subagent, ohf-sage, a reviewer from another model): what it found, what was fixed, each with its label, and what was kept on purpose, with the reason. Count kept theoretical findings in one line instead of listing them. Then say what none of them covered, such as a hand test, and never write that nothing is left to find. When no such review ran, read the diff as a skeptical reviewer, not its author. List only real, specific findings, each labeled as a user-visible bug or reachable but rare. Leave out theoretical ones. Look for:
 
 - edge cases the change adds or misses, such as empty or missing input, ordering, concurrency, and old peers or old data
 - tests that only retest existing behavior or would pass without the change

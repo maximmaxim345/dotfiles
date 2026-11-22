@@ -175,7 +175,10 @@ def adopt(args: argparse.Namespace) -> None:
 
 def ask(args: argparse.Namespace) -> None:
     try:
-        post("ask", {"thread": args.thread, "text": None if args.clear else args.question, "kind": args.kind})
+        post(
+            "ask",
+            {"thread": args.thread, "text": None if args.clear else args.question, "kind": args.kind, "minutes": args.minutes},
+        )
     except urllib.error.HTTPError as err:
         sys.exit(json.loads(err.read() or b"{}").get("error", str(err)))
     except OSError as err:
@@ -505,6 +508,7 @@ def main() -> None:
     p_ask_text.add_argument("question", nargs="?", help="the question in one line")
     p_ask_text.add_argument("--clear", action="store_true", help="remove the question once I answered")
     p_ask.add_argument("--kind", choices=ASK_KINDS, help="what answering takes from me")
+    p_ask.add_argument("--minutes", type=int, help="my minutes for it, when you can estimate them better than the kind")
     p_ask.set_defaults(func=ask)
 
     p_status = sub.add_parser("status", help="set an item's status and log it for the desk like a board change")

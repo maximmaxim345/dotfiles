@@ -477,11 +477,11 @@ function renderTop() {
   const shownItems = state.items.filter(i => inScope(i.effort));
   const starting = shownItems.filter(i => i.status === "requested").length;
   const inReview = shownItems.filter(i => i.status === "started" && threadState(i.thread)?.label === "waiting").length;
-  const auto = state.autostart?.mode || "off";
+  const auto = state.autostart?.mode || "off", held = autostartHeld();
   $("glance").replaceChildren(...[el("b", {}, String(nowRows().length)), " wait on you · ", el("b", {}, String(planned)), " of ", el("b", {}, String(t.budget)), " min planned",
     starting > 0 && [" · ", el("b", {}, String(starting)), " starting"], inReview > 0 && [" · ", el("b", {}, String(inReview)), " in review"],
-    " · ", el("button", { class: "quiet glance-auto", title: "Auto-start settings", onclick: () => { ui.settings = true; render(); } },
-      `auto-start ${auto === "all" ? "all efforts" : auto === "focus" ? `focus${state.autostart.efforts?.length ? `: ${state.autostart.efforts.map(effortTitle).join(", ")}` : ""}` : "off"}`)].flat().filter(c => c !== false));
+    " · ", el("button", { class: "quiet glance-auto", title: held ? `Auto-start held ${held}` : "Auto-start settings", onclick: () => { ui.settings = true; render(); } },
+      `auto-start ${auto === "all" ? "all efforts" : auto === "focus" ? `focus${state.autostart.efforts?.length ? `: ${state.autostart.efforts.map(effortTitle).join(", ")}` : ""}` : "off"}${held ? ", held" : ""}`)].flat().filter(c => c !== false));
   const counts = { now: nowRows().length, today: t.rows.filter(r => r.today && inScope(byId(r.id)?.effort)).length,
     backlog: state.items.filter(i => !CLOSED.includes(i.status) && inScope(i.effort)).length, incoming: incomingEntries().filter(e => ["needs-you", "new"].includes(shownStatus(e))).length };
   $("tabs").replaceChildren(...TABS.map(([key, name]) => el("button", { class: "tab", role: "tab", "aria-selected": String(ui.tab === key), onclick: () => go(key) },
@@ -498,6 +498,7 @@ function renderTop() {
 }
 function go(tab) { ui.tab = tab; history.replaceState(null, "", location.pathname + location.search + "#" + tab); scrollTo(0, 0); render(); }
 
+function autostartHeld() { return state.autostartLast?.line.split("Held: ")[1] || null; }
 function nowRows() { return (state.now || []).filter(r => inScope(r.effort)); }
 function nowAction(r) {
   const item = r.item && byId(r.item);
@@ -530,6 +531,7 @@ function renderNow() {
     el("div", {},
       el("div", { class: "sh" }, el("h2", {}, "Waits on you"), el("span", { class: "n" }, rows.length ? `${rows.length}, about ${minutes} min` : "")),
       el("p", { class: "hint" }, "Top row first: the desk itself, then people outside waiting, then threads blocked on you, quick ones before long ones."),
+      autostartHeld() && el("p", { class: "hint" }, `Auto-start held ${autostartHeld()}.`),
       el("div", { class: "list" }, rows.length ? rows.map(r => row({
         kinds: [el("span", { class: `kind ${r.kind}` }, KIND_NAME[r.kind] || r.kind), r.tier === 1 && tag(r.kind === "reply" || r.url ? "someone waiting" : "urgent", "warn")],
         title: r.title, context: [r.effort && !ui.effort && el("span", { class: "eff" }, effortTitle(r.effort)), r.effort && !ui.effort && " · ", r.text], minutes: r.minutes, at: r.at, warn: true,
@@ -1006,9 +1008,10 @@ function settingsSheet() {
         [...new Set([60, 120, 180, 240, 300, 360, 420, 480, state.today.budget])].sort((x, y) => x - y).map(m => el("option", { value: m, selected: m === state.today.budget }, `${m} min`))),
         el("span", { class: "muted" }, "The Today line falls where this runs out.")),
       el("h3", {}, "Auto-start"),
-      el("p", { class: "hint", style: { margin: "0 0 6px" } }, "Lets the desk start up to 5 work threads and 2 reviews on its own, on weekdays from 8:00 to 20:00. Threads that wait on reviewers don't count."),
+      el("p", { class: "hint", style: { margin: "0 0 6px" } }, "Lets the desk start up to 5 work threads and 2 reviews on its own, on weekdays from 8:00 to 20:00. Threads that wait on reviewers don't count. It starts no work while 3 of your handovers wait on your review."),
+      state.autostartLast && el("p", { class: "hint", style: { margin: "0 0 6px" } }, `Last check ${ago(state.autostartLast.at)} ago: ${state.autostartLast.line}`),
       el("div", { class: "filters" }, [["off", "Off"], ["focus", "Focus"], ["all", "All efforts"]].map(([mode, text]) => chip(a.mode === mode, text, () => setAutostart({ mode }))),
-        a.mode !== "off" && chip(a.reviews, "Reviews too", () => setAutostart({ reviews: !a.reviews }), "Also review other people's PRs that want my review, 2 at a time. Reviews only draft, nothing gets posted.")),
+        a.mode !== "off" && chip(a.reviews, "Reviews too", () => setAutostart({ reviews: !a.reviews }), "Also start first-pass reviews of PRs whose pre-read says ready, at most 2 a day. No more than 2 reviews run or wait on you at a time. Reviews only draft, nothing gets posted.")),
       a.mode === "focus" && el("div", { class: "filters" }, state.efforts.map(e => { const on = a.efforts.includes(e.slug); return chip(on, e.title, () => setAutostart({ efforts: on ? a.efforts.filter(x => x !== e.slug) : [...a.efforts, e.slug] })); })),
       el("h3", {}, "Spaces"),
       el("p", { class: "hint", style: { margin: "0 0 6px" } }, "Spaces group efforts, like work and personal. Turning a space off hides it and puts its idle threads away until you turn it on again."),

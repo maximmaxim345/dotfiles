@@ -1,7 +1,9 @@
 import argparse
+import contextlib
 import importlib
 import importlib.machinery
 import importlib.util
+import io
 import json
 import tempfile
 import unittest
@@ -77,31 +79,72 @@ class SweepTests(unittest.TestCase):
 
 
 class SaveTests(unittest.TestCase):
+    def setUp(self) -> None:
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.folder = Path(folder.name)
+        (self.folder / "watch.json").write_text(json.dumps({"firstPass": ["acme/widget"]}))
+        (self.folder / "pre-read.md").write_text("Adds a flag.\n")
+        self.incoming = self.folder / "incoming.json"
+        for target, values in (
+            (
+                pre_read,
+                {
+                    "INCOMING": self.incoming,
+                    "PREREADS": self.folder / "prereads.json",
+                    "WATCH": self.folder / "watch.json",
+                    "pull": lambda url: {
+                        "state": "open",
+                        "title": "PR",
+                        "base": {"repo": {"full_name": "acme/widget"}},
+                        "requested_reviewers": [{"login": "me"}],
+                    },
+                    "gh": lambda *args: {"login": "me"},
+                    "autostart_setting": lambda: {"mode": "all", "efforts": [], "reviews": True},
+                },
+            ),
+            (server, {"BACKLOG": self.folder / "backlog"}),
+        ):
+            patcher = patch.multiple(target, **values)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def save(self, number: int, verdict: str) -> None:
+        args = argparse.Namespace(
+            url=pr(number)["html_url"],
+            sha="abc",
+            title=f"PR {number}",
+            repo="widget",
+            effort=None,
+            verdict=verdict,
+            minutes=12,
+            action="Review now.",
+            text_file=str(self.folder / "pre-read.md"),
+            draft_file=None,
+        )
+        with contextlib.redirect_stdout(io.StringIO()):
+            pre_read.save(args)
+
+    def entries(self) -> list[dict]:
+        return list(json.loads(self.incoming.read_text()).values())
+
     def test_a_saved_pre_read_shows_on_now_with_its_minutes(self) -> None:
-        with tempfile.TemporaryDirectory() as folder:
-            incoming = Path(folder) / "incoming.json"
-            text = Path(folder) / "pre-read.md"
-            text.write_text("Adds a flag.\n")
-            url = pr(3)["html_url"]
-            args = argparse.Namespace(
-                url=url,
-                sha="abc",
-                title="PR 3",
-                verdict="ready",
-                minutes=12,
-                action="Review now.",
-                text_file=str(text),
-                draft_file=None,
-            )
-            with (
-                patch.object(pre_read, "INCOMING", incoming),
-                patch.object(pre_read, "PREREADS", Path(folder) / "prereads.json"),
-                patch.object(pre_read, "pull", lambda url: {"state": "open"}),
-            ):
-                pre_read.save(args)
-            entries = list(json.loads(incoming.read_text()).values())
-        rows = server.now_rows({}, {}, entries, None, {}, SPACES)
-        self.assertEqual([(r["kind"], r["minutes"], r["url"]) for r in rows], [("review", 12, url)])
+        self.save(3, "almost")
+        rows = server.now_rows({}, {}, self.entries(), None, {}, SPACES)
+        self.assertEqual([(r["kind"], r["minutes"], r["url"]) for r in rows], [("review", 12, pr(3)["html_url"])])
+
+    def test_only_a_ready_pre_read_files_a_first_pass(self) -> None:
+        self.save(3, "almost")
+        self.assertEqual(server.all_items(), {})
+        self.save(3, "ready")
+        (first_pass,) = server.all_items().values()
+        self.assertEqual((first_pass["pr"], first_pass["kind"]), (pr(3)["html_url"], "review"))
+        self.assertEqual(server.now_rows({}, {}, [e for e in self.entries() if server.incoming_shown(e)], None, {}, SPACES), [])
+
+    def test_at_most_two_first_passes_are_filed_a_day(self) -> None:
+        for number in (3, 4, 5):
+            self.save(number, "ready")
+        self.assertEqual(sorted(i["pr"].rsplit("/", 1)[1] for i in server.all_items().values()), ["3", "4"])
 
 
 if __name__ == "__main__":

@@ -39,6 +39,7 @@ PREREADS = STATE / "prereads.json"
 PROPOSALS = STATE / "proposals.json"
 AUTOSTART = STATE / "autostart.json"
 AUTOSTART_MODES = {"off", "focus", "all"}
+AUTOSTART_LAST = STATE / "autostart-last.json"
 SPACES = STATE / "spaces.json"
 DEFAULT_SPACE = "work"
 SPACE_NAME = re.compile(r"[a-z0-9][a-z0-9-]{0,30}")
@@ -323,6 +324,7 @@ def load_state() -> dict:
         "proposals": [p for p in proposals if p["state"] in SHOWN_PROPOSALS],
         "prereadError": (json.loads(PREREADS.read_text()) if PREREADS.exists() else {}).get("error"),
         "autostart": autostart_setting(),
+        "autostartLast": json.loads(AUTOSTART_LAST.read_text()) if AUTOSTART_LAST.exists() else None,
         "spaces": spaces_setting(),
         "now": day["now"],
         "today": {key: day[key] for key in ("date", "budget", "waiting", "rows")},
@@ -428,7 +430,7 @@ def now_rows(
             covered.add(item.get("thread"))
             if not item.get("answer"):
                 kind = item["asks"].get("kind") or "question"
-                minutes = estimates.get(kind, estimates["question"])["minutes"]
+                minutes = item["asks"].get("minutes") or estimates.get(kind, estimates["question"])["minutes"]
                 add(
                     1 if item.get("urgent") else 2, kind, minutes, item["title"], item["asks"]["text"], item["asks"]["at"], **base
                 )
@@ -820,6 +822,7 @@ class Handler(BaseHTTPRequestHandler):
                         "text": body["text"],
                         "at": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
                         **({"kind": body["kind"]} if body.get("kind") else {}),
+                        **({"minutes": int(body["minutes"])} if body.get("minutes") else {}),
                     }
                 else:
                     item.pop("asks", None)
@@ -927,6 +930,7 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError(f"unknown mode {body['mode']}")
                 chosen = sorted(set(body["efforts"]) & known)
                 write_json(AUTOSTART, {"mode": body["mode"], "efforts": chosen, "reviews": bool(body["reviews"])})
+                AUTOSTART_LAST.unlink(missing_ok=True)
                 log_event({"type": "autostart"})
             elif self.path == "/api/spaces":
                 change_spaces(body)

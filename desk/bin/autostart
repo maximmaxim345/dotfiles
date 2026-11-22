@@ -11,6 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
 from server import (  # noqa: E402
+    AUTOSTART_LAST,
     INCOMING,
     THREADS,
     WORKTREES,
@@ -23,12 +24,18 @@ from server import (  # noqa: E402
     plan_day,
     space_of,
     spaces_setting,
+    write_json,
 )
 
 WORK_SLOTS = 5
 REVIEW_SLOTS = 2
 MY_REVIEWS = 3
 ACTIVE = ("requested", "started")
+
+
+def report(line: str) -> None:
+    print(line)
+    write_json(AUTOSTART_LAST, {"at": datetime.datetime.now().isoformat(timespec="seconds"), "line": line})
 
 
 def ready_brief(brief: str) -> bool:
@@ -74,7 +81,7 @@ def main() -> None:
 
     resumes = sorted((i for i in items.values() if cleared(i)), key=lambda i: i.get("unblocked") or i.get("paused") or "")
     if setting["mode"] == "off":
-        print("auto-start off")
+        report("auto-start off")
         for item in resumes:
             print(f"resume {item['id']} {item['thread']}")
         return
@@ -85,11 +92,11 @@ def main() -> None:
         for i in items.values()
     )
     scope = "all efforts" if setting["mode"] == "all" else "focus on " + (", ".join(setting["efforts"]) or "no effort")
-    print(
-        f"auto-start {scope}, work {work_busy} of {WORK_SLOTS}, {mine} of {MY_REVIEWS} wait on my review"
-        + (f", reviews {reviews_busy} of {REVIEW_SLOTS}" if setting["reviews"] else ", reviews off")
+    header = f"auto-start {scope}, work {work_busy} of {WORK_SLOTS}, {mine} of {MY_REVIEWS} wait on my review" + (
+        f", reviews {reviews_busy} of {REVIEW_SLOTS}" if setting["reviews"] else ", reviews off"
     )
     if not in_window(now):
+        report(header)
         return
 
     incoming = [e for e in (json.loads(INCOMING.read_text()) if INCOMING.exists() else {}).values() if incoming_shown(e)]
@@ -104,19 +111,32 @@ def main() -> None:
     paused = sorted((i for i in candidates if i["status"] == "open" and i.get("thread")), key=lambda i: i.get("paused") or "")
     reviews = sorted((i for i in candidates if i["status"] == "open" and i.get("kind") == "review"), key=lambda i: i["id"])
 
-    chosen: list[str] = []
-    free = {
-        "work": min(WORK_SLOTS - work_busy, MY_REVIEWS - mine),
-        "review": REVIEW_SLOTS - reviews_busy if setting["reviews"] else 0,
+    lines: list[str] = []
+    held: dict[str, int] = {}
+    free = {"work": WORK_SLOTS - work_busy, "review": REVIEW_SLOTS - reviews_busy if setting["reviews"] else 0}
+    room = MY_REVIEWS - mine
+    caps = {
+        "work": f"{WORK_SLOTS} work threads run",
+        "review": f"{REVIEW_SLOTS} reviews run or wait on me",
+        "room": f"{mine} items wait on my review",
     }
-    for item in [*reviews, *resumes, *todays, *picks, *paused]:
+    for item in {i["id"]: i for i in [*reviews, *resumes, *todays, *picks, *paused]}.values():
         track = "review" if item.get("kind") == "review" else "work"
-        if item["id"] in chosen or free[track] <= 0:
+        if track == "review" and not setting["reviews"]:
+            continue
+        full = track if free[track] <= 0 else "room" if track == "work" and room <= 0 else None
+        if full:
+            held[full] = held.get(full, 0) + 1
             continue
         free[track] -= 1
-        chosen.append(item["id"])
+        room -= track == "work"
         verb = "resume" if item.get("thread") else "review" if track == "review" else "start"
-        print(f"{verb} {item['id']}" + (f" {item['thread']}" if item.get("thread") else ""))
+        lines.append(f"{verb} {item['id']}" + (f" {item['thread']}" if item.get("thread") else ""))
+    if held:
+        header += ". Held: " + ", ".join(f"{n} item{'s' if n > 1 else ''} because {caps[full]}" for full, n in held.items())
+    report(header)
+    for line in lines:
+        print(line)
 
 
 if __name__ == "__main__":

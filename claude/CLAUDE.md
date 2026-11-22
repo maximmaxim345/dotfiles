@@ -122,16 +122,16 @@ nothing (`--include='*.py'`).
 Delegate only large, self-contained work (a wide multi-file investigation, an
 independent parallel track), since each subagent re-reads context and reports
 back. Give subagents the session's model and effort unless I name others. Run
-subagents in the background. Report the conclusion, not the raw
-file dumps. For a follow-up on work a subagent already did, resume that
+subagents in the background, or the way T3's own rules say when you have the T3
+tools. Report the conclusion, not the raw file dumps. For a follow-up on work a subagent already did, resume that
 subagent instead of spawning a new one, so it keeps what it found. Start a
 fresh one when the task is different, and for each review round, with the
 earlier findings and replies in its prompt.
 
 Use ohf-sage for Music Assistant, Sendspin, ESPHome, and OHF-Voice
-implementation work when a plan involves a real design choice, and see "Before handing over". Do
-small reviews and Sendspin spec text yourself, and use ohf-sage for those only
-when I ask.
+implementation work when a plan involves a real design choice, and see "Before handing over". Outside
+that handover review, do small reviews and Sendspin spec text yourself, and use
+ohf-sage for those only when I ask.
 
 Subagents don't inherit anything pasted into the session, so copy the rules
 that apply to their work into their prompt. No subagent may push, open a PR,

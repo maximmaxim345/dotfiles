@@ -489,8 +489,11 @@ function renderTop() {
     ui.effort && el("span", { class: "scope", style: { alignSelf: "center", marginLeft: "auto" } }, `Effort: ${ui.effort === "-" ? "none" : effortTitle(ui.effort)} `, el("button", { class: "quiet", onclick: () => { ui.effort = ""; history.replaceState(null, "", location.pathname + location.hash); render(); } }, "show all")));
   const lines = [h?.failed && `The last ${h.failed} desk runs failed, so nothing gets started or sorted.`,
     h?.sweepStale && (h.lastSweep ? `The morning sweep last finished ${ago(h.lastSweep)} ago.` : "The morning sweep never finished."),
-    !state.listening && "The listener is not running. Run ./dotfiles.py install desk_listener in ~/dotfiles. Until then the desk only acts when you ask it."].filter(Boolean);
-  $("banner").replaceChildren(...(lines.length ? [el("div", { class: "banner" }, el("div", { class: "bt" }, el("b", {}, bad ? "The desk is not running." : "The desk is not listening."), lines.join(" ")),
+    !state.listening && "The listener is not running. Run ./dotfiles.py install desk_listener in ~/dotfiles. Until then the desk only acts when you ask it.",
+    ...(h?.routines || []).map(r => `The last ${r.failed} runs of ${r.title} failed.`),
+    state.prereadError && `The pre-read routine failed at ${state.prereadError.at.slice(11, 16)}: ${state.prereadError.text}`].filter(Boolean);
+  const head = bad ? "The desk is not running." : !state.listening ? "The desk is not listening." : "A routine failed.";
+  $("banner").replaceChildren(...(lines.length ? [el("div", { class: "banner" }, el("div", { class: "bt" }, el("b", {}, head), lines.join(" ")),
     h?.thread && threadUrl(h.thread) && el("a", { class: "btn", href: threadUrl(h.thread) }, "Open the desk thread"))] : []));
 }
 function go(tab) { ui.tab = tab; history.replaceState(null, "", location.pathname + location.search + "#" + tab); scrollTo(0, 0); render(); }
@@ -502,6 +505,7 @@ function nowAction(r) {
   if (item?.asks && !item.answer) return [pr, button("Go", async () => { if (confirm(`Answer "go" to:\n\n${item.asks.text}`)) { await api("/api/ask/open", { id: item.id }); await answer(item.id, "go", item.asks.text); } }, "", { title: "Accept the thread's pick" })];
   if (r.kind === "start") return button("Start again", () => post("/api/status", { ids: [r.item], status: "requested" }, startMsg()));
   if (r.kind === "reply") return button("Incoming", () => go("incoming"));
+  if (r.url) return pr;
   if (r.kind === "worktree") return button("Copy path", async () => { await navigator.clipboard.writeText(r.path); toast("Path copied"); });
   const url = threadUrl(r.thread);
   return [pr, url && el("a", { class: "btn", href: url, onclick: e => { e.stopPropagation(); if (item?.asks && !item.asks.opened) api("/api/ask/open", { id: item.id }).catch(() => {}); } }, r.kind === "desk" ? "Open desk" : "Open thread")];
@@ -509,6 +513,7 @@ function nowAction(r) {
 function nowClick(r) {
   if (r.item && byId(r.item)) return openItem(r.item);
   if (r.kind === "reply") return go("incoming");
+  if (r.url) { ui.highlight = r.url; ui.folds.add(`${r.url} preread`); return go("incoming"); }
   const url = threadUrl(r.thread);
   if (url) location.href = url;
 }
@@ -526,7 +531,7 @@ function renderNow() {
       el("div", { class: "sh" }, el("h2", {}, "Waits on you"), el("span", { class: "n" }, rows.length ? `${rows.length}, about ${minutes} min` : "")),
       el("p", { class: "hint" }, "Top row first: the desk itself, then people outside waiting, then threads blocked on you, quick ones before long ones."),
       el("div", { class: "list" }, rows.length ? rows.map(r => row({
-        kinds: [el("span", { class: `kind ${r.kind}` }, KIND_NAME[r.kind] || r.kind), r.tier === 1 && tag(r.kind === "reply" ? "someone waiting" : "urgent", "warn")],
+        kinds: [el("span", { class: `kind ${r.kind}` }, KIND_NAME[r.kind] || r.kind), r.tier === 1 && tag(r.kind === "reply" || r.url ? "someone waiting" : "urgent", "warn")],
         title: r.title, context: [r.effort && !ui.effort && el("span", { class: "eff" }, effortTitle(r.effort)), r.effort && !ui.effort && " · ", r.text], minutes: r.minutes, at: r.at, warn: true,
         action: nowAction(r), onclick: () => nowClick(r),
       })) : el("div", { class: "empty" }, t ? "Nothing waits on you." : "No sweep yet. Ask the desk to sweep."))),
@@ -729,6 +734,7 @@ function renderGoal() {
 
 const INCOMING_BADGE = { "needs-you": ["bad", "needs you"], sent: ["", "sent, waiting for the desk"], waiting: ["", "waiting for them"], new: ["accent", "new"], filed: ["good", "filed"],
   duplicate: ["", "duplicate"], noise: ["", "nothing to do"], closed: ["", "closed"] };
+const PREREAD_VERDICT = { ready: "ready for your review", almost: "almost ready", "not-ready": "not ready" };
 const deskOwes = x => x.chat?.at(-1)?.by === "me";
 const shownStatus = e => deskOwes(e) ? "sent" : e.status;
 function incomingEntries() { return (state.incoming || []).filter(e => inScope(e.effort)); }
@@ -766,6 +772,7 @@ function incomingRow(e) {
     el("div", { class: "c" }, shownStatus(e) === "needs-you" && e.action ? el("span", { style: { color: "var(--text)" } }, e.action) : (e.news || []).join(", ")),
     e.posts?.length > 0 && fold(`${e.url} posts`, e.posts.length === 1 ? "What they wrote" : `What they wrote (${e.posts.length})`,
       e.posts.map(p => el("div", { class: "post" }, el("div", { class: "by" }, `${p.by}, ${ago(p.at)} ago`), md(p.text)))),
+    e.preread && fold(`${e.url} preread`, `Pre-read: ${PREREAD_VERDICT[e.preread.verdict] || e.preread.verdict}, about ${e.preread.minutes} min`, md(e.preread.text)),
     e.draft && fold(`${e.url} draft`, "Draft reply", el("pre", {}, e.draft), copy),
     chatFold(`${e.url} chat`, e.chat, '"start a review"', text => post("/api/incoming/chat", { url: e.url, text })),
     el("div", { class: "links" }, el("a", { href: e.url, target: "_blank" }, `Open ${e.kind}`), e.link && el("a", { href: e.link, target: "_blank" }, "related"),

@@ -35,6 +35,7 @@ THREADS = STATE / "threads.json"
 EVENTS = STATE / "events.jsonl"
 LISTENER = STATE / "listener.pid"
 INCOMING = STATE / "incoming.json"
+PREREADS = STATE / "prereads.json"
 PROPOSALS = STATE / "proposals.json"
 AUTOSTART = STATE / "autostart.json"
 AUTOSTART_MODES = {"off", "focus", "all"}
@@ -189,11 +190,24 @@ def desk_health() -> dict | None:
         ).fetchone()
         if row is None:
             return None
-        statuses = conn.execute(
-            "SELECT status FROM orchestration_v2_projection_runs WHERE thread_id = ?"
-            " AND status IN ('completed', 'failed', 'cancelled', 'interrupted') ORDER BY ordinal DESC LIMIT 50",
-            (row[0],),
+
+        def failed_in_a_row(thread: str) -> int:
+            statuses = conn.execute(
+                "SELECT status FROM orchestration_v2_projection_runs WHERE thread_id = ?"
+                " AND status IN ('completed', 'failed', 'cancelled', 'interrupted') ORDER BY ordinal DESC LIMIT 50",
+                (thread,),
+            ).fetchall()
+            return next((n for n, (status,) in enumerate(statuses) if status != "failed"), len(statuses))
+
+        failed = failed_in_a_row(row[0])
+        routines = conn.execute(
+            "SELECT thread_id, title FROM orchestration_v2_projection_threads"
+            " WHERE project_id = ? AND title LIKE 'routine - %' AND archived_at IS NULL AND deleted_at IS NULL",
+            (project,),
         ).fetchall()
+        broken = [
+            {"thread": t, "title": title, "failed": n} for t, title in routines if (n := failed_in_a_row(t)) >= FAILED_IN_A_ROW
+        ]
         (last_sweep,) = conn.execute(
             "SELECT MAX(r.completed_at) FROM orchestration_v2_projection_runs r"
             " JOIN orchestration_v2_projection_messages m ON m.run_id = r.run_id"
@@ -205,7 +219,6 @@ def desk_health() -> dict | None:
         return None
     finally:
         conn.close()
-    failed = next((n for n, (status,) in enumerate(statuses) if status != "failed"), len(statuses))
     swept = datetime.datetime.fromisoformat(last_sweep.replace("Z", "+00:00")) if last_sweep else None
     due = last_sweep_due(datetime.datetime.now().astimezone())
     return {
@@ -213,6 +226,7 @@ def desk_health() -> dict | None:
         "failed": failed if failed >= FAILED_IN_A_ROW else 0,
         "lastSweep": swept.astimezone().isoformat(timespec="minutes") if swept else None,
         "sweepStale": swept is None or swept < due - SWEEP_EARLY,
+        "routines": broken,
     }
 
 
@@ -307,6 +321,7 @@ def load_state() -> dict:
         "health": health,
         "incoming": shown,
         "proposals": [p for p in proposals if p["state"] in SHOWN_PROPOSALS],
+        "prereadError": (json.loads(PREREADS.read_text()) if PREREADS.exists() else {}).get("error"),
         "autostart": autostart_setting(),
         "spaces": spaces_setting(),
         "now": day["now"],
@@ -424,13 +439,26 @@ def now_rows(
     for entry in threads.get("failed") or []:
         add(2, "failed", OTHER_MINUTES["failed"], entry["title"], entry["why"], entry.get("since"), **links(entry))
     off = set(spaces["off"])
-    replies = [
+    waiting = [
         e
         for e in incoming
         if e["status"] == "needs-you"
         and (e.get("chat") or [{}])[-1].get("by") != "me"
         and space_of(e.get("effort"), spaces) not in off
     ]
+    for entry in (e for e in waiting if e.get("preread")):
+        add(
+            1,
+            "review",
+            entry["preread"]["minutes"],
+            entry["title"],
+            entry.get("action") or "",
+            entry.get("updated"),
+            url=entry["url"],
+            pr=entry["url"],
+            effort=entry.get("effort"),
+        )
+    replies = [e for e in waiting if not e.get("preread")]
     if replies:
         title = f"{len(replies)} GitHub {'entry waits' if len(replies) == 1 else 'entries wait'} for my reply"
         oldest = min((e.get("updated") or "" for e in replies), default="") or None

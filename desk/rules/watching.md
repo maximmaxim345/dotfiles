@@ -1,6 +1,6 @@
 ## Watching
 
-`watch.json` lists the GitHub sources I want watched: `issues` and `discussions` (GitHub search queries), `projects` (boards as `owner` and `number`), `workflows` (repos whose failed runs count) and `notes` (my free-form sorting notes). Write the query lines yourself from what I ask for, and keep my notes as I wrote them.
+`watch.json` lists the GitHub sources I want watched: `issues` and `discussions` (GitHub search queries), `projects` (boards as `owner` and `number`), `workflows` (repos whose failed runs count), `prereads` (GitHub search queries for PRs that wait on my review, see "Pre-reads") and `notes` (my free-form sorting notes). Write the query lines yourself from what I ask for, and keep my notes as I wrote them.
 
 Run `bin/watch`. It records news since its last run in `state/incoming.json`, one entry per issue, PR, discussion, board card or run, and prints each as a `watch` line. A new source's first run only records what exists. A `watch-error` line goes in your reply. The board shows entries with status new, needs-you or waiting under Incoming, grouped by effort, except ones I snoozed until a later day (`snoozed`) that got no news but board moves since. `bin/watch` only adds a board move's line to the news of an entry it already has, and prints no line for it. Other entries, except dismissed ones, stay for a day after the last chat message.
 
@@ -13,7 +13,7 @@ Sorting reads the entry and its news, follows my notes in `watch.json`, and chec
 - `--status waiting`: it waits on someone other than me.
 - `--status needs-you --action "<what I have to do, one or two sentences>"`, with `--draft -` and the reply on stdin when an answer from me would help. Write drafts in my voice as `~/.claude/writing-examples.md` shows.
 
-An entry comes back as new when it gets more news. Read only what's new then.
+An entry comes back as new when it gets more news. Read only what's new then. When it has a `preread` (see "Pre-reads"), set it needs-you again with the pre-read's `action` and `draft`, unless the news changes what I have to do.
 
 Never post, comment, label, close, assign or move anything on GitHub, and never change a project board or an issue outside `bin/project-sync apply`. Drafts only go on the board, where I copy them.
 

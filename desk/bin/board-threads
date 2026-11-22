@@ -260,7 +260,7 @@ def build(threads: list[dict], items: list[dict], efforts: set[str], old: dict) 
     managers = {}
     for thread in threads:
         title, status, prs = thread["title"], thread["status"], thread["prs"]
-        if title == "desk":
+        if title == "desk" or title.startswith("routine - "):
             continue
         item = by_thread.get(thread["id"])
         effort = effort_of(title, item, efforts)

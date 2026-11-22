@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+"""Print the PRs that wait on my review and need a pre-read, or save a pre-read to their Incoming entry."""
+
+from __future__ import annotations
+
+import argparse
+import datetime
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import (  # noqa: E402
+    CLOSED_STATUSES,
+    DESK,
+    INCOMING,
+    PREREADS,
+    SHOWN_INCOMING,
+    all_items,
+    in_window,
+    locked,
+    write_json,
+)
+
+WATCH = DESK / "watch.json"
+PER_DAY = 5
+LOG_DAYS = 14
+VERDICTS = ["ready", "almost", "not-ready"]
+
+
+def gh(*args: str) -> object:
+    result = subprocess.run(["gh", *args], capture_output=True, text=True)
+    if result.returncode:
+        raise RuntimeError(result.stderr.strip() or f"gh exit {result.returncode}")
+    return json.loads(result.stdout or "null")
+
+
+def under_review(items: dict[str, dict]) -> set[str]:
+    """PR URLs that an open, requested or started review item covers."""
+    found = set()
+    for item in items.values():
+        if item.get("kind") != "review" or item["status"] in CLOSED_STATUSES:
+            continue
+        found.update(u for u in [item.get("pr"), *(item.get("prs") or [])] if u)
+        found.update(re.findall(r"https://github\.com/[^/\s]+/[^/\s]+/pull/\d+", item.get("brief") or ""))
+    return found
+
+
+def due_prs(found: list[dict], log: list[dict], items: dict[str, dict], me: str, today: str) -> list[dict]:
+    """The found PRs that need a pre-read, the longest waiting first, within today's cap and once a day per PR."""
+    todays = [entry for entry in log if entry["at"][:10] == today]
+    read = {entry["url"]: entry["sha"] for entry in log}
+    skip = under_review(items) | {entry["url"] for entry in todays}
+    due = []
+    for pr in sorted(found, key=lambda p: p["created_at"]):
+        if len(due) >= PER_DAY - len(todays):
+            break
+        if pr["user"]["login"] == me or pr["user"]["type"] == "Bot" or pr["draft"] or pr["html_url"] in skip:
+            continue
+        if read.get(pr["html_url"]) == pr["head"]["sha"]:
+            continue
+        due.append({"url": pr["html_url"], "title": pr["title"], "author": pr["user"]["login"], "head": pr["head"]["sha"]})
+    return due
+
+
+def load_log() -> dict:
+    return json.loads(PREREADS.read_text()) if PREREADS.exists() else {"log": [], "error": None}
+
+
+def pull(url: str) -> dict:
+    owner, repo, number = re.match(r"https://github\.com/([^/]+)/([^/]+)/pull/(\d+)", url).groups()
+    return gh("api", f"repos/{owner}/{repo}/pulls/{number}")
+
+
+def close_entry(entry: dict, pr: dict) -> None:
+    entry["status"] = "closed"
+    entry["news"] = [*entry.get("news", []), "merged" if pr["merged_at"] else "closed"]
+
+
+def sweep(found: dict[str, dict]) -> None:
+    """Close the pre-read entries of PRs that closed, and stop showing pre-reads of PRs that no longer wait on me."""
+    data = json.loads(INCOMING.read_text()) if INCOMING.exists() else {}
+    gone = {
+        url: pull(url)
+        for url, entry in data.items()
+        if entry.get("preread") and entry["status"] in SHOWN_INCOMING and url not in found
+    }
+    if not gone:
+        return
+    with locked(INCOMING):
+        data = json.loads(INCOMING.read_text())
+        for url, pr in gone.items():
+            entry = data[url]
+            if pr["state"] == "closed":
+                close_entry(entry, pr)
+            elif entry["status"] == "needs-you" and entry.get("action") == entry["preread"]["action"]:
+                entry["status"] = "waiting"
+        write_json(INCOMING, data)
+
+
+def due(args: argparse.Namespace) -> None:
+    if not in_window(datetime.datetime.now()):
+        return
+    queries = (json.loads(WATCH.read_text()) if WATCH.exists() else {}).get("prereads") or []
+    state = load_log()
+    try:
+        found: dict[str, dict] = {}
+        for query in queries:
+            hits = gh("api", "-X", "GET", "search/issues", "-f", f"q={query} is:pr is:open", "-f", "per_page=50")
+            for hit in hits["items"]:
+                if hit["html_url"] not in found:
+                    found[hit["html_url"]] = gh("api", hit["pull_request"]["url"].replace("https://api.github.com/", ""))
+        sweep(found)
+        me = gh("api", "user")["login"]
+    except RuntimeError as err:
+        error = (str(err).splitlines() or ["gh failed"])[-1]
+        write_json(PREREADS, {**state, "error": {"at": datetime.datetime.now().isoformat(timespec="seconds"), "text": error}})
+        sys.exit(f"pre-read failed: {error}")
+    write_json(PREREADS, {**state, "error": None})
+    for pr in due_prs(list(found.values()), state["log"], all_items(), me, datetime.date.today().isoformat()):
+        print(json.dumps(pr))
+
+
+def save(args: argparse.Namespace) -> None:
+    try:
+        pr = pull(args.url)
+    except RuntimeError as err:
+        sys.exit(f"pre-read failed: {(str(err).splitlines() or ['gh failed'])[-1]}")
+    if pr["state"] == "closed":
+        with locked(INCOMING):
+            data = json.loads(INCOMING.read_text()) if INCOMING.exists() else {}
+            if args.url in data:
+                close_entry(data[args.url], pr)
+                write_json(INCOMING, data)
+        print("the PR closed, no pre-read saved")
+        return
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    preread = {
+        "sha": args.sha,
+        "verdict": args.verdict,
+        "minutes": args.minutes,
+        "action": args.action,
+        "draft": Path(args.draft_file).read_text().strip() if args.draft_file else None,
+        "text": Path(args.text_file).read_text().strip(),
+        "file": str(Path(args.text_file).resolve()),
+        "at": datetime.datetime.now().isoformat(timespec="seconds"),
+    }
+    with locked(INCOMING):
+        data = json.loads(INCOMING.read_text()) if INCOMING.exists() else {}
+        entry = data.get(args.url) or {
+            "url": args.url,
+            "kind": "pr",
+            "title": args.title,
+            "news": ["waits on your review"],
+            "posts": [],
+            "source": "pre-read",
+        }
+        entry.update(
+            {"preread": preread, "status": "needs-you", "action": args.action, "draft": preread["draft"], "updated": now}
+        )
+        entry.pop("snoozed", None)
+        data[args.url] = entry
+        write_json(INCOMING, data)
+    state = load_log()
+    kept = (datetime.date.today() - datetime.timedelta(days=LOG_DAYS)).isoformat()
+    log = [entry for entry in state["log"] if entry["at"][:10] >= kept]
+    log.append({"url": args.url, "sha": args.sha, "verdict": args.verdict, "at": preread["at"]})
+    write_json(PREREADS, {**state, "log": log})
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p_due = sub.add_parser("due", help="print one JSON line per PR to pre-read, nothing outside weekdays 8:00 to 20:00")
+    p_due.set_defaults(func=due)
+
+    p_save = sub.add_parser("save", help="put a pre-read on the PR's Incoming entry and show it on the Now tab")
+    p_save.add_argument("url")
+    p_save.add_argument("--sha", required=True, help="the head commit the pre-read read")
+    p_save.add_argument("--title", required=True, help="the PR title, used when the PR has no Incoming entry yet")
+    p_save.add_argument("--verdict", required=True, choices=VERDICTS, help="how ready the PR is for my review")
+    p_save.add_argument("--minutes", required=True, type=int, help="my minutes for the review")
+    p_save.add_argument("--action", required=True, help="what I should do, in one line")
+    p_save.add_argument("--text-file", required=True, help="the full pre-read")
+    p_save.add_argument("--draft-file", help="a comment I can post, for ask for changes")
+    p_save.set_defaults(func=save)
+
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

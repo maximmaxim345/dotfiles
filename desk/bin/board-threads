@@ -19,7 +19,7 @@ PR_CHECK = DESK / "state" / "pr-check.json"
 T3 = Path.home() / ".t3" / "userdata"
 LIVE_RUNS = {"preparing", "queued", "starting", "running"}
 RUN_STATUSES = LIVE_RUNS | {"idle", "waiting", "completed", "interrupted", "failed", "cancelled", "rolled_back"}
-UNSTARTED = {"new", "open", "next", "requested"}
+UNSTARTED = {"new", "open", "requested"}
 CLOSED = {"done", "dropped"}
 COLUMNS = {
     "orchestration_v2_projection_threads": {"thread_id", "project_id", "title", "archived_at", "deleted_at", "payload_json"},
@@ -91,6 +91,7 @@ def from_db(db: Path) -> list[dict]:
                 "root": root,
                 "branch": payload.get("branch"),
                 "status": status,
+                "ended": completed_at,
                 "settled": payload["settledOverride"] == "settled",
                 "snoozedUntil": until if until and until > now and status != "waiting" and not failed_since else None,
                 "lastUser": parse_time(last_user),
@@ -255,7 +256,7 @@ def build(threads: list[dict], items: list[dict], efforts: set[str], old: dict) 
         if item.get("thread") and (current is None or current["status"] in CLOSED or item["status"] not in CLOSED):
             by_thread[item["thread"]] = item
     before = {name: {e["thread"]: e for e in old.get(name) or []} for name in ("needsYou", "waiting")}
-    lists: dict[str, list[dict]] = {name: [] for name in ("needsYou", "waiting", "snoozed", "working", "unassigned")}
+    lists: dict[str, list[dict]] = {name: [] for name in ("needsYou", "waiting", "snoozed", "working", "failed", "unassigned")}
     managers = {}
     for thread in threads:
         title, status, prs = thread["title"], thread["status"], thread["prs"]
@@ -302,6 +303,8 @@ def build(threads: list[dict], items: list[dict], efforts: set[str], old: dict) 
             kept = before["waiting"].get(thread["id"])
             still_open = all(p["state"] not in ("merged", "closed") for p in prs)
             lists["waiting"].append({**entry, "why": kept["why"] if kept and still_open else describe("settled", prs)})
+        elif status in ("failed", "interrupted") and item:
+            lists["failed"].append({**entry, "why": describe(status, prs), "since": thread.get("ended")})
         else:
             lists["working"].append({**entry, "why": describe(status if status in ("failed", "interrupted") else "idle", prs)})
     stamp = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")

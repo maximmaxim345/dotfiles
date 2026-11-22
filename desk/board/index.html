@@ -7,301 +7,263 @@
 <style>
   :root {
     color-scheme: light dark;
-    --bg: #faf9f5; --panel: #ffffff; --sunk: #f0eee6; --ink: #1f1e1d; --ink-2: #3d3d3a; --muted: #87867f;
-    --line: #e8e6dc; --line-2: #d8d5c8; --accent: #c96442; --accent-ink: #ffffff; --accent-soft: #f5e3da;
-    --red: #c4473a; --amber: #c08532; --gray: #a3a198; --green: #5f8a4e; --blue: #4a78b5; --violet: #8a6bb8;
-    --shadow: 0 1px 2px rgba(31,30,29,.06), 0 2px 8px rgba(31,30,29,.04);
-    --shadow-lg: 0 12px 40px rgba(31,30,29,.18); --scrim: rgba(20,20,19,.28);
-    --radius: 10px; --font: ui-sans-serif, -apple-system, "SF Pro Text", system-ui, sans-serif;
-    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --bg: #f7f7f5; --surface: #ffffff; --surface-2: #f0f0ec; --text: #1c1c1a; --muted: #6b6b66; --border: #dcdcd6;
+    --accent: #2f5fd0; --accent-soft: #e6ecfb; --good: #1f7a45; --good-soft: #e3f3e9; --warn: #a8650a; --warn-soft: #fbf0dc;
+    --bad: #b3322b; --bad-soft: #fbe6e4; --radius: 8px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #1c1b19; --panel: #262624; --sunk: #222120; --ink: #f2f0e8; --ink-2: #d6d3c8; --muted: #9a978d;
-      --line: #34332f; --line-2: #45433e; --accent: #d97757; --accent-ink: #1c1b19; --accent-soft: #3a2a23;
-      --shadow: 0 1px 2px rgba(0,0,0,.3); --shadow-lg: 0 12px 40px rgba(0,0,0,.5); --scrim: rgba(0,0,0,.6);
+      --bg: #161615; --surface: #1f1f1d; --surface-2: #292927; --text: #ecece8; --muted: #a0a09a; --border: #3a3a37;
+      --accent: #8fb0ff; --accent-soft: #1f2b4a; --good: #6fcf97; --good-soft: #17301f; --warn: #e5b25d; --warn-soft: #3a2c12;
+      --bad: #f08a83; --bad-soft: #3d1c1a;
     }
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 var(--font); -webkit-font-smoothing: antialiased; }
-  button, input, select, textarea { font: inherit; color: inherit; }
-  button { cursor: pointer; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 var(--font); padding-bottom: 96px; }
+  h2, h3 { line-height: 1.25; margin: 0 0 8px; }
   a { color: var(--accent); }
-  input[type=checkbox] { accent-color: var(--accent); }
-  .btn { border: 1px solid var(--line-2); background: var(--panel); border-radius: 8px; padding: 6px 12px; line-height: 1.2; white-space: nowrap; }
-  .btn:hover { border-color: var(--muted); }
-  .btn:disabled { opacity: .45; cursor: default; }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
-  .btn.primary:hover { filter: brightness(1.05); }
-  .btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
-  .btn.ghost:hover { color: var(--ink); background: var(--sunk); }
-  .btn.danger { color: var(--red); }
-  kbd { font: 11px var(--mono); border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; color: var(--muted); }
-  select, input[type=search] { border: 1px solid var(--line-2); background: var(--panel); border-radius: 8px; padding: 6px 10px; }
-  select:focus, input:focus, textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
-
-  header { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
-  .top { display: flex; align-items: center; gap: 12px; padding: 12px 20px; }
-  .brand { display: flex; align-items: center; gap: 8px; font-weight: 650; font-size: 16px; letter-spacing: -.01em; }
-  .brand .mark { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); display: grid; place-items: center; color: var(--accent-ink); font-size: 13px; }
-  .stats { display: flex; gap: 6px; margin-left: 8px; flex-wrap: wrap; min-width: 0; }
-  .stat { font-size: 12px; color: var(--muted); padding: 3px 8px; border-radius: 999px; background: var(--sunk); white-space: nowrap; }
-  .stat b { color: var(--ink); font-weight: 600; }
-  .stat.hot { background: var(--accent-soft); color: var(--accent); }
-  .stat.hot b { color: var(--accent); }
-  .stat.jump { cursor: pointer; }
-  .stat.jump:hover { filter: brightness(.95); }
-  #needsWrap, #incomingWrap, #board { scroll-margin-top: 110px; }
+  code, pre, .mono { font-family: var(--mono); font-size: 13px; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+  .shell { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
   .grow { flex: 1; }
-  .banner { margin: 0 20px 12px; padding: 8px 12px; border-radius: 8px; font-size: 13px; background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red); }
-  .search { position: relative; }
-  .search input { width: 220px; padding-left: 30px; }
-  .search svg { position: absolute; left: 9px; top: 50%; translate: 0 -50%; color: var(--muted); }
-  .filters { display: flex; gap: 8px; align-items: center; padding: 0 20px 12px; flex-wrap: wrap; }
-  .filters label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-  .filters select { padding: 4px 8px; font-size: 13px; }
-  .auto { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-  button.chip { border: 1px solid var(--line-2); cursor: pointer; padding: 2px 8px; font-size: 12px; max-width: none; }
-  button.chip.effort { border-color: var(--accent); }
-  .lanehead select { font-size: 12px; padding: 1px 6px; border-radius: 6px; }
+  .muted { color: var(--muted); }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; line-height: 18px; background: var(--surface-2); color: var(--muted); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .tag.good { background: var(--good-soft); color: var(--good); }
+  .tag.warn { background: var(--warn-soft); color: var(--warn); }
+  .tag.bad { background: var(--bad-soft); color: var(--bad); }
+  .tag.accent { background: var(--accent-soft); color: var(--accent); }
+  .btn { padding: 6px 12px; min-height: 36px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 600; }
+  .btn.danger { color: var(--bad); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .quiet { background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0 6px; min-height: 36px; font-size: 13px; }
+  .quiet.ref { padding: 0; text-align: left; font-size: inherit; }
+  .refs { display: flex; flex-direction: column; align-items: flex-start; }
+  select, input[type=search], input[type=text] { min-height: 36px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 14px; }
+  textarea { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; background: var(--surface); resize: vertical; font-size: 14px; }
+  input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; vertical-align: -3px; }
 
-  main { padding: 16px 20px 120px; }
-  .section-title .toggle { cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
-  .section-title { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
-  .needs { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 20px; }
-  .nrow { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) 11em; grid-template-areas: "t w m"; gap: 2px 14px; align-items: baseline; padding: 6px 12px; border-left: 3px solid var(--accent); font-size: 13px; }
-  .nrow + .nrow { border-top: 1px solid var(--line); }
-  .nrow.waiting { border-left-color: var(--gray); }
-  .nrow.link { cursor: pointer; }
-  .nrow.link:hover { background: var(--sunk); }
-  .nrow .t { grid-area: t; font-weight: 600; overflow-wrap: anywhere; }
-  .nrow .w { grid-area: w; color: var(--ink-2); }
-  .nrow .eff { font-weight: 400; color: var(--muted); margin-left: 8px; font-size: 12px; }
-  .nrow .m { grid-area: m; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px 10px; font-size: 12px; white-space: nowrap; }
-  .nrow .m a { color: var(--accent); font-family: var(--font); }
-  .nrow .draft { margin-top: 4px; }
-  .nrow .post + .post { margin-top: 8px; }
-  .nrow .chat textarea { margin-top: 4px; }
-  .nrow .chat .btn { margin-top: 4px; }
-  .nrow .post .by { font-size: 12px; color: var(--muted); }
-  .nrow .draft pre { white-space: pre-wrap; font-family: var(--font); font-size: 12px; background: var(--sunk); border-radius: 6px; padding: 6px 8px; margin: 4px 0; }
-  .nrow .act { color: var(--ink); }
-  .nrow.group { font-weight: 600; font-size: 12px; color: var(--muted); background: var(--sunk); border-left-color: transparent; padding: 4px 12px; }
-  .empty-note { color: var(--muted); font-size: 13px; padding: 10px 0 18px; }
+  .top { position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .topbar { display: flex; align-items: center; gap: 10px 12px; padding: 10px 0 6px; flex-wrap: wrap; }
+  .brand { font-weight: 700; font-size: 18px; }
+  .health { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); flex: none; display: inline-block; }
+  .dot.bad { background: var(--bad); } .dot.off { background: var(--muted); }
+  .health.bad { color: var(--bad); font-weight: 600; }
+  .glance { font-size: 13px; color: var(--muted); }
+  .glance b { color: var(--text); }
+  .search { width: 200px; }
+  .tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; margin: 0 -4px; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { border: 0; background: none; color: var(--muted); padding: 8px 12px; min-height: 44px; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+  .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+  .tab .n { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 3px; }
+  .scope { font-size: 13px; color: var(--muted); }
 
-  #board { overflow-x: clip; }
-  .legend { display: grid; gap: 10px; align-items: center; padding: 8px 0; position: sticky; top: var(--head-h, 0px); z-index: 10; background: var(--bg); }
-  .legend .colhead { padding: 0 6px; min-width: 0; }
-  .legend .colhead.narrow { justify-content: center; gap: 3px; flex-direction: column; }
-  .legend .colhead.narrow .name { display: none; }
-  .cols { display: grid; gap: 10px; }
-  .colhead { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
-  .colhead .n { font-weight: 500; color: var(--muted); font-size: 12px; }
-  .colhead .dot { width: 8px; height: 8px; border-radius: 50%; }
-  .colhead select { min-width: 0; font-size: 12px; padding: 2px 6px; border-radius: 6px; }
-  .cellhead { display: flex; align-items: center; gap: 6px; padding: 2px 4px 0; font-size: 12px; font-weight: 600; color: var(--ink-2); }
-  .cellhead .n { font-weight: 500; color: var(--muted); }
-  .cellhead .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
-  .cell.empty { padding: 8px 0; align-items: center; }
-  .cell.empty .cellhead { writing-mode: vertical-rl; padding: 0; color: var(--muted); font-weight: 500; white-space: nowrap; }
-  .cell.blank { background: color-mix(in srgb, var(--sunk) 50%, transparent); }
-  .cell.blank .cellhead { color: var(--muted); font-weight: 500; }
-  .lane { margin-bottom: 14px; }
-  .lanehead { display: flex; align-items: center; gap: 8px; padding: 8px 4px; cursor: pointer; user-select: none; border-top: 1px solid var(--line); }
-  .lanehead .chev { transition: rotate .15s; color: var(--muted); }
-  .lane.collapsed .chev { rotate: -90deg; }
-  .lanehead .name { font-weight: 600; }
-  .lanehead .sub { color: var(--muted); font-size: 12px; }
-  .lane.collapsed .cols { display: none; }
-  .lanehead .mini { display: inline-flex; gap: 10px; margin-left: 6px; font-size: 12px; color: var(--muted); }
-  .lanehead .mini > span { display: inline-flex; align-items: center; gap: 4px; }
-  .lanehead .mini .dot { width: 6px; height: 6px; border-radius: 50%; }
-  .lane.collapsed .lanehead { padding: 6px 4px; }
-  .lane.collapsed { margin-bottom: 0; }
-  .cell { background: var(--sunk); border-radius: var(--radius); padding: 6px; min-height: 56px; display: flex; flex-direction: column; gap: 6px; transition: background .1s, outline-color .1s; outline: 2px dashed transparent; outline-offset: -2px; }
-  .cell.can-drop { outline-color: var(--line-2); }
-  .cell.over { outline-color: var(--accent); background: var(--accent-soft); }
-  .more { font-size: 12px; color: var(--muted); text-align: center; padding: 4px; border-radius: 6px; }
-  .more:hover { background: var(--panel); color: var(--ink); }
+  .banner { margin: 14px 0 0; padding: 12px 14px; border-radius: var(--radius); border: 1px solid var(--bad); background: var(--bad-soft); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .banner .bt { flex: 1 1 260px; font-size: 14px; }
+  .banner .bt b { display: block; color: var(--bad); }
+  .panel { padding-top: 16px; }
+  .cols { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+  .sh { display: flex; align-items: baseline; gap: 8px; margin: 18px 0 8px; flex-wrap: wrap; }
+  .sh:first-child { margin-top: 0; }
+  .sh h2 { margin: 0; font-size: 16px; }
+  .sh .n { color: var(--muted); font-size: 13px; }
+  .sh .act { margin-left: auto; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .hint { font-size: 13px; color: var(--muted); margin: -4px 0 8px; }
+  .empty { padding: 14px; color: var(--muted); font-size: 14px; }
 
-  .card { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px 8px 12px; box-shadow: var(--shadow); cursor: pointer; transition: border-color .1s, transform .1s; }
-  .card:hover { border-color: var(--line-2); }
-  .card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-  .card.active { border-color: var(--accent); }
-  .card.dragging { opacity: .4; }
-  .cell[data-col=done] .card { opacity: .7; }
-  .cell[data-col=done] .card:hover { opacity: 1; }
-  .card .bar { position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; }
-  .card .title { font-size: 13px; font-weight: 550; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .card .why { font-size: 12px; color: var(--ink-2); margin-top: 3px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .card .meta { display: flex; gap: 5px; align-items: center; margin-top: 6px; flex-wrap: wrap; font-size: 11px; color: var(--muted); }
-  .chip { font-size: 11px; padding: 1px 6px; border-radius: 5px; background: var(--sunk); color: var(--ink-2); white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
-  .chip.effort { background: var(--accent-soft); color: var(--accent); }
-  .chip.new { background: color-mix(in srgb, var(--blue) 16%, transparent); color: var(--blue); }
-  .chip.pick { background: var(--accent); color: var(--accent-ink); }
-  .chip.blocked { background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red); }
-  .chip.hot { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-  .chip.ok { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); }
-  .stat .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
-  .blocker { display: flex; align-items: center; gap: 6px; font-size: 13px; }
-  .blocker .x { border: 0; background: none; color: var(--muted); padding: 0 4px; }
+  .list { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .r { display: grid; grid-template-columns: 112px minmax(0, 1fr) 64px auto; grid-template-areas: "k main mins act"; gap: 12px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--border); cursor: pointer; min-height: 58px; }
+  .r:first-child { border-top: 0; }
+  .r:hover { background: var(--surface-2); }
+  .r:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .r .k { grid-area: k; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; min-width: 0; }
+  .r .main { grid-area: main; min-width: 0; }
+  .r .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .r .t code { font-size: .92em; }
+  .r .c { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .r .m { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .r .m a { color: var(--accent); }
+  .budget .over { margin: 8px 0 0; font-size: 14px; color: var(--warn); font-weight: 600; }
+  .glance-auto { padding: 0; font-size: 13px; min-height: 0; }
+  .r .c .eff { color: var(--text); }
+  .r .mins { grid-area: mins; text-align: right; font-size: 13px; font-variant-numeric: tabular-nums; line-height: 1.3; }
+  .r .mins b { display: block; font-size: 14px; }
+  .r .mins span { color: var(--muted); }
+  .r .mins span.old { color: var(--warn); font-weight: 600; }
+  .r .act { grid-area: act; display: flex; gap: 6px; }
+  .r .act .btn { font-size: 13px; padding: 4px 10px; }
+  .r.child { padding-left: 38px; }
+  .r.dim { opacity: .65; }
+  .r.selected { background: var(--accent-soft); }
+  .r.dragging { opacity: .4; }
+  .kind { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; line-height: 18px; border: 1px solid var(--border); background: var(--surface); color: var(--text); white-space: nowrap; font-weight: 600; }
+  .kind.decide, .kind.push, .kind.post { border-color: var(--accent); color: var(--accent); }
+  .kind.failed, .kind.desk { border-color: var(--bad); color: var(--bad); }
+  .size { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--surface-2); font-size: 12px; font-weight: 700; }
+  @media (max-width: 640px) {
+    .r { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "k mins" "main main"; gap: 4px 10px; padding: 12px 14px; }
+    .r .act { display: none; }
+    .r .t, .r .c { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .r .mins { display: flex; gap: 8px; align-items: baseline; }
+    .r .mins b { display: inline; }
+    .r.child { padding-left: 28px; }
+    .search { width: 100%; order: 5; }
+    .sheet { width: 100%; }
+    .ent .links a, .ent .links button { min-height: 40px; }
+  }
+
+  .rail .card { margin-bottom: 12px; }
+  .rail h3 { font-size: 14px; margin-bottom: 6px; }
+  .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 5px 0; border-top: 1px solid var(--border); }
+  .kv:first-of-type { border-top: 0; }
+  .kv span:first-child { color: var(--muted); }
+  .mini { font-size: 13px; padding: 6px 0; border-top: 1px solid var(--border); cursor: pointer; }
+  .mini:first-of-type { border-top: 0; }
+  .mini .muted { display: block; font-size: 12px; }
+
+  .budget { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px; }
+  .budget .big { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .meter { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--surface-2); border: 1px solid var(--border); margin: 10px 0 6px; }
+  .meter .a { background: var(--accent); }
+  .meter .b { background: var(--accent-soft); border-left: 1px solid var(--accent); }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .ctl { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; font-size: 13px; }
+  .cut { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--surface-2); border-top: 1px dashed var(--accent); border-bottom: 1px dashed var(--accent); font-size: 13px; color: var(--accent); font-weight: 600; }
+  .later-h { padding: 6px 14px; font-size: 12px; color: var(--muted); background: var(--surface-2); text-transform: uppercase; letter-spacing: .04em; display: flex; align-items: center; gap: 8px; }
+  .drop { min-height: 8px; }
+  .drop.over { outline: 2px dashed var(--accent); outline-offset: -2px; }
+
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+  .chipbtn { font-size: 13px; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 999px; padding: 0 12px; min-height: 36px; cursor: pointer; }
+  .chipbtn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .grp { margin-bottom: 8px; }
+  .gh { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; min-height: 48px; cursor: pointer; color: var(--text); }
+  .gh .gn { font-weight: 600; }
+  .gh .gc { color: var(--muted); font-size: 13px; }
+  .gh .chev { margin-left: auto; color: var(--muted); font-size: 13px; }
+  .grp.open .gh { border-radius: var(--radius) var(--radius) 0 0; }
+  .grp .gb { border: 1px solid var(--border); border-top: 0; border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; background: var(--surface); }
+  .grp .gb .list { border: 0; border-radius: 0; }
+  .gfoot { padding: 8px 14px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  .ent { padding: 10px 14px; border-top: 1px solid var(--border); font-size: 14px; }
+  .ent:first-child { border-top: 0; }
+  .ent .t { font-weight: 600; overflow-wrap: anywhere; }
+  .ent .c { font-size: 13px; color: var(--muted); }
+  .ent .links { display: flex; flex-wrap: wrap; gap: 0 2px; margin-top: 2px; }
+  .ent .links a, .ent .links button { font-size: 13px; min-height: 32px; display: inline-flex; align-items: center; padding: 0 6px; }
+  .ent.group { background: var(--surface-2); font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; padding: 6px 14px; }
+  details.fold { margin-top: 4px; font-size: 13px; }
+  details.fold > summary { cursor: pointer; color: var(--accent); min-height: 28px; line-height: 28px; }
+  details.fold pre { white-space: pre-wrap; font-family: var(--font); background: var(--surface-2); border-radius: 6px; padding: 6px 8px; margin: 4px 0; }
+  .post + .post { margin-top: 8px; }
+  .post .by, .comment .who { font-size: 12px; color: var(--muted); }
+  .chat .btn { margin-top: 4px; }
+
+  .wt { padding: 10px 14px; border-top: 1px solid var(--border); }
+  .wt:first-child { border-top: 0; }
+  .wt .p { font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+  .wt .muted { font-size: 12px; display: block; }
+
+  .scrim { position: fixed; inset: 0; background: var(--text); opacity: .25; z-index: 40; }
+  .sheet { position: fixed; top: 0; right: 0; bottom: 0; width: 560px; max-width: 100%; background: var(--bg); border-left: 1px solid var(--border); z-index: 50; display: flex; flex-direction: column; }
+  .sheet .sh-top { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface); flex-wrap: wrap; }
+  .sheet .sh-body { flex: 1; overflow-y: auto; padding: 16px; }
+  .sheet .sh-bar { border-top: 1px solid var(--border); background: var(--surface); padding: 10px 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .sheet .sh-bar .btn.primary { flex: 1 1 140px; }
+  .sheet h2 { font-size: 18px; margin: 4px 0 4px; }
+  .sheet h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 18px 0 6px; }
+  .needsbox { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--radius); padding: 10px 12px; margin: 12px 0; font-size: 14px; display: grid; gap: 8px; }
+  .needsbox b.l { display: block; color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .fields { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 6px 10px; font-size: 14px; margin: 12px 0; align-items: center; }
+  .fields dt { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+  .fields dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  .fields select { width: 100%; }
+  .grants { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; margin-top: 6px; }
+  .grants label { min-height: 32px; display: inline-flex; align-items: center; gap: 6px; }
+  .blocker { display: flex; align-items: center; gap: 6px; font-size: 14px; }
   .blocker.resolved { color: var(--muted); text-decoration: line-through; }
-  .card .age { margin-left: auto; }
-  .card .check { position: absolute; top: 6px; right: 6px; width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--line-2); background: var(--panel); display: none; place-items: center; }
-  .card:hover .check, .card.selected .check { display: grid; }
-  .card.selected .check { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-
-  .bulk { position: fixed; left: 50%; bottom: 20px; translate: -50% 0; z-index: 30; width: max-content; max-width: calc(100vw - 16px); flex-wrap: wrap; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 8px 8px 8px 16px; display: flex; gap: 6px; align-items: center; box-shadow: var(--shadow-lg); }
-  .bulk .btn { background: transparent; border-color: color-mix(in srgb, var(--bg) 25%, transparent); color: var(--bg); padding: 5px 10px; }
-  .bulk .btn:hover { background: color-mix(in srgb, var(--bg) 12%, transparent); }
-  .bulk select { background: transparent; color: var(--bg); border-color: color-mix(in srgb, var(--bg) 25%, transparent); padding: 5px 8px; }
-  .bulk select option { color: var(--ink); background: var(--panel); }
-  .bulk .count { font-weight: 600; margin-right: 6px; }
-
-  .scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 40; }
-  .drawer { position: fixed; top: 4vh; left: 50%; translate: -50% 0; width: min(1200px, calc(100% - 48px)); height: 92vh; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; z-index: 41; display: flex; flex-direction: column; box-shadow: var(--shadow-lg); }
-  .drawer .head { padding: 18px 20px 12px; border-bottom: 1px solid var(--line); }
-  .drawer h2 { font-size: 17px; line-height: 1.35; margin: 6px 0 10px; letter-spacing: -.01em; }
-  .drawer .body { overflow: auto; padding: 16px 20px; flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 0 28px; align-items: start; }
-  .drawer .body .kv { order: 1; }
-  .drawer .foot { padding: 12px 20px; border-top: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; }
-  .kv { display: grid; grid-template-columns: 90px 1fr; gap: 6px 10px; font-size: 13px; margin-bottom: 16px; align-items: center; }
-  .kv dt { color: var(--muted); }
-  .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
-  .kv select { padding: 3px 6px; font-size: 13px; }
-  .block-title { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin: 18px 0 6px; }
-  .prose { white-space: pre-wrap; font-size: 13.5px; color: var(--ink-2); margin: 0; }
-  .md { font-size: 13.5px; color: var(--ink-2); overflow-wrap: anywhere; }
-  .md :is(h1, h2, h3, h4, h5, h6) { font-size: 14.5px; color: var(--ink); margin: 16px 0 6px; }
+  .md { font-size: 14px; overflow-wrap: anywhere; }
+  .md :is(h1, h2, h3, h4, h5, h6) { font-size: 15px; margin: 14px 0 6px; text-transform: none; letter-spacing: 0; color: var(--text); }
   .md :is(p, ul, ol, pre) { margin: 0 0 10px; }
   .md :is(ul, ol) { padding-left: 22px; }
-  .md code { font: 12px var(--mono); background: var(--sunk); padding: 1px 4px; border-radius: 4px; }
-  .md pre { background: var(--sunk); padding: 8px 10px; border-radius: 8px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .md pre code { padding: 0; }
-  .md a { color: var(--accent); }
-  .comment { border-left: 2px solid var(--line-2); padding: 2px 0 2px 10px; margin: 8px 0; font-size: 13px; }
-  .replies { margin-left: 18px; }
-  .glance { background: var(--sunk); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; display: grid; gap: 6px; margin-bottom: 14px; }
-  .glance .ask { font-size: 14px; border-left: 3px solid var(--accent); padding-left: 10px; margin-left: -14px; padding-block: 2px; }
-  .glance .block-title { margin: 6px 0 2px; }
-  .glance .md :is(p, ul, ol) { margin-bottom: 4px; }
-  .questions { border: 1px solid var(--accent); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; }
-  h4.sec { font-size: 14.5px; margin: 16px 0 6px; }
-  details.sec { margin: 8px 0; }
-  details.sec > summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--ink); }
-  details.sec[open] > summary { margin-bottom: 6px; }
-  .meta { font-size: 12px; color: var(--muted); margin: 18px 0 0; }
-  .muted { color: var(--muted); cursor: pointer; font-size: 12px; }
+  .md code { background: var(--surface-2); padding: 1px 4px; border-radius: 4px; font-size: 12.5px; }
+  .md pre { background: var(--surface-2); padding: 8px 10px; border-radius: 6px; overflow: auto; white-space: pre-wrap; }
+  .md pre code { padding: 0; background: none; }
+  .sec { border-top: 1px solid var(--border); padding: 6px 0; }
+  .sec > summary { cursor: pointer; font-weight: 600; min-height: 32px; line-height: 32px; }
+  .comment { border-left: 2px solid var(--border); padding: 2px 0 2px 10px; margin: 8px 0; font-size: 14px; }
   .comment.desk { border-left-color: var(--accent); }
-  .comment .who { font-size: 12px; color: var(--muted); }
-  textarea { width: 100%; border: 1px solid var(--line-2); border-radius: 8px; padding: 8px 10px; background: var(--panel); resize: vertical; }
-  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--sunk); }
-  .pill .dot { width: 7px; height: 7px; border-radius: 50%; }
-  .mono { font-family: var(--mono); font-size: 12px; }
-  :is(.card .title, .nrow .t, .drawer h2) code { font: .92em var(--mono); background: var(--sunk); padding: 0 3px; border-radius: 4px; }
+  .replies { margin-left: 18px; }
+  .meta { font-size: 12px; color: var(--muted); margin-top: 18px; }
 
-  .modal { position: fixed; z-index: 41; left: 50%; top: 12vh; translate: -50% 0; width: min(640px, calc(100% - 32px)); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-lg); padding: 18px; }
+  .modal { position: fixed; z-index: 50; left: 50%; top: 10vh; translate: -50% 0; width: min(640px, calc(100% - 24px)); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
   .modal h3 { margin: 0 0 4px; font-size: 16px; }
   .modal p { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
-  .modal textarea { min-height: 180px; font-size: 14px; }
-  .modal .row { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+  .modal textarea { min-height: 180px; }
+  .modal .row { margin-top: 10px; }
   .modal .row select { flex: 1 1 200px; min-width: 0; }
-  .toast { position: fixed; bottom: 20px; right: 20px; z-index: 50; background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px; box-shadow: var(--shadow-lg); }
-  [hidden] { display: none !important; }
-
-  @media (max-width: 900px) {
-    header { position: static; }
-    .top { flex-wrap: wrap; padding: 10px 12px; }
-    .top .grow { display: none; }
-    .stats { order: 3; width: 100%; margin-left: 0; flex-wrap: wrap; }
-    .search { flex: 1; }
-    .search input { width: 100%; }
-    .filters { padding: 0 12px 10px; }
-    main { padding: 12px 12px 120px; }
-    .nrow { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "t m" "w w"; }
-    .drawer { top: 0; height: 100%; width: 100%; border-radius: 0; }
-    .drawer .body { display: block; }
-  }
-  @media (max-width: 1000px) {
-    .cols { display: flex; flex-wrap: wrap; gap: 6px; }
-    .cell { flex: 1 1 100%; min-height: 0; }
-    .cell.empty { flex: 0 0 auto; order: 1; padding: 4px 10px; }
-    .cell.empty .cellhead { writing-mode: horizontal-tb; }
-    .cell.blank { flex: 0 0 auto; order: 1; padding: 4px 10px; min-height: 0; background: var(--sunk); }
-    .legend { display: flex; flex-wrap: wrap; gap: 4px 18px; position: static; }
-    .legend .colhead.narrow { flex-direction: row; }
-    .legend .colhead.narrow .name { display: inline; }
-  }
+  .bulk { position: fixed; left: 50%; bottom: 16px; translate: -50% 0; z-index: 30; width: max-content; max-width: calc(100vw - 16px); background: var(--text); color: var(--bg); border-radius: 12px; padding: 8px 8px 8px 16px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .bulk .btn, .bulk select { background: transparent; color: var(--bg); border-color: var(--muted); }
+  .bulk select option { color: var(--text); background: var(--surface); }
+  .toast { position: fixed; bottom: 20px; right: 20px; z-index: 60; background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 14px; max-width: calc(100vw - 40px); }
+  table.est { border-collapse: collapse; width: 100%; font-size: 13px; }
+  table.est td, table.est th { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--border); }
+  table.est th { color: var(--muted); font-weight: 600; }
 </style>
 </head>
 <body>
-<header>
-  <div class="top">
-    <div class="brand"><span class="mark">D</span>Desk</div>
-    <div class="stats" id="stats"></div>
-    <div class="grow"></div>
-    <div class="auto" id="spaceWrap" title="Spaces group efforts, like work and personal. Turning a space off hides it here and puts its idle threads away until you turn it on again."></div>
-    <div class="auto" id="autoWrap" title="Lets the desk start up to 5 work threads and 2 reviews on its own, on weekdays from 8:00 to 20:00. Threads that wait on reviewers don't count."></div>
-    <div class="search">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="5"/><path d="m11 11 3.5 3.5"/></svg>
-      <input type="search" id="q" placeholder="Search  /" autocomplete="off">
+<div class="top">
+  <div class="shell">
+    <div class="topbar">
+      <span class="brand">Desk</span>
+      <span class="health" id="health"></span>
+      <span class="glance" id="glance"></span>
+      <span class="grow"></span>
+      <input type="search" class="search" id="q" placeholder="Search  /" autocomplete="off" aria-label="Search items">
+      <span class="row"><button class="btn" type="button" id="captureBtn">Capture</button>
+      <button class="btn" type="button" id="settingsBtn">Settings</button></span>
     </div>
-    <button class="btn primary" id="captureBtn">Capture <kbd style="border-color:rgba(255,255,255,.4);color:inherit">C</kbd></button>
+    <nav class="tabs" role="tablist" aria-label="Board sections" id="tabs"></nav>
   </div>
-  <div class="banner" id="health" hidden></div>
-  <div class="filters">
-    <label>Group <select id="groupBy"><option value="effort">by effort</option><option value="repo">by repo</option><option value="none">no groups</option></select></label>
-    <label>Sort <select id="laneSort"><option value="activity">recent first</option><option value="name">by name</option></select></label>
-    <label>Space <select id="fSpace"></select></label>
-    <label>Effort <select id="fEffort"></select></label>
-    <label>Repo <select id="fRepo"></select></label>
-    <label>Label <select id="fLabel">
-      <option value="">any</option><option>user-visible bug</option><option>reachable but rare</option><option>theoretical</option>
-    </select></label>
-    <label>Thread <select id="fThread"><option value="">any</option><option value="yes">has a thread</option><option value="no">no thread</option></select></label>
-    <button class="btn ghost" id="clearFilters" hidden>Clear filters</button>
-    <span class="grow"></span>
-    <button class="btn ghost" id="collapseAll">Collapse all</button>
-    <button class="btn ghost" id="expandAll">Expand all</button>
-  </div>
-  <div class="filters" id="autoEfforts" hidden></div>
-</header>
-<main>
-  <div id="needsWrap"></div>
-  <div id="incomingWrap"></div>
-  <div id="board"></div>
+</div>
+<main class="shell">
+  <div id="banner"></div>
+  <section class="panel" id="panel"></section>
 </main>
 <div id="bulk" class="bulk" hidden></div>
 <div id="overlay"></div>
 <div id="toast" class="toast" hidden></div>
 
 <script>
-const COLUMNS = [
-  { key: "inbox", name: "Inbox", color: "var(--blue)", statuses: ["new"], hint: "Your raw notes. The desk sorts them into items." },
-  { key: "backlog", name: "Backlog", color: "var(--gray)", statuses: ["open"], hint: "The desk's picks come first" },
-  { key: "blocked", name: "Blocked", color: "var(--red)", statuses: [], hint: "Backlog items with an open blocker. They return to Backlog once their blockers are done or removed." },
-  { key: "next", name: "Next", color: "var(--accent)", statuses: ["next"], hint: "Your priority order. Drag to reorder." },
-  { key: "started", name: "In progress", color: "var(--amber)", statuses: ["requested", "started"], hint: "Drop items here to start them" },
-  { key: "review", name: "In review", color: "var(--violet)", statuses: [], hint: "Started items whose thread waits on reviewers or others. They return to In progress on news." },
-  { key: "done", name: "Done", color: "var(--green)", statuses: ["done", "dropped"] },
-];
-const DROP_STATUS = { backlog: "open", next: "next", started: "requested", done: "dropped" };
-const DROP_FROM = { backlog: ["new", "next", "requested", "started", "dropped"], next: ["new", "open", "requested", "started"], started: ["new", "open", "next"], done: ["new", "open", "next", "requested"] };
+const TABS = [["now", "Now"], ["today", "Today"], ["backlog", "Backlog"], ["incoming", "Incoming"], ["done", "Done"]];
+const KIND_NAME = { decide: "Decide", review: "Review", push: "Push OK", post: "Post OK", "device-test": "Test on device", question: "Answer", reply: "Reply",
+  start: "Start", failed: "Run failed", worktree: "Worktree", desk: "Desk" };
 const CLOSED = ["done", "dropped"];
-const LABEL_COLOR = { "user-visible bug": "var(--red)", "reachable but rare": "var(--amber)", "theoretical": "var(--gray)" };
-const cellLimit = () => ui.groupBy === "none" ? 40 : 6;
-const COMMENT_ICON = () => { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("width", "11"); s.setAttribute("height", "11"); s.setAttribute("viewBox", "0 0 16 16"); s.innerHTML = '<path d="M2 3h12v8H6l-3 3v-3H2z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>'; return s; };
-const store = JSON.parse(localStorage.getItem("desk-board") || "{}");
+const OLD_MINUTES = 2 * 1440;
+const params = new URLSearchParams(location.search);
+const store = (() => { try { return JSON.parse(localStorage.getItem("desk-board") || "{}"); } catch { return {}; } })();
 const ui = {
-  groupBy: store.groupBy || "effort", laneSort: store.laneSort || "activity", collapsed: new Set(store.collapsed || []), doneDays: store.doneDays || 7,
-  picked: new Set(), q: "", effort: new URLSearchParams(location.search).get("effort") || "", space: "", repo: "", label: "", thread: "", selected: new Set(), openId: null, expanded: new Set(), drag: null,
-  folds: new Set(), chatDrafts: {}, startNotes: {},
+  tab: TABS.some(t => t[0] === location.hash.slice(1)) ? location.hash.slice(1) : "now",
+  q: "", effort: params.get("effort") || "", space: "", repo: "", label: "", thread: "", groupBy: store.groupBy || "effort",
+  ready: false, seen: false, active: false, openGroups: new Set(store.openGroups || []), doneDays: store.doneDays || 7, showLater: false,
+  selecting: false, selected: new Set(), openId: null, capture: false, settings: false, highlight: null, drag: null,
+  folds: new Set(), chatDrafts: {}, startNotes: {}, picked: new Set(), proposalsOpen: null, blockerEdit: null,
 };
-let state = { items: [], threads: null, efforts: [], repos: [] };
+let state = { items: [], threads: null, efforts: [], repos: [], now: [], today: { rows: [], budget: 240, waiting: 0 }, incoming: [], proposals: [] };
 let lastJson = "";
 
 const $ = id => document.getElementById(id);
-function save() { localStorage.setItem("desk-board", JSON.stringify({ groupBy: ui.groupBy, laneSort: ui.laneSort, collapsed: [...ui.collapsed], doneDays: ui.doneDays })); }
+function save() { try { localStorage.setItem("desk-board", JSON.stringify({ groupBy: ui.groupBy, openGroups: [...ui.openGroups], doneDays: ui.doneDays })); } catch {} }
 function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
@@ -353,8 +315,9 @@ function markdown(text) {
   flush();
   return out.join("");
 }
+const md = text => Object.assign(el("div", { class: "md" }), { innerHTML: markdown(text) });
 function codeText(text) { return text.split(/`([^`]+)`/).map((part, i) => i % 2 ? el("code", {}, part) : part); }
-function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2200); }
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2600); }
 async function api(path, body) {
   const res = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
   const data = await res.json();
@@ -362,27 +325,534 @@ async function api(path, body) {
   return data;
 }
 async function post(path, body, msg) { setState(await api(path, body)); if (msg) toast(msg); }
-function guard(fn) { return async e => { const node = e.currentTarget; node.disabled = true; try { await fn(e); } finally { node.disabled = false; } }; }
+function guard(fn) { return async e => { e?.stopPropagation?.(); const node = e?.currentTarget; if (node) node.disabled = true; try { await fn(e); } finally { if (node) node.disabled = false; } }; }
+function button(label, fn, cls = "", attrs = {}) { return el("button", { class: `btn${cls ? " " + cls : ""}`, type: "button", ...attrs, onclick: guard(fn) }, label); }
 function setState(data) {
-  for (const id of Object.keys(ui.startNotes)) if (!["new", "open", "next"].includes(data.items.find(i => i.id === id)?.status)) delete ui.startNotes[id];
-  state = data; lastJson = JSON.stringify(data); render();
+  for (const id of Object.keys(ui.startNotes)) if (!["new", "open"].includes(data.items.find(i => i.id === id)?.status)) delete ui.startNotes[id];
+  const empty = { items: [], efforts: [], repos: [], now: [], incoming: [], proposals: [], goals: [], parked: [], askMinutes: {}, worktrees: {} };
+  state = { ...empty, ...data, today: { date: "", budget: 240, waiting: 0, rows: [], ...data.today } };
+  lastJson = JSON.stringify(data); render();
 }
 
-function age(date) {
-  const d = Math.floor((Date.now() - new Date(date).getTime()) / 86400000);
-  return d <= 0 ? "today" : d < 30 ? `${d}d` : d < 365 ? `${Math.floor(d / 30)}mo` : `${Math.floor(d / 365)}y`;
-}
-function blockers(item) {
-  return (item.blockedBy || []).map(b => { const other = state.items.find(i => i.id === b); return { key: b, text: other ? other.title : b, resolved: !!other && CLOSED.includes(other.status) }; });
-}
-function openBlockers(item) { return blockers(item).filter(b => !b.resolved); }
 function ago(iso) {
   const m = (Date.now() - new Date(iso).getTime()) / 60000;
-  return m < 60 ? `${Math.max(1, Math.round(m))}m` : m < 2880 ? `${Math.round(m / 60)}h` : `${Math.round(m / 1440)}d`;
+  return m < 60 ? `${Math.max(1, Math.round(m))}m` : m < 2880 ? `${Math.round(m / 60)}h` : m < 86400 ? `${Math.round(m / 1440)}d` : `${Math.round(m / 43200)}mo`;
 }
 function isOld(iso, minutes) { return !!iso && (Date.now() - new Date(iso).getTime()) / 60000 > minutes; }
-const OLD_MINUTES = 2 * 1440;
-const SECTION_LABEL = /^(goal|done when|done criteria|goal and done criteria|plan|suggested fix|next step|evidence|verified|done and verified|branch|branches|repo|repo and branch|rules|project rules|rules for this task|git-ignored files|ignored files|files|related|gaps|decisions that apply|kept on purpose|extra findings|open questions|context)\b/i;
+function localDate(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+const byId = id => state.items.find(i => i.id === id);
+function blockers(item) {
+  return (item.blockedBy || []).map(b => { const other = byId(b); return { key: b, text: other ? other.title : b, resolved: !!other && CLOSED.includes(other.status) }; });
+}
+function openBlockers(item) { return blockers(item).filter(b => !b.resolved); }
+function threadTitle(id) {
+  for (const list of ["needsYou", "working", "waiting", "snoozed", "failed", "unassigned"]) {
+    const hit = (state.threads?.[list] || []).find(x => x.thread === id);
+    if (hit) return hit.title;
+  }
+  return state.items.find(i => i.thread === id)?.title || null;
+}
+function threadState(id) {
+  const t = state.threads;
+  if (!id || !t) return null;
+  for (const [list, label] of [["needsYou", "needs you"], ["working", "working"], ["waiting", "waiting"], ["snoozed", "snoozed"], ["failed", "run failed"]]) {
+    const hit = (t[list] || []).find(x => x.thread === id);
+    if (hit) return { label, why: hit.until ? `until ${hit.until}` : hit.why || "" };
+  }
+  return null;
+}
+const listening = () => state.listening;
+const answerMsg = () => listening() ? "Sent. The desk passes it to the thread in a minute." : "Sent. The desk passes it on at its next sweep.";
+const startMsg = () => listening() ? "Starting. The desk launches it in a moment." : "Marked to start. The desk isn't listening, so type \"go\" in the desk thread.";
+const answer = (id, text, to) => post("/api/answer", { id, text, to }, answerMsg());
+function spaceOf(effort) { return state.spaces?.efforts?.[effort || ""] || "work"; }
+function spaceShown(effort) {
+  if (ui.effort || ui.space === "*") return true;
+  return ui.space ? spaceOf(effort) === ui.space : !(state.spaces?.off || []).includes(spaceOf(effort));
+}
+function inScope(effort) { return spaceShown(effort) && (!ui.effort || (effort || "") === (ui.effort === "-" ? "" : ui.effort)); }
+function effortTitle(slug) { return state.efforts.find(e => e.slug === slug)?.title || slug; }
+function threadUrl(id) { const env = state.threads?.environment; return env && id ? `t3code://threads/${encodeURIComponent(env)}/${encodeURIComponent(id)}` : null; }
+function threadLink(id, text) { const url = threadUrl(id); return url ? el("a", { href: url, title: "Open in T3 Code", onclick: e => e.stopPropagation() }, text || id) : el("span", { class: "mono" }, text || id); }
+function managerOf(effort) { return state.threads?.managers?.[effort] || null; }
+function isManager(id) { return !!id && Object.values(state.threads?.managers || {}).includes(id); }
+function isManagerItem(item) { return !!item.move?.manager || isManager(item.thread); }
+function startable(item) { return ["new", "open"].includes(item.status); }
+function todayRow(id) { return state.today.rows.find(r => r.id === id); }
+function minutesOf(item) { return item.minutes || ({ S: 10, M: 20, L: 40 })[item.size] || 20; }
+function itemState(i) {
+  if (i.status === "new") return ["Unsorted", "accent"];
+  if (i.status === "requested") return i.needs ? ["Needs you", "bad"] : ["Starting", "warn"];
+  if (i.status === "started") {
+    if (i.asks) return i.answer ? ["Answered", ""] : ["Asks you", "bad"];
+    const th = threadState(i.thread);
+    return th?.label === "waiting" ? ["Waiting", ""] : th?.label === "snoozed" ? ["Snoozed", ""] : th?.label === "run failed" ? ["Run failed", "bad"] : ["Started", "good"];
+  }
+  if (i.status === "done") return ["Done", "good"];
+  if (i.status === "dropped") return ["Dropped", ""];
+  if (openBlockers(i).length) return ["Blocked", "warn"];
+  if (i.thread) return ["Paused", ""];
+  if (i.suggested) return ["Desk pick", "accent"];
+  return null;
+}
+function tag(text, cls = "", title) { return el("span", { class: `tag${cls ? " " + cls : ""}`, title }, text); }
+function context(item, withEffort) {
+  const parts = [withEffort && item.effort && el("span", { class: "eff" }, effortTitle(item.effort)), item.why || item.summary || briefLine(item.brief), item.fromMe && `from you: ${item.fromMe}`].filter(Boolean);
+  return parts.flatMap((p, n) => n ? [" · ", p] : [p]);
+}
+function briefLine(brief) { return (brief || "").split("\n").map(l => l.replace(/^#+\s*|^[-*]\s+/, "").trim()).find(l => l && !/^(goal|done when|plan)$/i.test(l)) || ""; }
+
+function row({ kinds, title, context: ctx, meta, minutes, at, warn, action, onclick, cls = "", attrs = {} }) {
+  return el("div", { class: `r ${cls}`, tabindex: 0, role: "button", onclick, onkeydown: e => { if (e.key === "Enter" && e.target === e.currentTarget) onclick?.(e); }, ...attrs },
+    el("div", { class: "k" }, kinds),
+    el("div", { class: "main" }, el("div", { class: "t", title }, codeText(title)), ctx && el("div", { class: "c" }, ctx), meta?.length > 0 && el("div", { class: "m" }, meta)),
+    el("div", { class: "mins" }, minutes != null && el("b", {}, `${minutes} min`), at && el("span", { class: warn && isOld(at, OLD_MINUTES) ? "old" : "", title: warn ? "Waiting this long" : "Age" }, ago(at))),
+    el("div", { class: "act" }, action));
+}
+function stop(e) { e.stopPropagation(); }
+function itemMeta(item) {
+  const parts = [item.repo, item.kind, item.thread && threadUrl(item.thread) && el("a", { href: threadUrl(item.thread), onclick: stop }, "thread"),
+    item.pr && el("a", { href: item.pr, target: "_blank", onclick: stop }, `PR${item.prs?.length > 1 ? `s ${item.prs.length}` : ""}`),
+    item.comments.length > 0 && `${item.comments.length} ${item.comments.length === 1 ? "comment" : "comments"}`,
+    item.status === "open" && item.suggested && `desk pick: ${item.suggested}`,
+    item.status === "started" && !item.asks && (th => th?.why && ["waiting", "snoozed", "needs you"].includes(th.label) && `${th.label}: ${th.why}`)(threadState(item.thread))].filter(Boolean);
+  return parts.flatMap((p, n) => n ? [" · ", p] : [p]);
+}
+function toggleSelect(id) { ui.selecting = true; ui.selected.has(id) ? ui.selected.delete(id) : ui.selected.add(id); render(); }
+function itemRow(item, extra = {}) {
+  const st = itemState(item);
+  const sel = ui.selecting && ui.selected.has(item.id);
+  const startBtn = startable(item) && !openBlockers(item).length && button("Start", () => post("/api/status", { ids: [item.id], status: "requested" }, startMsg()));
+  return row({
+    kinds: [ui.selecting && el("input", { type: "checkbox", checked: sel, "aria-label": "Select", onclick: e => e.stopPropagation(), onchange: () => { sel ? ui.selected.delete(item.id) : ui.selected.add(item.id); render(); } }),
+      !extra.finished && (item.size ? el("span", { class: "size", title: `Size ${item.size}` }, item.size) : !item.why && tag("old format", "", "Filed before items had why, seen and size")),
+      st && tag(st[0], st[1]), item.urgent && tag("Urgent", "warn"), extra.kinds],
+    title: item.title, context: extra.context || context(item, extra.withEffort), minutes: extra.finished ? null : minutesOf(item), at: extra.at || item.done || item.created,
+    action: extra.action !== undefined ? extra.action : startBtn, cls: `${extra.cls || ""}${sel ? " selected" : ""}`, attrs: extra.attrs || {},
+    onclick: e => { if (ui.selecting || e.metaKey || e.ctrlKey || e.shiftKey) toggleSelect(item.id); else openItem(item.id); },
+  });
+}
+function openItem(id) {
+  ui.openId = id;
+  const item = byId(id);
+  if (item?.asks && !item.asks.opened && !item.answer) api("/api/ask/open", { id }).then(setState, () => {});
+  render();
+}
+
+function renderTop() {
+  const h = state.health;
+  const bad = h && (h.failed || h.sweepStale);
+  $("health").className = `health${bad ? " bad" : ""}`;
+  $("health").replaceChildren(el("span", { class: `dot${bad ? " bad" : state.listening ? "" : " off"}` }),
+    bad ? "Desk not running" : state.listening ? (h?.lastSweep ? `desk ok, swept ${ago(h.lastSweep)} ago` : "desk listening") : "desk not listening");
+  const t = state.today, planned = t.waiting + t.rows.filter(r => r.today).reduce((s, r) => s + r.minutes, 0);
+  const shownItems = state.items.filter(i => inScope(i.effort));
+  const starting = shownItems.filter(i => i.status === "requested").length;
+  const inReview = shownItems.filter(i => i.status === "started" && threadState(i.thread)?.label === "waiting").length;
+  const auto = state.autostart?.mode || "off";
+  $("glance").replaceChildren(...[el("b", {}, String(nowRows().length)), " wait on you · ", el("b", {}, String(planned)), " of ", el("b", {}, String(t.budget)), " min planned",
+    starting > 0 && [" · ", el("b", {}, String(starting)), " starting"], inReview > 0 && [" · ", el("b", {}, String(inReview)), " in review"],
+    " · ", el("button", { class: "quiet glance-auto", title: "Auto-start settings", onclick: () => { ui.settings = true; render(); } },
+      `auto-start ${auto === "all" ? "all efforts" : auto === "focus" ? `focus${state.autostart.efforts?.length ? `: ${state.autostart.efforts.map(effortTitle).join(", ")}` : ""}` : "off"}`)].flat().filter(c => c !== false));
+  const counts = { now: nowRows().length, today: t.rows.filter(r => r.today && inScope(byId(r.id)?.effort)).length,
+    backlog: state.items.filter(i => !CLOSED.includes(i.status) && inScope(i.effort)).length, incoming: incomingEntries().filter(e => ["needs-you", "new"].includes(shownStatus(e))).length };
+  $("tabs").replaceChildren(...TABS.map(([key, name]) => el("button", { class: "tab", role: "tab", "aria-selected": String(ui.tab === key), onclick: () => go(key) },
+    name, counts[key] != null && el("span", { class: "n" }, String(counts[key])))),
+    ui.effort && el("span", { class: "scope", style: { alignSelf: "center", marginLeft: "auto" } }, `Effort: ${ui.effort === "-" ? "none" : effortTitle(ui.effort)} `, el("button", { class: "quiet", onclick: () => { ui.effort = ""; history.replaceState(null, "", location.pathname + location.hash); render(); } }, "show all")));
+  const lines = [h?.failed && `The last ${h.failed} desk runs failed, so nothing gets started or sorted.`,
+    h?.sweepStale && (h.lastSweep ? `The morning sweep last finished ${ago(h.lastSweep)} ago.` : "The morning sweep never finished."),
+    !state.listening && "The listener is not running. Run ./dotfiles.py install desk_listener in ~/dotfiles. Until then the desk only acts when you ask it."].filter(Boolean);
+  $("banner").replaceChildren(...(lines.length ? [el("div", { class: "banner" }, el("div", { class: "bt" }, el("b", {}, bad ? "The desk is not running." : "The desk is not listening."), lines.join(" ")),
+    h?.thread && threadUrl(h.thread) && el("a", { class: "btn", href: threadUrl(h.thread) }, "Open the desk thread"))] : []));
+}
+function go(tab) { ui.tab = tab; history.replaceState(null, "", location.pathname + location.search + "#" + tab); scrollTo(0, 0); render(); }
+
+function nowRows() { return (state.now || []).filter(r => inScope(r.effort)); }
+function nowAction(r) {
+  const item = r.item && byId(r.item);
+  const pr = r.pr && el("a", { class: "btn", href: r.pr, target: "_blank", onclick: stop }, "PR");
+  if (item?.asks && !item.answer) return [pr, button("Go", async () => { if (confirm(`Answer "go" to:\n\n${item.asks.text}`)) { await api("/api/ask/open", { id: item.id }); await answer(item.id, "go", item.asks.text); } }, "", { title: "Accept the thread's pick" })];
+  if (r.kind === "start") return button("Start again", () => post("/api/status", { ids: [r.item], status: "requested" }, startMsg()));
+  if (r.kind === "reply") return button("Incoming", () => go("incoming"));
+  if (r.kind === "worktree") return button("Copy path", async () => { await navigator.clipboard.writeText(r.path); toast("Path copied"); });
+  const url = threadUrl(r.thread);
+  return [pr, url && el("a", { class: "btn", href: url, onclick: e => { e.stopPropagation(); if (item?.asks && !item.asks.opened) api("/api/ask/open", { id: item.id }).catch(() => {}); } }, r.kind === "desk" ? "Open desk" : "Open thread")];
+}
+function nowClick(r) {
+  if (r.item && byId(r.item)) return openItem(r.item);
+  if (r.kind === "reply") return go("incoming");
+  const url = threadUrl(r.thread);
+  if (url) location.href = url;
+}
+function renderNow() {
+  const rows = nowRows();
+  const minutes = rows.reduce((s, r) => s + r.minutes, 0);
+  const t = state.threads, shown = list => (t?.[list] || []).filter(x => inScope(x.effort));
+  const mini = x => el("div", { class: "mini", onclick: () => x.item ? openItem(x.item) : threadUrl(x.thread) && (location.href = threadUrl(x.thread)) },
+    codeText(x.title), (x.why || x.until) && el("span", { class: "muted" }, x.until ? `until ${x.until}` : x.why));
+  const railCard = (title, list, empty) => list.length || empty ? el("div", { class: "card" }, el("h3", {}, `${title} ${list.length ? list.length : ""}`), list.length ? list.map(mini) : el("div", { class: "muted", style: { fontSize: "13px" } }, empty)) : null;
+  const week = Date.now() - 7 * 86400000, recent = d => d && new Date(d).getTime() >= week;
+  const items = state.items.filter(i => inScope(i.effort)), open = items.filter(i => !CLOSED.includes(i.status));
+  return el("div", { class: "cols" },
+    el("div", {},
+      el("div", { class: "sh" }, el("h2", {}, "Waits on you"), el("span", { class: "n" }, rows.length ? `${rows.length}, about ${minutes} min` : "")),
+      el("p", { class: "hint" }, "Top row first: the desk itself, then people outside waiting, then threads blocked on you, quick ones before long ones."),
+      el("div", { class: "list" }, rows.length ? rows.map(r => row({
+        kinds: [el("span", { class: `kind ${r.kind}` }, KIND_NAME[r.kind] || r.kind), r.tier === 1 && tag(r.kind === "reply" ? "someone waiting" : "urgent", "warn")],
+        title: r.title, context: [r.effort && !ui.effort && el("span", { class: "eff" }, effortTitle(r.effort)), r.effort && !ui.effort && " · ", r.text], minutes: r.minutes, at: r.at, warn: true,
+        action: nowAction(r), onclick: () => nowClick(r),
+      })) : el("div", { class: "empty" }, t ? "Nothing waits on you." : "No sweep yet. Ask the desk to sweep."))),
+    el("aside", { class: "rail", "aria-label": "Threads" },
+      railCard("Running", shown("working"), "Nothing runs."), railCard("Waiting on others", shown("waiting")), railCard("Snoozed", shown("snoozed")), railCard("Not in an effort", shown("unassigned")),
+      el("div", { class: "card" }, el("h3", {}, "This week"),
+        el("div", { class: "kv" }, el("span", {}, "Added"), el("span", {}, String(items.filter(i => recent(i.created)).length))),
+        el("div", { class: "kv" }, el("span", {}, "Done"), el("span", {}, String(items.filter(i => i.status === "done" && recent(i.done)).length))),
+        el("div", { class: "kv" }, el("span", {}, "Dropped"), el("span", {}, String(items.filter(i => i.status === "dropped" && recent(i.done)).length))),
+        el("div", { class: "kv" }, el("span", {}, "Open, of which over 4 weeks"), el("span", {}, `${open.length}, ${open.filter(i => isOld(i.created, 28 * 1440)).length}`))),
+      t && el("p", { class: "hint" }, `Threads as of ${t.updated}.`)));
+}
+
+function moveToday(id, to) { return post("/api/today", { id, to }, to === "later" ? "Moved below the line" : to === "today" ? "Moved onto today" : "Back in the plan's order"); }
+function dropZone(to, ...children) {
+  return el("div", { class: "drop", ondragover: e => { if (ui.drag) { e.preventDefault(); e.currentTarget.classList.add("over"); } }, ondragleave: e => e.currentTarget.classList.remove("over"),
+    ondrop: e => { e.preventDefault(); e.currentTarget.classList.remove("over"); const id = ui.drag; ui.drag = null; if (id && todayRow(id)?.today !== (to === "today")) moveToday(id, to); } }, children);
+}
+function renderToday() {
+  const t = state.today;
+  const rows = t.rows.map(r => ({ ...r, item: byId(r.id) })).filter(r => r.item && inScope(r.item.effort));
+  const above = rows.filter(r => r.today), below = rows.filter(r => !r.today);
+  const starts = t.rows.filter(r => r.today).reduce((s, r) => s + r.minutes, 0), used = t.waiting + starts;
+  const forced = t.rows.filter(r => r.today && (r.moved === "today" || byId(r.id)?.urgent)).reduce((s, r) => s + r.minutes, 0);
+  const over = t.waiting > t.budget ? "What waits on you already takes more than today's time, so no starts fit. The next ones are below the line."
+    : t.waiting + forced > t.budget ? "What waits on you, your moves and urgent items already take more than today's time." : null;
+  const pct = n => `${Math.min(100, t.budget ? n / Math.max(t.budget, used) * 100 : 0)}%`;
+  const todayItemRow = r => itemRow(r.item, {
+    withEffort: !ui.effort, kinds: r.moved && tag(r.moved === "today" ? "moved up" : "moved down", "", "You moved it across the line"),
+    action: [startable(r.item) && !openBlockers(r.item).length && button("Start", () => post("/api/status", { ids: [r.id], status: "requested" }, startMsg())),
+      button(r.today ? "Later" : "Today", () => moveToday(r.id, r.today ? "later" : "today"))],
+    attrs: { draggable: "true", ondragstart: e => { ui.drag = r.id; e.dataTransfer.effectAllowed = "move"; e.currentTarget.classList.add("dragging"); }, ondragend: e => { e.currentTarget.classList.remove("dragging"); ui.drag = null; } },
+  });
+  const later = ui.showLater ? below : below.slice(0, 10);
+  const est = state.askMinutes || {};
+  return el("div", {},
+    el("div", { class: "budget" },
+      el("div", { class: "row", style: { justifyContent: "space-between", alignItems: "baseline" } },
+        el("div", {}, el("span", { class: "big" }, String(used)), el("span", { class: "muted" }, ` of ${t.budget} min planned`)),
+        el("div", { class: "muted" }, used > t.budget ? `${used - t.budget} min over` : `${t.budget - used} min free`)),
+      over && el("p", { class: "over" }, over),
+      el("div", { class: "meter", "aria-hidden": "true" }, el("div", { class: "a", style: { width: pct(t.waiting) } }), el("div", { class: "b", style: { width: pct(starts) } })),
+      el("div", { class: "legend" }, el("span", {}, el("span", { class: "sw", style: { background: "var(--accent)" } }), `Waits on you, ${t.waiting} min`),
+        el("span", {}, el("span", { class: "sw", style: { background: "var(--accent-soft)", border: "1px solid var(--accent)" } }), `Starts, ${starts} min`)),
+      el("div", { class: "ctl" }, el("label", { for: "budgetSel" }, "Your time today"),
+        el("select", { id: "budgetSel", onchange: e => post("/api/budget", { minutes: Number(e.target.value) }, "Budget saved") },
+          [...new Set([60, 120, 180, 240, 300, 360, 420, 480, t.budget])].sort((a, b) => a - b).map(m => el("option", { value: m, selected: m === t.budget }, `${m / 60} h`))),
+        el("span", { class: "muted" }, `Plan of ${t.date}. Drag rows across the line, or use Today and Later.`))),
+    el("div", { class: "list" },
+      el("div", { class: "r", onclick: () => go("now") }, el("div", { class: "k" }, el("span", { class: "kind" }, "Now")),
+        el("div", { class: "main" }, el("div", { class: "t" }, `Waits on you: ${nowRows().length} rows`), el("div", { class: "c" }, "Answers and reviews count first, on the Now tab.")),
+        el("div", { class: "mins" }, el("b", {}, `${t.waiting} min`)), el("div", { class: "act" })),
+      dropZone("today", above.map(todayItemRow), !above.length && el("div", { class: "empty" }, "No starts fit today. Move a row up to plan it anyway.")),
+      el("div", { class: "cut" }, `${t.budget} min line`),
+      el("div", { class: "later-h" }, `Later · ${below.length} rows, ${below.reduce((s, r) => s + r.minutes, 0)} min`),
+      dropZone("later", later.map(todayItemRow), below.length > later.length && el("div", { class: "empty" }, button(`Show all ${below.length}`, () => { ui.showLater = true; render(); })))),
+    el("p", { class: "hint", style: { marginTop: "12px" } }, "Ask estimates, default then measured: ",
+      Object.entries(est).map(([k, v], n) => `${n ? ", " : ""}${KIND_NAME[k] || k} ${v.default}${v.median != null ? ` / ${v.median} (${v.samples})` : ""}`).join(""), "."));
+}
+
+function matches(item) {
+  if (!inScope(item.effort)) return false;
+  if (ui.repo && (item.repo || "") !== (ui.repo === "-" ? "" : ui.repo)) return false;
+  if (ui.label && item.label !== ui.label) return false;
+  if (ui.thread && !!item.thread !== (ui.thread === "yes")) return false;
+  if (ui.q) {
+    const hay = [item.title, item.why, item.seen, item.start, item.fromMe, item.summary, item.brief, item.repo, item.effort, item.kind, item.id, ...item.comments.map(c => c.text)].join(" ").toLowerCase();
+    if (!ui.q.toLowerCase().split(/\s+/).every(w => hay.includes(w))) return false;
+  }
+  return true;
+}
+function groupKey(item) { return ui.groupBy === "effort" ? (item.effort || "") : ui.groupBy === "repo" ? (item.repo || "") : "all"; }
+function groupName(key) { return ui.groupBy === "none" ? "All items" : key === "" ? (ui.groupBy === "effort" ? "No effort" : "No repo") : ui.groupBy === "effort" ? effortTitle(key) : key; }
+function backlogRank(i) {
+  return i.status === "new" ? 0 : i.status === "requested" ? 1 : i.status === "started" ? (i.asks && !i.answer ? 2 : 3) : i.urgent ? 4 : i.suggested ? 5 : openBlockers(i).length ? 7 : 6;
+}
+function nested(items, rowFor) {
+  const ids = new Set(items.map(i => i.id));
+  const kids = id => items.filter(i => i.parent === id);
+  return items.filter(i => !ids.has(i.parent)).flatMap(i => [rowFor(i, false), ...kids(i.id).map(c => rowFor(c, true))]);
+}
+function filterRow() {
+  const chip = (key, label) => el("button", { class: "chipbtn", "aria-pressed": String(ui[key]), onclick: () => { ui[key] = !ui[key]; render(); } }, label);
+  const select = (key, all, options) => el("select", { "aria-label": all, onchange: e => { ui[key] = e.target.value; render(); } },
+    el("option", { value: "" }, all), options.map(([v, t]) => el("option", { value: v, selected: v === ui[key] }, t)));
+  return el("div", { class: "filters", role: "group", "aria-label": "Filters" },
+    chip("ready", "Ready to start"), chip("seen", "Seen only"), chip("active", "In progress"),
+    select("effort", "Any effort", [["-", "No effort"], ...state.efforts.map(e => [e.slug, e.title])]),
+    select("repo", "Any repo", [["-", "No repo"], ...state.repos.map(r => [r, r])]),
+    select("label", "Any label", ["user-visible bug", "reachable but rare", "theoretical"].map(l => [l, l])),
+    select("thread", "With or without thread", [["yes", "Has a thread"], ["no", "No thread"]]),
+    (state.spaces?.spaces || []).length > 1 && select("space", "Spaces that are on", [...state.spaces.spaces.map(s => [s, s]), ["*", "All spaces"]]),
+    el("select", { "aria-label": "Group", onchange: e => { ui.groupBy = e.target.value; save(); render(); } },
+      [["effort", "Group by effort"], ["repo", "Group by repo"], ["none", "No groups"]].map(([v, t]) => el("option", { value: v, selected: v === ui.groupBy }, t))),
+    el("button", { class: "quiet", onclick: () => { ui.selecting = !ui.selecting; ui.selected.clear(); render(); } }, ui.selecting ? "Stop selecting" : "Select"),
+    [ui.q, ui.effort, ui.ready, ui.seen, ui.active, ui.repo, ui.label, ui.thread, ui.space].some(Boolean) && el("button", { class: "quiet", onclick: () => {
+      Object.assign(ui, { q: "", effort: "", ready: false, seen: false, active: false, repo: "", label: "", thread: "", space: "" }); $("q").value = ""; render(); } }, "Clear filters"));
+}
+function renderBacklog() {
+  const items = state.items.filter(i => !CLOSED.includes(i.status) && matches(i)
+    && (!ui.ready || startable(i) && !openBlockers(i).length && !i.needs) && (!ui.seen || i.seen) && (!ui.active || ["requested", "started"].includes(i.status)));
+  const groups = new Map();
+  for (const item of items) { const k = groupKey(item); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(item); }
+  const keys = [...groups.keys()].sort((a, b) => (a === "") - (b === "") || groupName(a).localeCompare(groupName(b)));
+  const isOpen = k => ui.groupBy === "none" || ui.q || ui.openGroups.has(`${ui.groupBy}:${k}`) || ui.effort;
+  const toggle = k => { const key = `${ui.groupBy}:${k}`; ui.openGroups.has(key) ? ui.openGroups.delete(key) : ui.openGroups.add(key); save(); render(); };
+  const sorted = list => list.sort((a, b) => backlogRank(a) - backlogRank(b) || b.created.localeCompare(a.created));
+  return el("div", {},
+    el("div", { class: "sh" }, el("h2", {}, "Backlog"), el("span", { class: "n" }, `${items.length} not finished${ui.groupBy !== "none" ? ` in ${keys.length} groups` : ""}`),
+      el("span", { class: "act" }, el("button", { class: "quiet", onclick: () => { keys.forEach(k => ui.openGroups.add(`${ui.groupBy}:${k}`)); save(); render(); } }, "Expand all"),
+        el("button", { class: "quiet", onclick: () => { ui.openGroups.clear(); save(); render(); } }, "Collapse all"))),
+    filterRow(),
+    keys.length ? keys.map(k => {
+      const list = sorted(groups.get(k));
+      const open = isOpen(k);
+      const started = list.filter(i => i.status === "started").length, blocked = list.filter(i => i.status === "open" && openBlockers(i).length).length;
+      const counts = [`${list.length} items`, started && `${started} started`, blocked && `${blocked} blocked`].filter(Boolean).join(" · ");
+      return el("div", { class: `grp${open ? " open" : ""}` },
+        el("button", { class: "gh", type: "button", "aria-expanded": String(!!open), onclick: () => toggle(k) }, el("span", { class: "gn" }, groupName(k)), el("span", { class: "gc" }, counts), el("span", { class: "chev" }, open ? "Hide" : "Show")),
+        open && el("div", { class: "gb" }, el("div", { class: "list" }, nested(list, (i, child) => itemRow(i, { withEffort: ui.groupBy !== "effort", cls: child ? "child" : "" }))),
+          ui.groupBy === "effort" && k && el("div", { class: "gfoot" }, el("span", { class: "mono" }, k), managerOf(k) && threadLink(managerOf(k), "manager thread"),
+            (state.spaces?.spaces || []).length > 1 && el("label", {}, "Space ", el("select", { onchange: e => post("/api/spaces", { effort: k, space: e.target.value }, `Moved to ${e.target.value}`) },
+              state.spaces.spaces.map(n => el("option", { value: n, selected: n === spaceOf(k) }, n)))))));
+    }) : el("div", { class: "empty" }, "No items match."));
+}
+
+const INCOMING_BADGE = { "needs-you": ["bad", "needs you"], sent: ["", "sent, waiting for the desk"], waiting: ["", "waiting for them"], new: ["accent", "new"], filed: ["good", "filed"],
+  duplicate: ["", "duplicate"], noise: ["", "nothing to do"], closed: ["", "closed"] };
+const deskOwes = x => x.chat?.at(-1)?.by === "me";
+const shownStatus = e => deskOwes(e) ? "sent" : e.status;
+function incomingEntries() { return (state.incoming || []).filter(e => inScope(e.effort)); }
+function commentEl(c) {
+  return el("div", { class: `comment${c.by === "me" ? "" : " desk"}` }, el("div", { class: "who", title: c.at.replace("T", " ").slice(0, 16) }, `${{ me: "you", task: "task thread" }[c.by] || c.by} · ${ago(c.at)} ago`), el("div", {}, c.text));
+}
+function fold(key, summary, ...children) {
+  return el("details", { class: "fold", open: ui.folds.has(key), ontoggle: ev => ev.target.open ? ui.folds.add(key) : ui.folds.delete(key) }, el("summary", {}, summary), ...children);
+}
+function chatFold(key, chat, hint, send) {
+  const textarea = el("textarea", { rows: 2, placeholder: `Ask the desk, like ${hint}. ⌘↵ sends.`, oninput: ev => { ui.chatDrafts[key] = ev.target.value; },
+    onkeydown: ev => { if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) sendBtn.click(); } });
+  textarea.value = ui.chatDrafts[key] || "";
+  const sendBtn = button("Send", async () => {
+    const text = textarea.value.trim();
+    if (!text) return;
+    textarea.blur();
+    delete ui.chatDrafts[key];
+    try { await send(text); } catch (err) { ui.chatDrafts[key] = text; throw err; }
+    toast(listening() ? "Sent. The desk answers in a minute." : "Sent. The desk answers on its next sweep.");
+  });
+  return fold(key, chat?.length ? `Chat (${chat.length})` : "Ask the desk", el("div", { class: "chat" }, (chat || []).map(commentEl), textarea, sendBtn));
+}
+function snoozeLink(e, label, days) {
+  return el("button", { class: "quiet", title: "Hide it until then or until it gets news", onclick: guard(() => {
+    const until = new Date(); until.setDate(until.getDate() + days(until.getDay()));
+    return post("/api/incoming/snooze", { url: e.url, until: localDate(until) }, `Snoozed until ${localDate(until)}`);
+  }) }, label);
+}
+function incomingRow(e) {
+  const [cls, label] = INCOMING_BADGE[shownStatus(e)] || ["", e.status];
+  const copy = button("Copy draft", async () => { await navigator.clipboard.writeText(e.draft); toast("Reply copied"); });
+  return el("div", { class: "ent", id: `in-${e.url}`, style: ui.highlight === e.url ? { background: "var(--accent-soft)" } : {} },
+    el("div", { class: "row", style: { gap: "6px" } }, tag(label, cls), el("span", { class: "t" }, codeText(e.title))),
+    el("div", { class: "c" }, shownStatus(e) === "needs-you" && e.action ? el("span", { style: { color: "var(--text)" } }, e.action) : (e.news || []).join(", ")),
+    e.posts?.length > 0 && fold(`${e.url} posts`, e.posts.length === 1 ? "What they wrote" : `What they wrote (${e.posts.length})`,
+      e.posts.map(p => el("div", { class: "post" }, el("div", { class: "by" }, `${p.by}, ${ago(p.at)} ago`), md(p.text)))),
+    e.draft && fold(`${e.url} draft`, "Draft reply", el("pre", {}, e.draft), copy),
+    chatFold(`${e.url} chat`, e.chat, '"start a review"', text => post("/api/incoming/chat", { url: e.url, text })),
+    el("div", { class: "links" }, el("a", { href: e.url, target: "_blank" }, `Open ${e.kind}`), e.link && el("a", { href: e.link, target: "_blank" }, "related"),
+      e.item && byId(e.item) && el("button", { class: "quiet", onclick: () => openItem(e.item) }, "item"),
+      snoozeLink(e, "tomorrow", () => 1), snoozeLink(e, "next week", weekday => (8 - weekday) % 7 || 7),
+      el("button", { class: "quiet", title: "Hide it until it gets news", onclick: guard(() => confirm(`Hide "${e.title}" until it gets news?`) && post("/api/incoming/dismiss", { url: e.url }, "Hidden")) }, "hide"),
+      el("span", { class: "muted", style: { fontSize: "12px", alignSelf: "center" } }, ago(e.updated))));
+}
+function proposalRow(p) {
+  const box = el("input", { type: "checkbox", checked: ui.picked.has(p.id), disabled: p.state === "approved", onchange: ev => { ev.target.checked ? ui.picked.add(p.id) : ui.picked.delete(p.id); render(); } });
+  const what = { add: `${p.board}: add as ${p.to}`, move: `${p.board}: ${p.from || "no status"} → ${p.to}`, edit: "new description",
+    create: `new issue in ${p.repo}${p.parent ? ` under #${p.parent.split("/").pop()}` : ""}${p.board && p.to ? `, on ${p.board} as ${p.to}` : ""}` }[p.action];
+  const link = p.url || p.parent;
+  const item = p.url && state.items.find(i => i.issue === p.url);
+  const issue = p.issue && [`${p.issue.state}, last activity ${ago(p.issue.updated)} ago, ${p.issue.comments} comments`,
+    p.issue.assignees.length && `assigned to ${p.issue.assignees.join(", ")}`, p.issue.labels.length && `labels ${p.issue.labels.join(", ")}`].filter(Boolean).join(", ");
+  return el("div", { class: "ent" },
+    el("label", { style: { display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", gap: "8px", alignItems: "start" } }, box, el("span", { class: "t" }, codeText(p.title))),
+    el("div", { class: "c" }, `${what}, ${p.why}`, p.state === "approved" && " (applying)", deskOwes(p) && " (sent, waiting for the desk)", isOld(p.at, OLD_MINUTES) && ` · proposed ${ago(p.at)} ago`),
+    p.error && el("div", { style: { color: "var(--bad)", fontSize: "13px" } }, p.error),
+    issue && fold(`${p.id} issue`, "About the issue", el("div", { class: "post" }, el("div", { class: "by" }, issue), p.issue.text && md(p.issue.text))),
+    p.body && fold(`${p.id} body`, p.action === "edit" ? "New description" : "Issue text", md(p.body)),
+    p.state !== "approved" && chatFold(`${p.id} chat`, p.chat, '"move it to Next instead"', text => post("/api/proposals/chat", { id: p.id, text })),
+    el("div", { class: "links" }, item && el("button", { class: "quiet", title: item.title, onclick: () => openItem(item.id) }, "item"), link && el("a", { href: link, target: "_blank" }, "open")));
+}
+function renderIncoming() {
+  const order = ["needs-you", "new", "sent", "waiting", "filed", "duplicate", "noise", "closed"];
+  const entries = incomingEntries().sort((a, b) => order.indexOf(shownStatus(a)) - order.indexOf(shownStatus(b)) || b.updated.localeCompare(a.updated));
+  const groups = [...new Set(entries.map(e => e.effort || ""))];
+  const proposals = state.proposals || [];
+  const pending = proposals.filter(p => p.state !== "approved");
+  const chosen = () => pending.filter(p => ui.picked.has(p.id)).map(p => p.id);
+  const decide = decision => async () => { const ids = chosen(); if (!ids.length) return toast("Check the changes first"); await post("/api/proposals", { ids, decision }, decision === "approve" ? "Approved. The desk applies them in a moment." : "Dismissed"); };
+  const all = el("input", { type: "checkbox", checked: pending.length > 0 && pending.every(p => ui.picked.has(p.id)),
+    onchange: ev => { pending.forEach(p => ev.target.checked ? ui.picked.add(p.id) : ui.picked.delete(p.id)); render(); } });
+  return el("div", { class: "cols" },
+    el("div", {},
+      el("div", { class: "sh" }, el("h2", {}, "From GitHub"), el("span", { class: "n" }, `${entries.length} entries. Nothing gets posted, drafts are for you to copy.`)),
+      el("div", { class: "list" }, entries.length ? groups.map(g => [groups.length > 1 && el("div", { class: "ent group" }, g ? effortTitle(g) : "No effort"),
+        entries.filter(e => (e.effort || "") === g).map(incomingRow)]) : el("div", { class: "empty" }, "Nothing came in."))),
+    el("div", {},
+      el("div", { class: "sh" }, el("h2", {}, "Project board changes"), el("span", { class: "n" }, String(proposals.length))),
+      proposals.length ? [el("div", { class: "row", style: { marginBottom: "8px" } }, button("Apply checked", decide("approve"), "primary"), button("Dismiss checked", decide("dismiss")),
+        el("label", { style: { fontSize: "13px" } }, all, " Check all")),
+        el("div", { class: "list" }, proposals.map(proposalRow))] : el("p", { class: "hint" }, "No proposed changes.")));
+}
+
+function renderDone() {
+  const inWindow = i => ui.doneDays < 0 || !i.done || (Date.now() - new Date(i.done).getTime()) / 86400000 <= ui.doneDays;
+  const items = state.items.filter(i => CLOSED.includes(i.status) && matches(i) && inWindow(i) && (ui.doneDays < 0 || !i.archived)).sort((a, b) => (b.done || "").localeCompare(a.done || ""));
+  const groups = [...new Set(items.map(i => i.effort || ""))].sort((a, b) => (a === "") - (b === "") || effortTitle(a).localeCompare(effortTitle(b)));
+  const wt = state.worktrees || {};
+  return el("div", { class: "cols" },
+    el("div", {},
+      el("div", { class: "sh" }, el("h2", {}, "Done and dropped"), el("span", { class: "n" }, `${items.filter(i => i.status === "done").length} done, ${items.filter(i => i.status === "dropped").length} dropped`),
+        el("span", { class: "act" }, el("select", { "aria-label": "How far back", onchange: e => { ui.doneDays = Number(e.target.value); save(); render(); } },
+          [[7, "Last 7 days"], [30, "Last 30 days"], [365, "Last year"], [1e6, "All"], [-1, "All, archived too"]].map(([v, t]) => el("option", { value: v, selected: v === ui.doneDays }, t))))),
+      items.length ? groups.map(g => {
+        const list = items.filter(i => (i.effort || "") === g), toArchive = list.filter(i => !i.archived);
+        return el("div", { class: "grp open" },
+          el("div", { class: "gh" }, el("span", { class: "gn" }, g ? effortTitle(g) : "No effort"), el("span", { class: "gc" }, String(list.length)), el("span", { class: "chev" },
+            toArchive.length > 0 && button("Archive these", () => confirm(`Archive ${toArchive.length} finished item(s)? They leave the board, and the desk archives their threads.`) && post("/api/archive", { ids: toArchive.map(i => i.id) }, "Archived")))),
+          el("div", { class: "gb" }, el("div", { class: "list" }, list.map(i => itemRow(i, { at: i.done, action: null, finished: true, cls: i.archived ? "dim" : "", context: [i.repo, i.pr && i.pr.replace("https://github.com/", "")].filter(Boolean).join(" · ") || context(i) })))));
+      }) : el("div", { class: "empty" }, "Nothing finished in this window.")),
+    el("div", {},
+      el("div", { class: "sh" }, el("h2", {}, "Worktrees to remove"), el("span", { class: "n" }, wt.at ? `checked ${ago(wt.at)} ago` : "")),
+      el("p", { class: "hint" }, "Archived threads whose worktree has no uncommitted changes and no unpushed commits. Delete their threads in T3. The Thursday check fills this list."),
+      el("div", { class: "list" }, (wt.due || []).length ? wt.due.map(w => el("div", { class: "wt" }, el("div", { class: "p" }, w.path), el("span", { class: "muted" }, w.title))) : el("div", { class: "empty" }, "None."))));
+}
+
+function renderSheet() {
+  const overlay = $("overlay");
+  if (ui.capture) { if (!overlay.querySelector(".modal")) overlay.replaceChildren(el("div", { class: "scrim", onclick: closeOverlay }), captureModal()); return; }
+  if (ui.settings) { if (!overlay.querySelector(".sheet:focus-within")) overlay.replaceChildren(el("div", { class: "scrim", onclick: closeOverlay }), settingsSheet()); return; }
+  const item = byId(ui.openId);
+  if (!item) { overlay.replaceChildren(); return; }
+  if (overlay.querySelector(`.sheet[data-id="${CSS.escape(item.id)}"] :is(textarea, input):focus`)) return;
+  const setStatus = (status, msg = "Updated") => post("/api/status", { ids: [item.id], status }, msg);
+  const locked = ["started", "done"].includes(item.status);
+  const blocked = openBlockers(item);
+  const note = ui.startNotes[item.id] ||= { text: "" };
+  const grant = (key, label, title) => el("label", { title }, el("input", { type: "checkbox", checked: !!note[key], onchange: e => { note[key] = e.target.checked; } }), label);
+  const noteBox = el("textarea", { rows: 2, placeholder: "Note for this start, like how far it may go or what to check first", oninput: e => { note.text = e.target.value; } });
+  noteBox.value = note.text;
+  const replyKey = `answer:${item.id}`;
+  const replyBox = el("textarea", { rows: 2, placeholder: "Or answer in your own words. ⌘↵ sends.", oninput: e => { ui.chatDrafts[replyKey] = e.target.value; },
+    onkeydown: e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) replyBtn.click(); } });
+  replyBox.value = ui.chatDrafts[replyKey] || "";
+  const replyBtn = button("Send", async () => {
+    const text = replyBox.value.trim();
+    if (!text) return;
+    replyBox.blur();
+    delete ui.chatDrafts[replyKey];
+    try { await answer(item.id, text, item.asks.text); } catch (err) { ui.chatDrafts[replyKey] = text; throw err; }
+  });
+  const today = todayRow(item.id);
+  const actions = [];
+  if (startable(item)) actions.push(button("Start", () => post("/api/status", { ids: [item.id], status: "requested", note }, startMsg()), "primary", { disabled: blocked.length > 0, title: blocked.length ? "Blocked" : "" }));
+  if (item.status === "requested" && item.needs) actions.push(button("Start again", () => setStatus("requested", startMsg()), "primary"));
+  if (item.status === "requested") actions.push(button("Cancel start", () => setStatus("open")));
+  if (startable(item)) actions.push(today?.today ? button("Later", () => moveToday(item.id, "later")) : button("Today", () => moveToday(item.id, "today")));
+  if (item.status === "started" || item.thread && item.status === "open") actions.push(button("Done", () => confirm("Mark this item done? The desk archives its thread.") && setStatus("done")));
+  if (item.status === "started" && !isManagerItem(item)) actions.push(button("Pause", () => confirm("Pause this item? The desk compacts its thread, and Start picks it up again later.") && setStatus("open", "Paused")));
+  if (item.status === "dropped") actions.push(button("Reopen", () => setStatus("open")));
+  if (!locked && item.status !== "dropped") actions.push(button("Drop", () => confirm("Drop this item?") && setStatus("dropped", "Dropped"), "danger"));
+  const setBlockers = list => post("/api/update", { ids: [item.id], fields: { blockedBy: list } }, "Saved");
+  const current = item.blockedBy || [];
+  const blockerEditor = CLOSED.includes(item.status) ? null : [
+    blockers(item).map(b => el("div", { class: `blocker${b.resolved ? " resolved" : ""}` }, b.text, el("button", { class: "quiet", title: "Remove", "aria-label": "Remove blocker", onclick: guard(() => setBlockers(current.filter(x => x !== b.key))) }, "✕"))),
+    el("select", { style: { width: "100%", marginTop: "4px" }, onchange: e => e.target.value && setBlockers([...current, e.target.value]) },
+      el("option", { value: "" }, "Add a blocking item…"),
+      state.items.filter(i => i.id !== item.id && !CLOSED.includes(i.status) && !current.includes(i.id)).sort((a, b) => a.title.localeCompare(b.title)).map(i => el("option", { value: i.id }, i.title))),
+    el("input", { type: "text", placeholder: "or what it waits on, then ↵", style: { width: "100%", marginTop: "4px" },
+      onkeydown: e => { if (e.key === "Enter" && e.target.value.trim()) guard(() => setBlockers([...current, e.target.value.trim()]))(e); } })];
+  const field = (name, list, value) => locked ? (value ? (name === "effort" ? effortTitle(value) : value) : "none") :
+    el("select", { onchange: e => post("/api/update", { ids: [item.id], fields: { [name]: e.target.value } }, "Saved") },
+      el("option", { value: "" }, "none (desk decides)"), list.map(([v, t]) => el("option", { value: v, selected: v === value }, t)));
+  const commentKey = `comment:${item.id}`;
+  const commentBox = el("textarea", { rows: 2, placeholder: listening() ? "Comment for the desk. It answers in a minute." : "Comment for the desk. It answers on its next sweep.",
+    oninput: e => { ui.chatDrafts[commentKey] = e.target.value; }, onkeydown: e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) commentBtn.click(); } });
+  commentBox.value = ui.chatDrafts[commentKey] || "";
+  const commentBtn = button("Comment", async () => {
+    const text = commentBox.value.trim();
+    if (!text) return;
+    commentBox.blur();
+    delete ui.chatDrafts[commentKey];
+    try { await post("/api/comment", { id: item.id, text }, "Comment added"); } catch (err) { ui.chatDrafts[commentKey] = text; throw err; }
+  });
+  const sections = item.brief ? briefSections(item.brief) : [];
+  const children = state.items.filter(i => i.parent === item.id);
+  const glance = sections.filter(x => sectionKind(x.title) === "glance");
+  const questions = sections.filter(x => sectionKind(x.title) === "questions");
+  const rest = sections.filter(x => !["glance", "questions"].includes(sectionKind(x.title)));
+  const th = item.status === "started" ? threadState(item.thread) : null;
+  const prs = item.pr ? (item.prs?.length ? item.prs : [item.pr]) : [];
+  const groups = commentGroups(item.comments);
+  const groupEl = g => el("div", {}, commentEl(g.head), g.replies.length > 0 && el("div", { class: "replies" }, g.replies.map(commentEl)));
+  const st = itemState(item);
+  const dd = (label, value) => value && [el("dt", {}, label), el("dd", {}, value)];
+  overlay.replaceChildren(el("div", { class: "scrim", onclick: closeOverlay }),
+    el("aside", { class: "sheet", role: "dialog", "aria-modal": "true", "data-id": item.id },
+      el("div", { class: "sh-top" }, st && tag(st[0], st[1]), item.label && tag(item.label, item.label === "user-visible bug" ? "bad" : ""), item.size && tag(`${item.size} · ${minutesOf(item)} min`),
+        el("span", { class: "grow" }), item.thread && threadUrl(item.thread) && el("a", { class: `btn${item.asks && !item.answer ? " primary" : ""}`, href: threadUrl(item.thread) }, item.asks && !item.answer ? "Answer in thread" : "Open thread"),
+        button("Close", closeOverlay)),
+      el("div", { class: "sh-body" },
+        el("h2", {}, codeText(item.title)),
+        (item.why || item.summary) && el("p", { style: { margin: 0 } }, item.why || item.summary),
+        (item.needs || item.asks && item.status === "started") && el("div", { class: "needsbox" },
+          item.needs && el("div", {}, el("b", { class: "l" }, "Needs from you before it can start"), item.needs),
+          item.asks && item.status === "started" && el("div", {}, el("b", { class: "l" }, `${KIND_NAME[item.asks.kind || "question"]} · asked ${ago(item.asks.at)} ago`), item.asks.text),
+          item.asks && item.status === "started" && (item.answer
+            ? el("div", {}, el("b", {}, "You answered: "), item.answer.text, el("span", { class: "muted" }, ` · ${ago(item.answer.at)} ago, waiting for the thread`))
+            : el("div", {}, el("div", { class: "row", style: { marginBottom: "6px" } }, button("Go", () => answer(item.id, "go", item.asks.text), "primary", { title: "Accept the thread's pick and let it do what the question names" })), replyBox, replyBtn))),
+        el("dl", { class: "fields" },
+          dd("Seen", item.seen), dd("Needs you", item.fromMe), dd("Start", item.start),
+          dd("Part of", item.parent && (byId(item.parent) ? el("button", { class: "quiet ref", onclick: () => openItem(item.parent) }, byId(item.parent).title) : item.parent)),
+          dd("Parts", children.length > 0 && el("div", { class: "refs" }, children.map(c => el("button", { class: "quiet ref", onclick: () => openItem(c.id) }, c.title)))),
+          dd("Start note", item.start_note && [item.start_note.text, item.start_note.draft_pr && "may open a draft PR", item.start_note.babysit && "babysit", item.start_note.second_opinion && "second opinion first"].filter(Boolean).join(" · ")),
+          dd("State", !item.asks && th && `${th.label}${th.why ? ": " + th.why : ""}`),
+          dd(prs.length > 1 ? "PRs" : "PR", prs.length > 0 && prs.map((pr, n) => [n ? ", " : "", el("a", { href: pr, target: "_blank" }, pr.replace("https://github.com/", ""))])),
+          dd("Issue", item.issue && el("a", { href: item.issue, target: "_blank" }, item.issue.replace("https://github.com/", ""))),
+          dd("Desk pick", item.status === "open" && item.suggested),
+          dd("Today", startable(item) && (today ? (today.today ? "above the line" : "below the line, under Later") : "not in today's plan")),
+          [el("dt", {}, "Effort"), el("dd", {}, field("effort", state.efforts.map(e => [e.slug, e.title]), item.effort))],
+          [el("dt", {}, "Repo"), el("dd", {}, field("repo", state.repos.map(r => [r, r]), item.repo))],
+          dd("Kind", item.kind || "not sorted yet"),
+          !CLOSED.includes(item.status) && [el("dt", {}, "Urgent"), el("dd", {}, el("label", {}, el("input", { type: "checkbox", checked: !!item.urgent,
+            onchange: e => post("/api/update", { ids: [item.id], fields: { urgent: e.target.checked } }, e.target.checked ? "Marked urgent, it stays above the line" : "No longer urgent") }), " stays above the line"))],
+          dd("Thread", item.thread && threadLink(item.thread, threadTitle(item.thread) || "open thread")),
+          blockerEditor && [el("dt", {}, "Blocked by"), el("dd", {}, current.length || ui.blockerEdit === item.id ? blockerEditor : el("button", { class: "quiet", onclick: () => { ui.blockerEdit = item.id; renderSheet(); } }, "add a blocker"))]),
+        startable(item) && el("div", {}, el("h3", {}, "When started"), noteBox, el("div", { class: "grants" },
+          grant("draft_pr", "may open a draft PR", "After its own review, the thread pushes the branch and opens a draft PR without asking"),
+          grant("babysit", "babysit the PR", "It also fixes failing checks and review bot findings on that PR"),
+          grant("second_opinion", "second opinion first", "Another model reviews the change before the brief"))),
+        glance.map(x => el("div", {}, el("h3", {}, x.title), md(x.body))),
+        questions.map(x => el("div", { class: "needsbox" }, el("b", { class: "l" }, x.title), md(x.body))),
+        el("h3", {}, item.status === "new" ? "Your note" : "Brief"),
+        !item.brief && el("p", { class: "muted" }, "No brief yet."),
+        rest.map((x, n) => sectionKind(x.title) === "open" || n === 0 && !glance.length ? el("div", {}, x.title && el("h3", {}, x.title), md(x.body))
+          : el("details", { class: "sec" }, el("summary", {}, x.title), md(x.body))),
+        el("h3", {}, `Comments ${item.comments.length || ""}`),
+        commentBox, el("div", { class: "row", style: { justifyContent: "flex-end", marginTop: "6px" } }, commentBtn),
+        groups.slice(0, 3).map(groupEl),
+        groups.length > 3 && el("details", { class: "sec" }, el("summary", {}, `${groups.length - 3} older`), groups.slice(3).map(groupEl)),
+        el("p", { class: "meta" }, `Created ${item.created} by `, item.source === "me" ? "you" : item.source?.startsWith("mcp:") ? threadLink(item.source, threadTitle(item.source) || "a thread") : item.source,
+          item.done && ` · finished ${item.done}`, " · ", el("span", { class: "mono" }, item.id))),
+      el("div", { class: "sh-bar" }, actions)));
+}
+const SECTION_LABEL = /^(goal|done when|done criteria|goal and done criteria|plan|suggested fix|next step|evidence|verified|done and verified|branch|branches|repo|repo and branch|rules|project rules|rules for this task|git-ignored files|ignored files|files|related|gaps|decisions that apply|kept on purpose|extra findings|open questions|context|drop if)\b/i;
 function briefSections(text) {
   const out = [{ title: "", lines: [] }];
   let fence = false;
@@ -411,550 +881,35 @@ function commentGroups(comments) {
   }
   return groups.reverse();
 }
-function threadTitle(id) {
-  for (const list of ["needsYou", "working", "waiting", "snoozed", "unassigned"]) {
-    const hit = (state.threads?.[list] || []).find(x => x.thread === id);
-    if (hit) return hit.title;
-  }
-  return state.items.find(i => i.thread === id)?.title || null;
-}
-function threadState(id) {
-  const t = state.threads;
-  if (!id || !t) return null;
-  for (const [list, label, cls] of [["needsYou", "needs you", "hot"], ["working", "working", "ok"], ["waiting", "waiting", ""], ["snoozed", "snoozed", ""]]) {
-    const hit = (t[list] || []).find(x => x.thread === id);
-    if (hit) return { label, cls, why: hit.until ? `until ${hit.until}` : hit.why || "" };
-  }
-  return null;
-}
-const answerMsg = () => state.listening ? "Sent. The desk passes it to the thread in a minute." : "Sent. The desk passes it on at its next sweep.";
-const answer = (id, text, to) => post("/api/answer", { id, text, to }, answerMsg());
-const startMsg = () => state.listening ? "Starting. The desk launches it in a moment." : "Marked to start. The desk isn't listening, so type \"go\" in the desk thread.";
-function spaceOf(effort) { return state.spaces?.efforts?.[effort || ""] || "work"; }
-function spaceShown(effort) {
-  if (ui.effort || ui.space === "*") return true;
-  return ui.space ? spaceOf(effort) === ui.space : !(state.spaces?.off || []).includes(spaceOf(effort));
-}
-function effortTitle(slug) { return state.efforts.find(e => e.slug === slug)?.title || slug; }
-function baseColumn(item) { return COLUMNS.find(c => c.statuses.includes(item.status))?.key; }
-function columnOf(item) {
-  if (item.status === "open" && openBlockers(item).length) return "blocked";
-  if (item.status === "started" && !item.asks && threadState(item.thread)?.label === "waiting") return "review";
-  return baseColumn(item);
-}
-function inColumn(item, col) { return columnOf(item) === col || baseColumn(item) === col; }
-function inDoneWindow(item) { return ui.doneDays < 0 || !item.done || (Date.now() - new Date(item.done).getTime()) / 86400000 <= ui.doneDays; }
-function matches(item) {
-  if (!spaceShown(item.effort)) return false;
-  if (ui.effort && (item.effort || "") !== (ui.effort === "-" ? "" : ui.effort)) return false;
-  if (ui.repo && (item.repo || "") !== (ui.repo === "-" ? "" : ui.repo)) return false;
-  if (ui.label && item.label !== ui.label) return false;
-  if (ui.thread && !!item.thread !== (ui.thread === "yes")) return false;
-  if (ui.q) {
-    const hay = [item.title, item.summary, item.brief, item.repo, item.effort, item.kind, ...item.comments.map(c => c.text)].join(" ").toLowerCase();
-    if (!ui.q.toLowerCase().split(/\s+/).every(w => hay.includes(w))) return false;
-  }
-  if (item.archived && ui.doneDays >= 0) return false;
-  return columnOf(item) !== "done" || inDoneWindow(item);
-}
 
-function needsList() {
-  const snoozed = (state.threads?.snoozed || []).map(z => z.thread);
-  const own = state.items.filter(i => i.needs && i.status === "requested" || i.asks && !i.answer && i.status === "started" && !snoozed.includes(i.thread));
-  const covered = n => own.some(i => i.thread && i.thread === n.thread) || state.items.some(i => i.answer && i.thread === n.thread && i.asks?.text === n.why);
-  return [...own.map(i => ({ thread: i.thread, title: i.title, why: i.asks ? i.asks.text : i.needs, at: i.asks?.at, pr: i.pr, item: i.id, effort: i.effort, ask: !!i.asks })),
-    ...(state.threads?.needsYou || []).filter(n => !covered(n))].filter(n => spaceShown(n.effort));
-}
-
-function renderStats() {
-  const items = state.items.filter(i => spaceShown(i.effort));
-  const count = s => items.filter(i => s.includes(i.status)).length;
-  const needs = needsList().length;
-  const stat = (n, label, hot, target) => n ? el("span", { class: `stat${hot ? " hot" : ""}${target ? " jump" : ""}`, onclick: target ? () => $(target).scrollIntoView({ behavior: "smooth" }) : null }, el("b", {}, String(n)), ` ${label}`) : null;
-  const listen = el("span", { class: "stat", title: state.listening ? "The desk reacts to Start, captures, comments and pauses within a minute." : "Run ./dotfiles.py install desk_listener in ~/dotfiles. Until then the desk only acts when you ask it." },
-    el("span", { class: "dot", style: { background: state.listening ? "var(--green)" : "var(--gray)" } }), state.listening ? "desk listening" : "desk not listening");
-  $("stats").replaceChildren(...[stat(needs, "need you", true, "needsWrap"), stat((state.incoming || []).filter(e => ["new", "needs-you"].includes(shownStatus(e)) && spaceShown(e.effort)).length, "incoming", true, "incomingWrap"), stat(count(["new"]), "inbox"), stat(count(["next"]), "next"), stat(count(["requested"]), "starting", true), stat(items.filter(i => i.status === "started" && columnOf(i) === "started").length, "in progress"), stat(items.filter(i => columnOf(i) === "review").length, "in review"), listen].filter(Boolean));
-  $("stats").prepend(...(needs ? [] : [el("span", { class: "stat" }, "nothing needs you")]));
-}
-
-function renderHealth() {
-  const h = state.health;
-  const lines = [h?.failed && `The last ${h.failed} desk runs failed. Open the desk thread to see why.`,
-    h?.sweepStale && (h.lastSweep ? `The morning sweep last finished ${ago(h.lastSweep)} ago.` : "The morning sweep never finished.")].filter(Boolean);
-  $("health").hidden = !lines.length;
-  $("health").replaceChildren(...lines.map(line => el("div", {}, line)));
-}
-
-function renderFilters() {
-  const opts = (sel, all, list, current) => sel.replaceChildren(el("option", { value: "" }, all), el("option", { value: "-", selected: current === "-" }, "none"),
-    ...list.map(([v, t]) => el("option", { value: v, selected: v === current }, t)));
-  $("fSpace").replaceChildren(el("option", { value: "" }, "spaces that are on"), ...(state.spaces?.spaces || []).map(n => el("option", { value: n, selected: n === ui.space }, n)),
-    el("option", { value: "*", selected: ui.space === "*" }, "all"));
-  opts($("fEffort"), "all", state.efforts.map(e => [e.slug, e.title]), ui.effort);
-  opts($("fRepo"), "all", state.repos.map(r => [r, r]), ui.repo);
-  $("groupBy").value = ui.groupBy;
-  $("laneSort").value = ui.laneSort;
-  $("clearFilters").hidden = !(ui.q || ui.effort || ui.space || ui.repo || ui.label || ui.thread);
-}
-
-function renderSpaces() {
-  const sp = state.spaces;
-  const wake = state.listening ? "in a minute" : "on its next sweep";
-  $("spaceWrap").replaceChildren("Spaces", ...sp.spaces.map(n => {
-    const on = !sp.off.includes(n);
-    return el("button", { class: `chip${on ? " effort" : ""}`, title: on ? "Turn off" : "Turn on",
-      onclick: guard(() => post("/api/spaces", { space: n, on: !on }, on ? `${n} off. The desk puts its idle threads away ${wake}.` : `${n} on. The desk brings its threads back ${wake}.`)) }, n);
-  }), el("button", { class: "chip", title: "New space", onclick: guard(async () => {
-    const name = prompt("Name of the new space");
-    if (name?.trim()) await post("/api/spaces", { create: name }, `Space ${name.trim().toLowerCase()} added. Move efforts into it from their lane.`);
-  }) }, "+"));
-}
-
-function renderAutostart() {
-  const a = state.autostart;
-  const chip = (on, text, title, change) => el("button", { class: `chip${on ? " effort" : ""}`, title, onclick: guard(() => setAutostart(change)) }, text);
-  $("autoWrap").replaceChildren("Auto-start",
-    ...[["off", "off"], ["focus", "focus"], ["all", "all efforts"]].map(([mode, text]) => chip(a.mode === mode, text, null, { mode })),
-    ...(a.mode === "off" ? [] : [chip(a.reviews, "reviews", "Also review other people's PRs that want my review, 2 at a time. Reviews only draft, nothing gets posted.", { reviews: !a.reviews })]));
-  $("autoEfforts").hidden = a.mode !== "focus";
-  $("autoEfforts").replaceChildren(el("span", { class: "auto" }, "Auto-start in"), ...state.efforts.map(e => {
-    const on = a.efforts.includes(e.slug);
-    return chip(on, e.title, on ? "Stop auto-starting here" : "Auto-start here too", { efforts: on ? a.efforts.filter(x => x !== e.slug) : [...a.efforts, e.slug] });
-  }));
-}
-async function setAutostart(change) {
-  const next = { ...state.autostart, ...change };
-  await post("/api/autostart", next, next.mode === "off" ? "Auto-start off" : next.mode === "focus" && !next.efforts.length ? "Pick the efforts to auto-start in" : "Auto-start on. The desk fills free slots on weekdays from 8:00 to 20:00.");
-}
-
-function threadLink(id, text) {
-  const env = state.threads?.environment;
-  return env ? el("a", { class: text ? "" : "mono", href: `t3code://threads/${encodeURIComponent(env)}/${encodeURIComponent(id)}`, title: "Open in T3 Code", style: { color: "var(--accent)" } }, text || id) : el("span", { class: "mono" }, text || id);
-}
-function managerOf(effort) { return state.threads?.managers?.[effort] || null; }
-function isManager(id) { return !!id && Object.values(state.threads?.managers || {}).includes(id); }
-function isManagerItem(item) { return !!item.move?.manager || isManager(item.thread); }
-function threadRow(t, waiting) {
-  return el("div", { class: `nrow${waiting ? " waiting" : ""}${t.item ? " link" : ""}`, onclick: t.item ? e => { if (!e.target.closest("a")) openDrawer(t.item); } : null },
-    el("div", { class: "t", title: t.title }, isManager(t.thread) && el("span", { class: "chip effort", style: { marginRight: "6px" } }, "manager"), codeText(t.title),
-      !ui.effort && t.effort && !isManager(t.thread) && el("span", { class: "eff" }, effortTitle(t.effort))),
-    el("div", { class: "w" }, t.until ? `until ${t.until}` : t.why || ""),
-    el("div", { class: "m" }, t.at && el("span", { class: `chip${isOld(t.at, 60) ? " hot" : ""}`, title: "Asked this long ago" }, ago(t.at)), t.pr && el("a", { href: t.pr, target: "_blank" }, "PR"),
-      t.ask && el("a", { href: "#", title: "Accept the thread's pick and let it do what the question names", onclick: guard(async e => { e.preventDefault(); e.stopPropagation(); if (confirm(`Answer "go" to:\n\n${t.why}`)) await answer(t.item, "go", t.why); }) }, "go"),
-      t.thread && state.threads?.environment && threadLink(t.thread, "open")));
-}
-
-function renderNeeds() {
-  const t = state.threads;
-  const wrap = $("needsWrap");
-  if (!t) { wrap.replaceChildren(el("div", { class: "section-title" }, "Needs you"), el("div", { class: "empty-note" }, "No sweep yet. Ask the desk to sweep.")); return; }
-  const needs = needsList().filter(n => !ui.effort || (n.effort || "") === (ui.effort === "-" ? "" : ui.effort)), shown = list => (list || []).filter(x => spaceShown(x.effort));
-  const waiting = shown(t.waiting), snoozed = shown(t.snoozed), unassigned = shown(t.unassigned);
-  const parts = [el("div", { class: "section-title" }, "Needs you", el("span", { style: { fontWeight: 400, textTransform: "none", letterSpacing: 0 } }, `· sweep ${t.updated}`))];
-  const fresh = needs.filter(n => !isOld(n.at, OLD_MINUTES)), old = needs.filter(n => isOld(n.at, OLD_MINUTES));
-  parts.push(fresh.length ? el("div", { class: "needs" }, fresh.map(n => threadRow(n))) : el("div", { class: "empty-note" }, "Nothing new needs you."));
-  if (old.length) parts.push(el("div", { class: "section-title" }, "Getting old", el("span", { style: { fontWeight: 400, textTransform: "none", letterSpacing: 0 } }, "· asked more than two days ago")),
-    el("div", { class: "needs" }, old.map(n => threadRow(n))));
-  if (waiting.length || snoozed.length || unassigned.length) {
-    const det = el("details", { style: { marginBottom: "18px" } }, el("summary", { class: "section-title", style: { cursor: "pointer" } }, `Waiting on others ${waiting.length} · Snoozed ${snoozed.length} · Not in an effort ${unassigned.length}`),
-      el("div", { class: "needs", style: { marginTop: "8px" } }, waiting.map(w => threadRow(w, true)), snoozed.map(z => threadRow(z, true)), unassigned.map(u => threadRow(u, true))));
-    parts.push(det);
-  }
-  wrap.replaceChildren(...parts);
-}
-
-function commentEl(c) {
-  return el("div", { class: `comment${c.by === "me" ? "" : " desk"}` }, el("div", { class: "who", title: c.at.replace("T", " ").slice(0, 16) }, `${{ me: "you", task: "task thread" }[c.by] || c.by} · ${ago(c.at)} ago`), el("div", {}, c.text));
-}
-function fold(key, summary, ...children) {
-  return el("details", { class: "draft", open: ui.folds.has(key), ontoggle: ev => ev.target.open ? ui.folds.add(key) : ui.folds.delete(key) }, el("summary", {}, summary), ...children);
-}
-function chatFold(key, chat, hint, send) {
-  const textarea = el("textarea", { rows: 2, placeholder: `Ask the desk, like ${hint}. ⌘↵ sends.`, oninput: ev => { ui.chatDrafts[key] = ev.target.value; },
-    onkeydown: ev => { if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) sendBtn.click(); } });
-  textarea.value = ui.chatDrafts[key] || "";
-  const sendBtn = el("button", { class: "btn", onclick: guard(async () => {
-    const text = textarea.value.trim();
-    if (!text) return;
-    textarea.blur();
-    delete ui.chatDrafts[key];
-    try { await send(text); } catch (err) { ui.chatDrafts[key] = text; throw err; }
-    toast(state.listening ? "Sent. The desk answers in a minute." : "Sent. The desk answers on its next sweep.");
-  }) }, "Send");
-  return fold(key, chat?.length ? `Chat (${chat.length})` : "Ask the desk", el("div", { class: "chat" }, (chat || []).map(commentEl), textarea, sendBtn));
-}
-const INCOMING_BADGE = { "needs-you": ["hot", "needs you"], sent: ["", "sent, waiting for the desk"], waiting: ["", "waiting for user"], new: ["new", "new"], filed: ["ok", "filed"],
-  duplicate: ["", "duplicate"], noise: ["", "nothing to do"], closed: ["", "closed"] };
-const deskOwes = x => x.chat?.at(-1)?.by === "me";
-const shownStatus = e => deskOwes(e) ? "sent" : e.status;
-function localDate(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
-function snoozeLink(e, label, days) {
-  return el("a", { href: "#", title: "Hide it until then or until it gets news", onclick: ev => {
-    ev.preventDefault();
-    const until = new Date(); until.setDate(until.getDate() + days(until.getDay()));
-    post("/api/incoming/snooze", { url: e.url, until: localDate(until) }, `Snoozed until ${localDate(until)}`);
-  } }, label);
-}
-function incomingRow(e) {
-  const [cls, label] = INCOMING_BADGE[shownStatus(e)];
-  const copy = el("button", { class: "btn ghost", onclick: async () => { await navigator.clipboard.writeText(e.draft); toast("Reply copied"); } }, "Copy");
-  return el("div", { class: `nrow${shownStatus(e) === "needs-you" ? "" : " waiting"}` },
-    el("div", { class: "t", title: e.title }, el("span", { class: `chip ${cls}`, style: { marginRight: "6px" } }, label), e.title),
-    el("div", { class: "w" },
-      shownStatus(e) === "needs-you" && e.action ? el("div", { class: "act" }, e.action) : el("div", {}, (e.news || []).join(", ")),
-      e.posts?.length > 0 && fold(`${e.url} posts`, e.posts.length === 1 ? "What they wrote" : `What they wrote (${e.posts.length})`,
-        e.posts.map(p => el("div", { class: "post" }, el("div", { class: "by" }, `${p.by}, ${ago(p.at)} ago`), Object.assign(el("div", { class: "md" }), { innerHTML: markdown(p.text) })))),
-      e.draft && fold(`${e.url} draft`, "Draft reply", el("pre", {}, e.draft), copy),
-      chatFold(`${e.url} chat`, e.chat, '"start a review"', text => post("/api/incoming/chat", { url: e.url, text }))),
-    el("div", { class: "m" }, el("a", { href: e.url, target: "_blank" }, e.kind), e.link && el("a", { href: e.link, target: "_blank" }, "related"),
-      e.item && state.items.some(i => i.id === e.item) && el("a", { href: "#", onclick: ev => { ev.preventDefault(); openDrawer(e.item); } }, "item"),
-      snoozeLink(e, "tomorrow", () => 1), snoozeLink(e, "next week", weekday => (8 - weekday) % 7 || 7),
-      el("a", { href: "#", title: "Hide it until it gets news", onclick: ev => { ev.preventDefault(); if (confirm(`Hide "${e.title}" until it gets news?`)) post("/api/incoming/dismiss", { url: e.url }, "Hidden"); } }, "hide")));
-}
-function proposalRow(p) {
-  const box = el("input", { type: "checkbox", checked: ui.picked.has(p.id), disabled: p.state === "approved", onchange: ev => { ev.target.checked ? ui.picked.add(p.id) : ui.picked.delete(p.id); renderIncoming(); } });
-  const what = { add: `${p.board}: add as ${p.to}`, move: `${p.board}: ${p.from || "no status"} → ${p.to}`, edit: "new description",
-    create: `new issue in ${p.repo}${p.parent ? ` under #${p.parent.split("/").pop()}` : ""}${p.board && p.to ? `, on ${p.board} as ${p.to}` : ""}` }[p.action];
-  const link = p.url || p.parent;
-  const item = p.url && state.items.find(i => i.issue === p.url);
-  const issue = p.issue && [`${p.issue.state}, last activity ${ago(p.issue.updated)} ago, ${p.issue.comments} comments`,
-    p.issue.assignees.length && `assigned to ${p.issue.assignees.join(", ")}`, p.issue.labels.length && `labels ${p.issue.labels.join(", ")}`].filter(Boolean).join(", ");
-  return el("div", { class: "nrow waiting" },
-    el("label", { class: "t", title: p.title }, box, " ", codeText(p.title)),
-    el("div", { class: "w" }, `${what}, ${p.why}`, p.state === "approved" && " (applying)", deskOwes(p) && " (sent, waiting for the desk)", p.error && el("div", { style: { color: "var(--red)" } }, p.error),
-      issue && fold(`${p.id} issue`, "About the issue", el("div", { class: "post" }, el("div", { class: "by" }, issue),
-        p.issue.text && Object.assign(el("div", { class: "md" }), { innerHTML: markdown(p.issue.text) }))),
-      p.body && fold(`${p.id} body`, p.action === "edit" ? "New description" : "Issue text", Object.assign(el("div", { class: "md" }), { innerHTML: markdown(p.body) })),
-      p.state !== "approved" && chatFold(`${p.id} chat`, p.chat, '"move it to Next instead"', text => post("/api/proposals/chat", { id: p.id, text }))),
-    el("div", { class: "m" }, isOld(p.at, OLD_MINUTES) && el("span", { class: "chip hot", title: "Proposed this long ago" }, ago(p.at)),
-      item && el("a", { href: "#", title: item.title, onclick: ev => { ev.preventDefault(); openDrawer(item.id); } }, "item"), link && el("a", { href: link, target: "_blank" }, "open")));
-}
-function renderIncoming() {
-  const order = ["needs-you", "new", "sent", "waiting", "filed", "duplicate", "noise", "closed"];
-  const entries = (state.incoming || []).filter(e => spaceShown(e.effort) && (!ui.effort || (e.effort || "") === (ui.effort === "-" ? "" : ui.effort)))
-    .sort((a, b) => order.indexOf(shownStatus(a)) - order.indexOf(shownStatus(b)) || b.updated.localeCompare(a.updated));
-  const parts = [];
-  if (entries.length) {
-    parts.push(el("div", { class: "section-title" }, "Incoming", el("span", { style: { fontWeight: 400, textTransform: "none", letterSpacing: 0 } }, "· from GitHub, nothing gets posted")));
-    const groups = [...new Set(entries.map(e => e.effort || ""))];
-    parts.push(el("div", { class: "needs" }, groups.map(g => [groups.length > 1 && el("div", { class: "nrow group" }, g ? effortTitle(g) : "No effort"),
-      entries.filter(e => (e.effort || "") === g).map(incomingRow)])));
-  }
-  const proposals = state.proposals || [];
-  if (proposals.length) {
-    const chosen = () => proposals.filter(p => p.state !== "approved" && ui.picked.has(p.id)).map(p => p.id);
-    const decide = decision => async () => { const ids = chosen(); if (!ids.length) return; await post("/api/proposals", { ids, decision }, decision === "approve" ? "Approved. The desk applies them in a moment." : "Dismissed"); };
-    const open = ui.proposalsOpen ?? proposals.length <= 5;
-    const pending = proposals.filter(p => p.state !== "approved");
-    const all = el("input", { type: "checkbox", title: "Check all", checked: pending.length > 0 && pending.every(p => ui.picked.has(p.id)),
-      onchange: ev => { pending.forEach(p => ev.target.checked ? ui.picked.add(p.id) : ui.picked.delete(p.id)); renderIncoming(); } });
-    parts.push(el("div", { class: "section-title" },
-      el("span", { class: "toggle", onclick: () => { ui.proposalsOpen = !open; renderIncoming(); } }, el("span", { class: "chev" }, open ? "▾" : "▸"), `Project board changes ${proposals.length}`),
-      el("span", { class: "grow" }),
-      open && el("button", { class: "btn primary", onclick: guard(decide("approve")) }, "Apply checked"), open && el("button", { class: "btn ghost", onclick: guard(decide("dismiss")) }, "Dismiss checked")));
-    if (open) parts.push(el("div", { class: "needs" }, el("div", { class: "nrow group" }, el("label", {}, all, " Check all")), proposals.map(proposalRow)));
-  }
-  $("incomingWrap").replaceChildren(...parts);
-}
-
-function card(item) {
-  const sel = ui.selected.has(item.id);
-  return el("div", {
-    class: `card${sel ? " selected" : ""}${ui.openId === item.id ? " active" : ""}`, draggable: "true", "data-id": item.id,
-    onclick: e => {
-      if (e.target.closest("a")) return;
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.target.closest(".check")) { sel ? ui.selected.delete(item.id) : ui.selected.add(item.id); render(); }
-      else openDrawer(item.id);
-    },
-    ondragstart: e => { ui.drag = ui.selected.has(item.id) ? [...ui.selected] : [item.id]; e.dataTransfer.effectAllowed = "move"; e.currentTarget.classList.add("dragging"); markDropTargets(); },
-    ondragend: e => { e.currentTarget.classList.remove("dragging"); ui.drag = null; document.querySelectorAll(".cell").forEach(c => c.classList.remove("can-drop", "over")); },
-  },
-    el("span", { class: "bar", style: { background: LABEL_COLOR[item.label] || "transparent" } }),
-    el("span", { class: "check" }, sel ? "✓" : ""),
-    el("div", { class: "title" }, codeText(item.title)),
-    item.why && el("div", { class: "why" }, item.why),
-    el("div", { class: "meta" },
-      item.size && el("span", { class: "chip", title: item.fromMe ? `Needs from you: ${item.fromMe}` : "" }, `${item.size} · ${item.minutes} min`),
-      item.fromMe && el("span", {}, item.fromMe),
-      item.parent && el("span", { class: "chip", title: `Part of ${parentTitle(item.parent)}` }, "part"),
-      item.status === "new" && el("span", { class: "chip new" }, "unsorted"),
-      item.status === "dropped" && el("span", { class: "chip" }, "dropped"),
-      item.archived && el("span", { class: "chip" }, "archived"),
-      item.status === "open" && item.suggested && el("span", { class: "chip pick", title: item.suggested }, "desk pick"),
-      !CLOSED.includes(item.status) && openBlockers(item).length ? el("span", { class: "chip blocked", title: "Blocked by: " + openBlockers(item).map(b => b.text).join(", ") }, "blocked") : null,
-      ["open", "next"].includes(item.status) && item.thread && el("span", { class: "chip", title: "Has a thread. Starting it again picks that thread up." }, "paused"),
-      item.status === "requested" && el("span", { class: "chip hot", title: item.needs || "" }, item.needs ? "needs you" : "starting"),
-      item.status === "started" && item.asks && el("span", { class: `chip${item.answer ? "" : " hot"}`, title: item.asks.text }, item.answer ? "answered" : "asks you"),
-      item.status === "started" && !item.asks && (th => th && el("span", { class: `chip ${th.cls}`, title: th.why }, th.why && th.label === "waiting" ? `waiting: ${th.why}` : th.label === "snoozed" ? `snoozed ${th.why}` : th.label))(threadState(item.thread)),
-      item.repo && el("span", { class: "chip" }, item.repo),
-      ui.groupBy !== "effort" && item.effort && el("span", { class: "chip effort" }, effortTitle(item.effort)),
-      item.kind && el("span", {}, item.kind),
-      item.thread && state.threads?.environment && threadLink(item.thread, "thread"),
-      item.comments.length ? el("span", { title: "comments", style: { display: "inline-flex", alignItems: "center", gap: "3px" } }, COMMENT_ICON(), String(item.comments.length)) : null,
-      el("span", { class: "age" }, age(item.done || item.created))));
-}
-
-function parentTitle(parent) { return state.items.find(i => i.id === parent)?.title || parent; }
-function parentLink(parent) {
-  return state.items.some(i => i.id === parent) ? el("a", { href: "#", onclick: e => { e.preventDefault(); openDrawer(parent); } }, parentTitle(parent)) : parent;
-}
-
-function laneKey(item) { return ui.groupBy === "effort" ? (item.effort || "") : ui.groupBy === "repo" ? (item.repo || "") : "all"; }
-function laneName(key) { return ui.groupBy === "none" ? "All" : key === "" ? (ui.groupBy === "effort" ? "No effort" : "No repo") : ui.groupBy === "effort" ? effortTitle(key) : key; }
-
-function markDropTargets() {
-  const items = ui.drag.map(id => state.items.find(i => i.id === id));
-  document.querySelectorAll(".cell").forEach(c => { if (canDrop(items, c.dataset.col, c.dataset.lane)) c.classList.add("can-drop"); });
-}
-function canMove(item, col) { return (DROP_FROM[col] || []).includes(item.status) && !(item.status === "started" && isManagerItem(item)); }
-function canDrop(items, col, lane) {
-  return items.some(i => {
-    const sameCol = inColumn(i, col);
-    const laneMove = ui.groupBy !== "none" && laneKey(i) !== lane && !["started", "done"].includes(i.status);
-    return (sameCol && (laneMove || col === "next")) || (!sameCol && canMove(i, col));
-  });
-}
-function nextOrder() { return state.items.filter(i => i.status === "next").sort((a, b) => (a.rank ?? 1e9) - (b.rank ?? 1e9)).map(i => i.id); }
-async function drop(col, lane, e) {
-  const items = ui.drag.map(id => state.items.find(i => i.id === id));
-  ui.drag = null;
-  let beforeId = null, afterId = null;
-  if (col === "next") {
-    const cards = [...e.currentTarget.querySelectorAll(".card")].filter(c => !items.some(i => i.id === c.dataset.id));
-    beforeId = cards.find(c => { const r = c.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; })?.dataset.id || null;
-    afterId = beforeId ? null : cards.at(-1)?.dataset.id || null;
-  }
-  const blocked = col === "started" ? items.filter(i => openBlockers(i).length) : [];
-  if (blocked.length) { toast(`Blocked: ${blocked.map(i => i.title).join(", ")}`); return; }
-  const pausing = items.filter(i => i.status === "started" && ["backlog", "next"].includes(col) && canMove(i, col));
-  if (pausing.length && !confirm(`Pause ${pausing.length} item(s)? The desk compacts their threads, and Start picks them up again later.`)) return;
-  const field = ui.groupBy === "effort" ? "effort" : ui.groupBy === "repo" ? "repo" : null;
-  const movers = field ? items.filter(i => laneKey(i) !== lane && !["started", "done"].includes(i.status)) : [];
-  if (movers.length) await post("/api/update", { ids: movers.map(i => i.id), fields: { [field]: lane } }, `Moved to ${laneName(lane)}`);
-  const statusMovers = items.filter(i => !inColumn(i, col) && canMove(i, col));
-  if (statusMovers.length) {
-    if (col === "done" && !confirm(`Drop ${statusMovers.length} item(s)? They stay in the Done column.`)) return;
-    await post("/api/status", { ids: statusMovers.map(i => i.id), status: DROP_STATUS[col] }, col === "started" ? startMsg() : pausing.length ? "Paused" : "Updated");
-  }
-  if (col === "next") {
-    const moving = items.map(i => i.id);
-    const order = nextOrder().filter(id => !moving.includes(id));
-    const at = beforeId ? order.indexOf(beforeId) : afterId ? order.indexOf(afterId) + 1 : order.length;
-    order.splice(at < 0 ? order.length : at, 0, ...moving.filter(id => state.items.find(i => i.id === id)?.status === "next"));
-    await post("/api/order", { ids: order });
-  }
-}
-
-function renderBoard() {
-  const visible = state.items.filter(matches);
-  const lanes = new Map();
-  if (ui.groupBy === "effort" && !ui.effort) state.efforts.filter(e => spaceShown(e.slug)).forEach(e => lanes.set(e.slug, []));
-  for (const item of visible) { const k = laneKey(item); if (!lanes.has(k)) lanes.set(k, []); lanes.get(k).push(item); }
-  const activity = k => lanes.get(k).reduce((m, i) => (i.done || i.created) > m ? (i.done || i.created) : m, "");
-  const keys = [...lanes.keys()].sort((a, b) => ui.laneSort === "name"
-    ? (a === "") - (b === "") || laneName(a).localeCompare(laneName(b))
-    : activity(b).localeCompare(activity(a)) || laneName(a).localeCompare(laneName(b)));
-  const nonEmpty = keys.filter(k => lanes.get(k).some(i => columnOf(i) !== "done"));
-  const ordered = [...nonEmpty, ...keys.filter(k => !nonEmpty.includes(k) && lanes.get(k).length)];
-
-  const shownLanes = ordered.filter(k => ui.groupBy === "none" || !ui.collapsed.has(`${ui.groupBy}:${k}`));
-  const wide = new Set(COLUMNS.filter(c => shownLanes.some(k => lanes.get(k).some(i => columnOf(i) === c.key))).map(c => c.key));
-  wide.add("done");
-  const template = COLUMNS.map(c => wide.has(c.key) ? "minmax(120px, 1fr)" : "34px").join(" ");
-  const head = el("div", { class: "legend", style: { gridTemplateColumns: template } }, COLUMNS.map(c => el("div", { class: `colhead${wide.has(c.key) ? "" : " narrow"}`, title: `${c.name}${c.hint ? ". " + c.hint : ""}` },
-    el("span", { class: "dot", style: { background: c.color } }), el("span", { class: "name" }, c.name), el("span", { class: "n" }, String(visible.filter(i => columnOf(i) === c.key).length)),
-    c.key === "done" && el("select", { onchange: e => { ui.doneDays = Number(e.target.value); save(); render(); } },
-      [[7, "7 days"], [30, "30 days"], [365, "1 year"], [1e6, "all"], [-1, "all + archived"]].map(([v, t]) => el("option", { value: v, selected: v === ui.doneDays }, t))))));
-
-  const laneEls = ordered.map(key => {
-    const items = lanes.get(key);
-    const open = items.filter(i => !["done", "dropped"].includes(i.status)).length;
-    const collapsed = ui.groupBy !== "none" && ui.collapsed.has(`${ui.groupBy}:${key}`);
-    const cells = COLUMNS.map(c => {
-      const byDate = (a, b) => (b.done || b.created).localeCompare(a.done || a.created);
-      let colItems = items.filter(i => columnOf(i) === c.key).sort(
-        c.key === "next" ? (a, b) => (a.rank ?? 1e9) - (b.rank ?? 1e9)
-        : c.key === "backlog" ? (a, b) => !!b.suggested - !!a.suggested || byDate(a, b)
-        : c.key === "started" ? (a, b) => (b.status === "requested") - (a.status === "requested") || byDate(a, b)
-        : byDate);
-      const cellKey = `${key}|${c.key}`;
-      const expanded = ui.expanded.has(cellKey);
-      const long = colItems.length > cellLimit();
-      const shown = long && !expanded ? colItems.slice(0, cellLimit()) : colItems;
-      const toArchive = c.key === "done" && ui.groupBy !== "none" ? colItems.filter(i => !i.archived) : [];
-      return el("div", {
-        class: `cell${wide.has(c.key) ? colItems.length ? "" : " blank" : " empty"}`, "data-col": c.key, "data-lane": key,
-        ondragover: e => { if (e.currentTarget.classList.contains("can-drop")) { e.preventDefault(); e.currentTarget.classList.add("over"); } },
-        ondragleave: e => e.currentTarget.classList.remove("over"),
-        ondrop: e => { e.preventDefault(); drop(c.key, key, e); },
-      }, el("div", { class: "cellhead", title: c.hint || "" }, el("span", { class: "dot", style: { background: c.color } }), c.name, el("span", { class: "n" }, String(colItems.length))),
-        shown.map(card),
-        long && el("button", { class: "more btn ghost", onclick: () => { expanded ? ui.expanded.delete(cellKey) : ui.expanded.add(cellKey); render(); } }, expanded ? "Show fewer" : `Show ${colItems.length - cellLimit()} more`),
-        toArchive.length > 0 && el("button", { class: "more btn ghost", onclick: guard(() => confirm(`Archive ${toArchive.length} finished item(s) in ${laneName(key)}? They leave the board, and the desk archives their threads.`) && post("/api/archive", { ids: toArchive.map(i => i.id) }, "Archived")) }, "Archive these"));
-    });
-    return el("section", { class: `lane${collapsed ? " collapsed" : ""}`, "data-key": key },
-      ui.groupBy !== "none" && el("div", { class: "lanehead", onclick: () => { const k = `${ui.groupBy}:${key}`; ui.collapsed.has(k) ? ui.collapsed.delete(k) : ui.collapsed.add(k); save(); render(); } },
-        el("span", { class: "chev" }, "▾"), el("span", { class: "name" }, laneName(key)),
-        el("span", { class: "sub" }, `${open} open · ${items.length - open} done`),
-        collapsed && el("span", { class: "mini" }, COLUMNS.map(c => { const n = items.filter(i => columnOf(i) === c.key).length; return n ? el("span", { title: c.name }, el("span", { class: "dot", style: { background: c.color } }), String(n)) : null; })),
-        ui.groupBy === "effort" && key && el("span", { class: "sub mono" }, key),
-        ui.groupBy === "effort" && key && state.spaces.spaces.length > 1 && el("select", { title: "This effort's space", onclick: e => e.stopPropagation(),
-          onchange: e => post("/api/spaces", { effort: key, space: e.target.value }, `Moved to ${e.target.value}`) },
-          state.spaces.spaces.map(n => el("option", { value: n, selected: n === spaceOf(key) }, n))),
-        ui.groupBy === "effort" && managerOf(key) && el("span", { class: "chip effort", title: "This effort's manager thread", onclick: e => e.stopPropagation() }, threadLink(managerOf(key), "manager"))),
-      el("div", { class: "cols", style: { gridTemplateColumns: template } }, cells));
-  });
-  $("board").replaceChildren(head, ...(laneEls.length ? laneEls : [el("div", { class: "empty-note" }, "No items match.")]));
-}
-
-function renderBulk() {
-  const bulk = $("bulk");
-  const n = ui.selected.size;
-  bulk.hidden = !n;
-  if (!n) return;
-  const ids = [...ui.selected];
-  const pausable = ids.filter(id => { const i = state.items.find(x => x.id === id); return !(i?.status === "started" && isManagerItem(i)); });
-  const act = (path, body, msg, list = ids) => async () => { await post(path, { ids: list, ...body }, msg); ui.selected.clear(); render(); };
-  bulk.replaceChildren(
-    el("span", { class: "count" }, `${n} selected`),
-    el("button", { class: "btn", onclick: guard(act("/api/status", { status: "requested" }, startMsg())) }, "Start"),
-    el("button", { class: "btn", disabled: !pausable.length, onclick: guard(act("/api/status", { status: "next" }, "Moved to Next", pausable)) }, "Next"),
-    el("button", { class: "btn", disabled: !pausable.length, onclick: guard(act("/api/status", { status: "open" }, "Back in the backlog", pausable)) }, "To backlog"),
-    el("button", { class: "btn", onclick: guard(async () => { if (confirm(`Drop ${n} item(s)?`)) await act("/api/status", { status: "dropped" }, "Dropped")(); }) }, "Drop"),
-    el("select", { onchange: e => e.target.value !== "x" && act("/api/update", { fields: { effort: e.target.value } }, "Effort set")() },
-      el("option", { value: "x" }, "Set effort…"), el("option", { value: "" }, "none"), state.efforts.map(e => el("option", { value: e.slug }, e.title))),
-    el("select", { onchange: e => e.target.value !== "x" && act("/api/update", { fields: { repo: e.target.value } }, "Repo set")() },
-      el("option", { value: "x" }, "Set repo…"), el("option", { value: "" }, "none"), state.repos.map(r => el("option", { value: r }, r))),
-    el("button", { class: "btn", onclick: () => { ui.selected.clear(); render(); } }, "✕"));
-}
-
-function openDrawer(id) { ui.openId = id; render(); }
-function closeOverlay() { ui.openId = null; ui.capture = false; render(); }
-
-function renderDrawer() {
-  const overlay = $("overlay");
-  if (ui.capture) { if (!overlay.querySelector(".modal")) overlay.replaceChildren(el("div", { class: "scrim", onclick: closeOverlay }), captureModal()); return; }
-  const item = state.items.find(i => i.id === ui.openId);
-  if (!item) { overlay.replaceChildren(); return; }
-  if (overlay.querySelector(`.drawer[data-id="${item.id}"] :is(textarea, input):focus`)) return;
-  const col = COLUMNS.find(c => c.key === columnOf(item));
-  const setStatus = status => post("/api/status", { ids: [item.id], status }, "Updated");
-  const button = (cls, label, action, attrs = {}) => el("button", { class: `btn${cls ? " " + cls : ""}`, ...attrs, onclick: guard(action) }, label);
-  const locked = ["started", "done"].includes(item.status);
-  const blocked = openBlockers(item);
-  const actions = [];
-  const startable = ["new", "open", "next"].includes(item.status);
-  const note = ui.startNotes[item.id] ||= { text: "" };
-  const grant = (key, label, title) => el("label", { title }, el("input", { type: "checkbox", checked: !!note[key], onchange: e => { note[key] = e.target.checked; } }), " ", label);
-  const noteBox = el("textarea", { rows: 2, placeholder: "Note for this start, like how far it may go or what to check first", oninput: e => { note.text = e.target.value; } });
-  noteBox.value = note.text;
-  const startNote = startable && el("div", { class: "glance-sec" }, el("div", { class: "block-title" }, "When started"), noteBox,
-    el("div", { style: { display: "flex", gap: "14px", flexWrap: "wrap", marginTop: "6px", fontSize: "13px" } },
-      grant("draft_pr", "may open a draft PR", "After its own review, the thread pushes the branch and opens a draft PR without asking"),
-      grant("babysit", "babysit the PR", "It also fixes failing checks and review bot findings on that PR"),
-      grant("second_opinion", "second opinion first", "GPT-6.2 Sol reviews the change before the brief")));
-  const replyKey = `answer:${item.id}`;
-  const replyBox = el("textarea", { rows: 2, placeholder: "Or answer in your own words. ⌘↵ sends.", oninput: e => { ui.chatDrafts[replyKey] = e.target.value; },
-    onkeydown: e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) replyBtn.click(); } });
-  replyBox.value = ui.chatDrafts[replyKey] || "";
-  const replyBtn = button("", "Send", async () => {
-    const text = replyBox.value.trim();
-    if (!text) return;
-    replyBox.blur();
-    delete ui.chatDrafts[replyKey];
-    try { await answer(item.id, text, item.asks.text); } catch (err) { ui.chatDrafts[replyKey] = text; throw err; }
-  });
-  if (startable) actions.push(button("primary", "Start", () => post("/api/status", { ids: [item.id], status: "requested", note }, startMsg()), { disabled: blocked.length > 0, title: blocked.length ? "Blocked" : "" }));
-  if (["new", "open"].includes(item.status)) actions.push(button("", "Next", () => setStatus("next")));
-  if (["next", "requested"].includes(item.status)) actions.push(button("", "To backlog", () => setStatus("open")));
-  if (item.status === "requested" && item.needs) actions.push(button("primary", "Start again", () => post("/api/status", { ids: [item.id], status: "requested" }, startMsg())));
-  if (item.status === "requested") actions.push(button("", "Cancel start", () => setStatus("next")));
-  if (item.status === "started" || item.thread && ["open", "next"].includes(item.status)) actions.push(button("", "Done", () => confirm("Mark this item done? The desk archives its thread.") && setStatus("done")));
-  if (item.status === "started" && !isManagerItem(item)) actions.push(button("", "Pause", () => confirm("Pause this item? The desk compacts its thread, and Start picks it up again later.") && setStatus("next")));
-  if (item.status === "dropped") actions.push(button("", "Reopen", () => setStatus("open")));
-  if (!locked && item.status !== "dropped") actions.push(button("danger", "Drop", () => confirm("Drop this item?") && setStatus("dropped")));
-  const setBlockers = list => post("/api/update", { ids: [item.id], fields: { blockedBy: list } }, "Saved");
-  const current = item.blockedBy || [];
-  const noteInput = el("input", { type: "search", placeholder: "or what it waits on, then ↵", style: { width: "100%", marginTop: "4px" },
-    onkeydown: e => { if (e.key === "Enter" && e.target.value.trim()) guard(() => setBlockers([...current, e.target.value.trim()]))(e); } });
-  const blockerEditor = CLOSED.includes(item.status) ? null : [
-    blockers(item).map(b => el("div", { class: `blocker${b.resolved ? " resolved" : ""}` }, b.text, el("button", { class: "x", title: "Remove", onclick: guard(() => setBlockers(current.filter(x => x !== b.key))) }, "✕"))),
-    el("select", { style: { width: "100%", marginTop: "4px" }, onchange: e => e.target.value && setBlockers([...current, e.target.value]) },
-      el("option", { value: "" }, "Add a blocking item…"),
-      state.items.filter(i => i.id !== item.id && !CLOSED.includes(i.status) && !current.includes(i.id)).sort((a, b) => a.title.localeCompare(b.title)).map(i => el("option", { value: i.id }, i.title))),
-    noteInput];
-  const field = (name, list, value) => locked ? (value ? (name === "effort" ? effortTitle(value) : value) : "none") :
-    el("select", { onchange: e => post("/api/update", { ids: [item.id], fields: { [name]: e.target.value } }, "Saved") },
-      el("option", { value: "" }, "none (desk decides)"), list.map(([v, t]) => el("option", { value: v, selected: v === value }, t)));
-  const textarea = el("textarea", { rows: 2, placeholder: state.listening ? "Comment for the desk. It answers in a minute." : "Comment for the desk. It answers on its next sweep.", onkeydown: e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) commentBtn.click(); } });
-  const commentBtn = button("", "Comment", async () => {
-    if (!textarea.value.trim()) return;
-    await post("/api/comment", { id: item.id, text: textarea.value.trim() }, "Comment added");
-    textarea.value = "";
-    textarea.blur();
-    renderDrawer();
-  });
-  const sections = item.brief ? briefSections(item.brief) : [];
-  const children = state.items.filter(i => i.parent === item.id);
-  const glance = sections.filter(x => sectionKind(x.title) === "glance");
-  const questions = sections.filter(x => sectionKind(x.title) === "questions");
-  const rest = sections.filter(x => !["glance", "questions"].includes(sectionKind(x.title)));
-  const md = text => Object.assign(el("div", { class: "md" }), { innerHTML: markdown(text) });
-  const th = item.status === "started" ? threadState(item.thread) : null;
-  const prs = item.pr ? (item.prs?.length ? item.prs : [item.pr]) : [];
-  const groups = commentGroups(item.comments);
-  const groupEl = g => el("div", {}, commentEl(g.head), g.replies.length > 0 && el("div", { class: "replies" }, g.replies.map(commentEl)));
-  const showBlockers = blockerEditor && (current.length || ui.blockerEdit === item.id);
-  overlay.replaceChildren(el("div", { class: "scrim", onclick: closeOverlay }),
-    el("aside", { class: "drawer", "data-id": item.id },
-      el("div", { class: "head" },
-        el("div", { style: { display: "flex", alignItems: "center", gap: "8px" } },
-          el("span", { class: "pill" }, el("span", { class: "dot", style: { background: col.color } }), item.status === "dropped" ? "Dropped" : col.name),
-          item.label && el("span", { class: "pill" }, el("span", { class: "dot", style: { background: LABEL_COLOR[item.label] } }), item.label),
-          el("span", { class: "grow" }),
-          item.thread && state.threads?.environment && el("a", { class: `btn${item.asks ? " primary" : ""}`, style: { textDecoration: "none" }, href: `t3code://threads/${encodeURIComponent(state.threads.environment)}/${encodeURIComponent(item.thread)}`, title: "Open in T3 Code" }, item.asks ? "Answer in thread ↗" : "Open thread ↗"),
-          el("button", { class: "btn ghost", title: "Close (Esc)", onclick: closeOverlay }, "✕ Close")),
-        el("h2", {}, codeText(item.title)),
-        (item.why || item.summary) && el("p", { class: "prose", style: { margin: 0 } }, item.why || item.summary)),
-      el("div", { class: "body" },
-        el("div", {},
-          el("div", { class: "glance" },
-            item.needs && el("div", { class: "ask" }, el("b", {}, "Needs you: "), item.needs),
-            item.asks && item.status === "started" && el("div", { class: "ask" }, el("b", {}, "Asks you: "), item.asks.text, " ", el("span", { class: `chip${isOld(item.asks.at, 60) ? " hot" : ""}` }, ago(item.asks.at))),
-            item.asks && item.status === "started" && (item.answer
-              ? el("div", {}, el("b", {}, "You answered: "), item.answer.text, " ", el("span", { class: "chip" }, `${ago(item.answer.at)} ago, waiting for the thread`))
-              : el("div", {}, button("primary", "Go", () => answer(item.id, "go", item.asks.text), { title: "Accept the thread's pick and let it do what the question names" }), replyBox, replyBtn)),
-            item.size && el("div", {}, el("b", {}, "Size: "), `${item.size}, about ${item.minutes} min of your time`, item.fromMe && ` · needs from you: ${item.fromMe}`),
-            item.seen && el("div", {}, el("b", {}, "Seen: "), item.seen),
-            item.start && el("div", {}, el("b", {}, "Start: "), item.start),
-            item.parent && el("div", {}, el("b", {}, "Part of: "), parentLink(item.parent)),
-            children.length > 0 && el("div", {}, el("b", {}, "Parts: "), children.map((c, n) => [n ? ", " : "", parentLink(c.id)])),
-            item.start_note && el("div", {}, el("b", {}, "Start note: "), [item.start_note.text, item.start_note.draft_pr && "may open a draft PR", item.start_note.babysit && "babysit", item.start_note.second_opinion && "second opinion first"].filter(Boolean).join(" · ")),
-            startNote,
-            !item.asks && th && el("div", {}, el("b", {}, "State: "), `${th.label}${th.why ? ": " + th.why : ""}`),
-            prs.length > 0 && el("div", {}, el("b", {}, prs.length > 1 ? "PRs: " : "PR: "), prs.map((pr, n) => [n ? ", " : "", el("a", { href: pr, target: "_blank" }, pr.replace("https://github.com/", ""))])),
-            item.issue && el("div", {}, el("b", {}, "Issue: "), el("a", { href: item.issue, target: "_blank" }, item.issue.replace("https://github.com/", ""))),
-            glance.map(x => el("div", { class: "glance-sec" }, el("div", { class: "block-title" }, x.title), md(x.body))),
-            textarea, el("div", { style: { marginTop: "6px", display: "flex", justifyContent: "flex-end" } }, commentBtn)),
-          questions.map(x => el("div", { class: "questions" }, el("div", { class: "block-title", style: { marginTop: 0 } }, x.title), md(x.body))),
-          el("div", { class: "block-title" }, item.status === "new" ? "Your note" : "Brief"),
-          !item.brief && el("p", { class: "prose" }, "No brief yet."),
-          rest.map((x, n) => sectionKind(x.title) === "open" || n === 0 && !glance.length ? el("div", {}, x.title && el("h4", { class: "sec" }, x.title), md(x.body))
-            : el("details", { class: "sec" }, el("summary", {}, x.title), md(x.body))),
-          el("div", { class: "block-title" }, `Comments ${item.comments.length || ""}`),
-          groups.slice(0, 3).map(groupEl),
-          groups.length > 3 && el("details", {}, el("summary", { class: "muted" }, `${groups.length - 3} older`), groups.slice(3).map(groupEl)),
-          el("p", { class: "meta" }, `Created ${item.created} by `, item.source === "me" ? "you" : threadTitle(item.source) || item.source?.startsWith("mcp:") ? threadLink(item.source, threadTitle(item.source) || "a thread") : item.source,
-            item.done && ` · finished ${item.done}`, " · ", el("span", { class: "mono" }, item.id))),
-        el("dl", { class: "kv" },
-          el("dt", {}, "Effort"), el("dd", {}, field("effort", state.efforts.map(e => [e.slug, e.title]), item.effort)),
-          el("dt", {}, "Repo"), el("dd", {}, field("repo", state.repos.map(r => [r, r]), item.repo)),
-          el("dt", {}, "Kind"), el("dd", {}, item.kind || "not sorted yet"),
-          item.suggested && item.status === "open" && [el("dt", {}, "Desk pick"), el("dd", {}, item.suggested)],
-          item.thread && [el("dt", {}, "Thread"), el("dd", {}, threadLink(item.thread, threadTitle(item.thread) || "open thread"))],
-          blockerEditor && [el("dt", { style: { alignSelf: "start", paddingTop: "4px" } }, "Blocked by"),
-            el("dd", {}, showBlockers ? blockerEditor : el("a", { href: "#", onclick: e => { e.preventDefault(); ui.blockerEdit = item.id; renderDrawer(); } }, "add a blocker"))])),
-      el("div", { class: "foot" }, actions)));
+function settingsSheet() {
+  const a = state.autostart, sp = state.spaces;
+  const chip = (on, text, onclick, title) => el("button", { class: "chipbtn", "aria-pressed": String(on), title, onclick: guard(onclick) }, text);
+  const setAutostart = change => { const next = { ...a, ...change }; return post("/api/autostart", next, next.mode === "off" ? "Auto-start off" : next.mode === "focus" && !next.efforts.length ? "Pick the efforts to auto-start in" : "Auto-start on. The desk fills free slots on weekdays from 8:00 to 20:00."); };
+  const wake = listening() ? "in a minute" : "on its next sweep";
+  const est = state.askMinutes || {};
+  return el("aside", { class: "sheet", role: "dialog", "aria-modal": "true" },
+    el("div", { class: "sh-top" }, el("b", {}, "Settings"), el("span", { class: "grow" }), button("Close", closeOverlay)),
+    el("div", { class: "sh-body" },
+      el("h3", {}, "Your time per day"),
+      el("div", { class: "row" }, el("select", { onchange: e => post("/api/budget", { minutes: Number(e.target.value) }, "Budget saved") },
+        [...new Set([60, 120, 180, 240, 300, 360, 420, 480, state.today.budget])].sort((x, y) => x - y).map(m => el("option", { value: m, selected: m === state.today.budget }, `${m} min`))),
+        el("span", { class: "muted" }, "The Today line falls where this runs out.")),
+      el("h3", {}, "Auto-start"),
+      el("p", { class: "hint", style: { margin: "0 0 6px" } }, "Lets the desk start up to 5 work threads and 2 reviews on its own, on weekdays from 8:00 to 20:00. Threads that wait on reviewers don't count."),
+      el("div", { class: "filters" }, [["off", "Off"], ["focus", "Focus"], ["all", "All efforts"]].map(([mode, text]) => chip(a.mode === mode, text, () => setAutostart({ mode }))),
+        a.mode !== "off" && chip(a.reviews, "Reviews too", () => setAutostart({ reviews: !a.reviews }), "Also review other people's PRs that want my review, 2 at a time. Reviews only draft, nothing gets posted.")),
+      a.mode === "focus" && el("div", { class: "filters" }, state.efforts.map(e => { const on = a.efforts.includes(e.slug); return chip(on, e.title, () => setAutostart({ efforts: on ? a.efforts.filter(x => x !== e.slug) : [...a.efforts, e.slug] })); })),
+      el("h3", {}, "Spaces"),
+      el("p", { class: "hint", style: { margin: "0 0 6px" } }, "Spaces group efforts, like work and personal. Turning a space off hides it and puts its idle threads away until you turn it on again."),
+      el("div", { class: "filters" }, sp.spaces.map(n => { const on = !sp.off.includes(n); return chip(on, n, () => post("/api/spaces", { space: n, on: !on }, on ? `${n} off. The desk puts its idle threads away ${wake}.` : `${n} on. The desk brings its threads back ${wake}.`), on ? "Turn off" : "Turn on"); }),
+        el("button", { class: "chipbtn", title: "New space", onclick: guard(async () => { const name = prompt("Name of the new space"); if (name?.trim()) await post("/api/spaces", { create: name }, `Space ${name.trim().toLowerCase()} added. Move efforts into it here or from their Backlog group.`); }) }, "+ space")),
+      sp.spaces.length > 1 && el("dl", { class: "fields" }, state.efforts.map(e => [el("dt", {}, e.title), el("dd", {}, el("select", { onchange: ev => post("/api/spaces", { effort: e.slug, space: ev.target.value }, `Moved to ${ev.target.value}`) },
+        sp.spaces.map(n => el("option", { value: n, selected: n === spaceOf(e.slug) }, n))))])),
+      el("h3", {}, "Ask estimates"),
+      el("p", { class: "hint", style: { margin: "0 0 6px" } }, "Minutes from opening a question on the board to answering it. A kind uses your median once it has 5 answers."),
+      el("table", { class: "est" }, el("tr", {}, ["Kind", "Default", "Measured", "Answers", "Used"].map(h => el("th", {}, h))),
+        Object.entries(est).map(([k, v]) => el("tr", {}, el("td", {}, KIND_NAME[k] || k), el("td", {}, String(v.default)), el("td", {}, v.median == null ? "-" : String(v.median)), el("td", {}, String(v.samples)), el("td", {}, String(v.minutes)))))));
 }
 
 function captureModal() {
@@ -966,50 +921,64 @@ function captureModal() {
     await api("/api/capture", { text: text.value, repo: repo.value, effort: effort.value });
     ui.capture = false;
     setState(await api("/api/state"));
-    toast(state.listening ? "Captured. The desk sorts it in a minute." : "Captured. The desk sorts it on its next sweep.");
+    toast(listening() ? "Captured. The desk sorts it in a minute." : "Captured. The desk sorts it on its next sweep.");
   };
-  const add = el("button", { class: "btn primary", onclick: guard(submit) }, "Add to inbox");
+  const add = button("Add", submit, "primary");
   text.addEventListener("keydown", e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) add.click(); });
   setTimeout(() => text.focus());
-  return el("div", { class: "modal" }, el("h3", {}, "Capture"), el("p", {}, "Lands in Inbox. Nothing starts until you press Start."),
+  return el("div", { class: "modal", role: "dialog", "aria-modal": "true" }, el("h3", {}, "Capture"), el("p", {}, "Lands in the backlog as unsorted. Nothing starts until you press Start."),
     text, el("div", { class: "row" }, repo, effort),
-    el("div", { class: "row", style: { justifyContent: "flex-end" } }, el("span", { style: { color: "var(--muted)", fontSize: "12px" } }, "⌘↵ to add"),
-      el("button", { class: "btn", onclick: closeOverlay }, "Cancel"), add));
+    el("div", { class: "row", style: { justifyContent: "flex-end" } }, el("span", { class: "muted", style: { fontSize: "12px" } }, "⌘↵ to add"), button("Cancel", closeOverlay), add));
+}
+function closeOverlay() { ui.openId = null; ui.capture = false; ui.settings = false; ui.blockerEdit = null; render(); }
+
+function renderBulk() {
+  const bulk = $("bulk"), n = ui.selected.size;
+  bulk.hidden = !ui.selecting || !n;
+  if (bulk.hidden) return;
+  const ids = [...ui.selected];
+  const pausable = ids.filter(id => { const i = byId(id); return !(i?.status === "started" && isManagerItem(i)); });
+  const act = (path, body, msg, list = ids) => async () => { await post(path, { ids: list, ...body }, msg); ui.selected.clear(); render(); };
+  bulk.replaceChildren(el("b", { style: { marginRight: "6px" } }, `${n} selected`),
+    button("Start", act("/api/status", { status: "requested" }, startMsg())),
+    button("Today", async () => { for (const id of ids.filter(id => startable(byId(id) || {}))) await api("/api/today", { id, to: "today" }); setState(await api("/api/state")); toast("Moved onto today"); ui.selected.clear(); render(); }),
+    button("To backlog", act("/api/status", { status: "open" }, "Back in the backlog", pausable), "", { disabled: !pausable.length }),
+    button("Drop", async () => { if (confirm(`Drop ${n} item(s)?`)) await act("/api/status", { status: "dropped" }, "Dropped")(); }),
+    el("select", { "aria-label": "Set effort", onchange: e => e.target.value !== "x" && act("/api/update", { fields: { effort: e.target.value } }, "Effort set")() },
+      el("option", { value: "x" }, "Set effort…"), el("option", { value: "" }, "none"), state.efforts.map(e => el("option", { value: e.slug }, e.title))),
+    el("select", { "aria-label": "Set repo", onchange: e => e.target.value !== "x" && act("/api/update", { fields: { repo: e.target.value } }, "Repo set")() },
+      el("option", { value: "x" }, "Set repo…"), el("option", { value: "" }, "none"), state.repos.map(r => el("option", { value: r }, r))),
+    button("✕", () => { ui.selected.clear(); render(); }, "", { "aria-label": "Clear selection" }));
 }
 
 function render() {
   const y = scrollY;
-  renderStats(); renderHealth(); renderFilters(); renderSpaces(); renderAutostart(); renderNeeds(); renderIncoming(); renderBoard(); renderBulk(); renderDrawer();
+  renderTop();
+  const view = { now: renderNow, today: renderToday, backlog: renderBacklog, incoming: renderIncoming, done: renderDone }[ui.tab];
+  $("panel").replaceChildren(view());
+  renderBulk(); renderSheet();
   scrollTo(0, y);
+  if (ui.highlight && ui.tab === "incoming") { document.getElementById(`in-${ui.highlight}`)?.scrollIntoView({ block: "center" }); ui.highlight = null; }
 }
 
-$("q").addEventListener("input", e => { ui.q = e.target.value; renderBoard(); renderFilters(); });
-$("groupBy").addEventListener("change", e => { ui.groupBy = e.target.value; save(); render(); });
-$("laneSort").addEventListener("change", e => { ui.laneSort = e.target.value; save(); render(); });
-$("fSpace").addEventListener("change", e => { ui.space = e.target.value; render(); });
-$("fEffort").addEventListener("change", e => { ui.effort = e.target.value; render(); });
-$("fRepo").addEventListener("change", e => { ui.repo = e.target.value; render(); });
-$("fLabel").addEventListener("change", e => { ui.label = e.target.value; render(); });
-$("fThread").addEventListener("change", e => { ui.thread = e.target.value; render(); });
-$("clearFilters").addEventListener("click", () => { ui.q = ui.effort = ui.space = ui.repo = ui.label = ui.thread = ""; $("q").value = ""; $("fLabel").value = ""; $("fThread").value = ""; render(); });
+$("q").addEventListener("input", e => { ui.q = e.target.value; if (!["backlog", "done"].includes(ui.tab)) ui.tab = "backlog"; render(); });
 $("captureBtn").addEventListener("click", () => { ui.capture = true; render(); });
-$("collapseAll").addEventListener("click", () => { document.querySelectorAll(".lane[data-key]").forEach(l => ui.collapsed.add(`${ui.groupBy}:${l.dataset.key}`)); save(); render(); });
-$("expandAll").addEventListener("click", () => { ui.collapsed.clear(); save(); render(); });
+$("settingsBtn").addEventListener("click", () => { ui.settings = true; render(); });
+addEventListener("hashchange", () => { const tab = location.hash.slice(1); if (TABS.some(t => t[0] === tab)) { ui.tab = tab; render(); } });
 document.addEventListener("keydown", e => {
   const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
-  if (e.key === "Escape") { if (ui.openId || ui.capture) closeOverlay(); else if (ui.selected.size) { ui.selected.clear(); render(); } else if (typing) document.activeElement.blur(); }
+  if (e.key === "Escape") { if (ui.openId || ui.capture || ui.settings) closeOverlay(); else if (ui.selecting) { ui.selecting = false; ui.selected.clear(); render(); } else if (typing) document.activeElement.blur(); }
   if (typing || e.metaKey || e.ctrlKey || e.altKey || getSelection().toString()) return;
   if (e.key === "/") { e.preventDefault(); $("q").focus(); }
   if (e.key === "c") { e.preventDefault(); ui.capture = true; render(); }
 });
 
 async function refresh() {
-  if (ui.drag || ui.capture || document.activeElement?.closest(".drawer") || document.activeElement?.matches(".chat textarea")) return;
+  if (ui.drag || ui.capture || document.activeElement?.closest(".sheet") || document.activeElement?.matches(".chat textarea")) return;
   const data = await api("/api/state");
   const json = JSON.stringify(data);
   if (json !== lastJson) setState(data);
 }
-new ResizeObserver(([entry]) => document.documentElement.style.setProperty("--head-h", `${entry.target.offsetHeight}px`)).observe(document.querySelector("header"));
 refresh();
 setInterval(refresh, 5000);
 </script>

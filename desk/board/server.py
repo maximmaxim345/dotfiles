@@ -44,7 +44,7 @@ SPACE_NAME = re.compile(r"[a-z0-9][a-z0-9-]{0,30}")
 SHOWN_INCOMING = {"new", "needs-you", "waiting"}
 CHAT_SHOWN_FOR = datetime.timedelta(days=1)
 SHOWN_PROPOSALS = {"open", "approved", "failed"}
-SETTABLE_STATUSES = {"open", "next", "requested", "done", "dropped"}
+SETTABLE_STATUSES = {"open", "requested", "done", "dropped"}
 CLOSED_STATUSES = {"done", "dropped"}
 START_GRANTS = ("draft_pr", "babysit", "second_opinion")
 BOARD_CONFIG = DESK / "board.json"
@@ -488,10 +488,10 @@ def today_rows(items: dict[str, dict], plan: dict, minutes: int, waiting: int) -
 
 
 def apply_status(item: dict, status: str) -> None:
-    """Set an item's status and the fields that follow from it, leaving a new Next rank to the caller."""
-    if item["status"] == "started" and status in ("open", "next"):
+    """Set an item's status and the fields that follow from it."""
+    if item["status"] == "started" and status == "open":
         item["paused"] = datetime.datetime.now().isoformat(timespec="seconds")
-    elif status not in ("open", "next"):
+    elif status != "open":
         item.pop("paused", None)
         item.pop("unblocked", None)
     item["status"] = status
@@ -502,9 +502,8 @@ def apply_status(item: dict, status: str) -> None:
     item["done"] = datetime.date.today().isoformat() if status in CLOSED_STATUSES else None
     if status not in CLOSED_STATUSES:
         item.pop("archived", None)
-    if status != "next":
-        item.pop("rank", None)
-    if status in ("next", "requested"):
+    item.pop("rank", None)
+    if status == "requested":
         item.pop("suggested", None)
 
 
@@ -529,11 +528,10 @@ def set_status(ids: list[str], status: str, note: dict | None = None) -> None:
             raise ValueError(f"blocked: {items[item_id]['title']}")
     changes = []
     saved_note = start_note(note)
-    next_rank = max((i.get("rank") or 0 for i in items.values() if i["status"] == "next"), default=0)
     for item_id in ids:
         item = items[item_id]
         old = item["status"]
-        allowed = {"open", "next", "done"} if old == "started" else SETTABLE_STATUSES - ({"done"} if old == "new" else set())
+        allowed = {"open", "done"} if old == "started" else SETTABLE_STATUSES - ({"done"} if old == "new" else set())
         retry = status == "requested" and item.get("needs")
         if old == status and not retry or old == "done" or status not in allowed:
             continue
@@ -543,9 +541,6 @@ def set_status(ids: list[str], status: str, note: dict | None = None) -> None:
             item.pop("start_note", None)
             if saved_note:
                 item["start_note"] = saved_note
-        if status == "next":
-            next_rank += 1
-            item["rank"] = next_rank
         write_json(item_path(item_id), item)
         changes.append({"id": item_id, "from": old, "to": status})
     if changes:
@@ -780,13 +775,6 @@ class Handler(BaseHTTPRequestHandler):
                 if item.get("asks") and not item["asks"].get("opened"):
                     item["asks"]["opened"] = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
                     write_json(path, item)
-            elif self.path == "/api/order":
-                for rank, item_id in enumerate(body["ids"], 1):
-                    path = item_path(item_id)
-                    item = json.loads(path.read_text())
-                    if item["status"] == "next":
-                        item["rank"] = rank
-                        write_json(path, item)
             elif self.path == "/api/incoming/dismiss":
                 with locked(INCOMING):
                     incoming = json.loads(INCOMING.read_text())

@@ -179,9 +179,6 @@ def set_status(args: argparse.Namespace) -> None:
         sys.exit("a started item needs --thread")
     if old != args.status:
         apply_status(item, args.status)
-        if args.status == "next":
-            ranks = (json.loads(other.read_text()) for other in BACKLOG.glob("*.json"))
-            item["rank"] = max((i.get("rank") or 0 for i in ranks if i["status"] == "next"), default=0) + 1
     write_json(path, item)
     if old == args.status:
         return
@@ -283,7 +280,7 @@ def wait_moved(args: argparse.Namespace) -> None:
 def list_items(args: argparse.Namespace) -> None:
     for path in sorted(BACKLOG.glob("*.json")):
         item = json.loads(path.read_text())
-        if args.all or item["status"] in ("new", "open", "next", "requested", "started"):
+        if args.all or item["status"] in ("new", "open", "requested", "started"):
             if args.repo and item["repo"] != args.repo:
                 continue
             print(f"{item['id']}  [{item['status']}] {item['repo']}: {item['title']}")
@@ -364,7 +361,7 @@ def main() -> None:
 
     p_status = sub.add_parser("status", help="set an item's status and log it for the desk like a board change")
     p_status.add_argument("id")
-    p_status.add_argument("status", choices=["open", "next", "started", "done", "dropped"])
+    p_status.add_argument("status", choices=["open", "started", "done", "dropped"])
     p_status.add_argument("--thread", help="the T3 thread id, required to start an item without one")
     p_status.add_argument("--pr", help="the PR URL")
     p_status.add_argument(

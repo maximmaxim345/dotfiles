@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print archived threads with a backlog item whose worktree can go with them, and the ones held back with the reason."""
+"""Print and save for the board the archived threads with an item whose worktree can go, and the held ones with why."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from pathlib import Path
 
 DESK = Path.home() / "desk"
 BACKLOG = DESK / "backlog"
+SAVED = DESK / "state" / "worktrees.json"
 DB = Path.home() / ".t3" / "userdata" / "statev2.sqlite"
 ARCHIVED_FOR = datetime.timedelta(days=14)
 # Ignored paths a build or install recreates, so they never hold a worktree back
@@ -78,11 +79,14 @@ def main() -> None:
     for thread, _, archived_at, path in rows:
         if path and not due(archived_at, thread):
             users.setdefault(path, []).append(thread)
+    found: dict[str, list[dict]] = {"due": [], "held": []}
     for thread, title, archived_at, path in sorted(rows, key=lambda row: row[2] or ""):
         if not path or not due(archived_at, thread) or not Path(path).is_dir():
             continue
         reason = f"worktree also used by thread {users[path][0]}" if path in users else held_because(path)
         print(f"held {thread} {title} ({path}): {reason}" if reason else f"due {thread} {title} ({path})")
+        found["held" if reason else "due"].append({"thread": thread, "title": title, "path": path, "reason": reason})
+    SAVED.write_text(json.dumps({"at": now.isoformat(timespec="seconds"), **found}, indent=2) + "\n")
 
 
 if __name__ == "__main__":

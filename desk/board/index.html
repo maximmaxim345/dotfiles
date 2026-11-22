@@ -53,6 +53,7 @@
   .stat.jump:hover { filter: brightness(.95); }
   #needsWrap, #incomingWrap, #board { scroll-margin-top: 110px; }
   .grow { flex: 1; }
+  .banner { margin: 0 20px 12px; padding: 8px 12px; border-radius: 8px; font-size: 13px; background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red); }
   .search { position: relative; }
   .search input { width: 220px; padding-left: 30px; }
   .search svg { position: absolute; left: 9px; top: 50%; translate: 0 -50%; color: var(--muted); }
@@ -246,6 +247,7 @@
     </div>
     <button class="btn primary" id="captureBtn">Capture <kbd style="border-color:rgba(255,255,255,.4);color:inherit">C</kbd></button>
   </div>
+  <div class="banner" id="health" hidden></div>
   <div class="filters">
     <label>Group <select id="groupBy"><option value="effort">by effort</option><option value="repo">by repo</option><option value="none">no groups</option></select></label>
     <label>Sort <select id="laneSort"><option value="activity">recent first</option><option value="name">by name</option></select></label>
@@ -472,6 +474,14 @@ function renderStats() {
     el("span", { class: "dot", style: { background: state.listening ? "var(--green)" : "var(--gray)" } }), state.listening ? "desk listening" : "desk not listening");
   $("stats").replaceChildren(...[stat(needs, "need you", true, "needsWrap"), stat((state.incoming || []).filter(e => ["new", "needs-you"].includes(shownStatus(e)) && spaceShown(e.effort)).length, "incoming", true, "incomingWrap"), stat(count(["new"]), "inbox"), stat(count(["next"]), "next"), stat(count(["requested"]), "starting", true), stat(items.filter(i => i.status === "started" && columnOf(i) === "started").length, "in progress"), stat(items.filter(i => columnOf(i) === "review").length, "in review"), listen].filter(Boolean));
   $("stats").prepend(...(needs ? [] : [el("span", { class: "stat" }, "nothing needs you")]));
+}
+
+function renderHealth() {
+  const h = state.health;
+  const lines = [h?.failed && `The last ${h.failed} desk runs failed. Open the desk thread to see why.`,
+    h?.sweepStale && (h.lastSweep ? `The morning sweep last finished ${ago(h.lastSweep)} ago.` : "The morning sweep never finished.")].filter(Boolean);
+  $("health").hidden = !lines.length;
+  $("health").replaceChildren(...lines.map(line => el("div", {}, line)));
 }
 
 function renderFilters() {
@@ -953,7 +963,7 @@ function captureModal() {
 
 function render() {
   const y = scrollY;
-  renderStats(); renderFilters(); renderSpaces(); renderAutostart(); renderNeeds(); renderIncoming(); renderBoard(); renderBulk(); renderDrawer();
+  renderStats(); renderHealth(); renderFilters(); renderSpaces(); renderAutostart(); renderNeeds(); renderIncoming(); renderBoard(); renderBulk(); renderDrawer();
   scrollTo(0, y);
 }
 

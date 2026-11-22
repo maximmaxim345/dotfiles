@@ -40,6 +40,10 @@ SHOWN_PROPOSALS = {"open", "approved", "failed"}
 SETTABLE_STATUSES = {"open", "next", "requested", "done", "dropped"}
 CLOSED_STATUSES = {"done", "dropped"}
 START_GRANTS = ("draft_pr", "babysit", "second_opinion")
+FAILED_IN_A_ROW = 3
+SWEEP_HOUR = 9
+SWEEP_GRACE = datetime.timedelta(hours=2)
+SWEEP_EARLY = datetime.timedelta(hours=12)
 
 
 def write_json(path: Path, data: dict) -> None:
@@ -100,6 +104,57 @@ def listening() -> bool:
     except (OSError, ValueError):
         return False
     return True
+
+
+def last_sweep_due(now: datetime.datetime) -> datetime.datetime:
+    """The latest weekday morning sweep time that lies at least SWEEP_GRACE in the past."""
+    due = (now - SWEEP_GRACE).replace(hour=SWEEP_HOUR, minute=0, second=0, microsecond=0)
+    if due > now - SWEEP_GRACE:
+        due -= datetime.timedelta(days=1)
+    while due.weekday() >= 5:
+        due -= datetime.timedelta(days=1)
+    return due
+
+
+def desk_health() -> dict | None:
+    """How many of the desk thread's latest runs failed in a row, and whether its morning sweep is overdue."""
+    if not T3_DB.exists():
+        return None
+    conn = sqlite3.connect(f"file:{T3_DB}?mode=ro", uri=True)
+    try:
+        roots = conn.execute("SELECT project_id, workspace_root FROM projection_projects WHERE deleted_at IS NULL").fetchall()
+        project = next((pid for pid, root in roots if Path(root).resolve() == DESK.resolve()), None)
+        row = conn.execute(
+            "SELECT thread_id FROM orchestration_v2_projection_threads"
+            " WHERE project_id = ? AND title = 'desk' AND archived_at IS NULL AND deleted_at IS NULL",
+            (project,),
+        ).fetchone()
+        if row is None:
+            return None
+        statuses = conn.execute(
+            "SELECT status FROM orchestration_v2_projection_runs WHERE thread_id = ?"
+            " AND status IN ('completed', 'failed', 'cancelled', 'interrupted') ORDER BY ordinal DESC LIMIT 50",
+            (row[0],),
+        ).fetchall()
+        (last_sweep,) = conn.execute(
+            "SELECT MAX(r.completed_at) FROM orchestration_v2_projection_runs r"
+            " JOIN orchestration_v2_projection_messages m ON m.run_id = r.run_id"
+            " WHERE r.thread_id = ? AND r.status = 'completed' AND m.thread_id = r.thread_id AND m.role = 'user'"
+            " AND json_extract(m.payload_json, '$.text') LIKE 'Morning sweep%'",
+            (row[0],),
+        ).fetchone()
+    except sqlite3.Error:
+        return None
+    finally:
+        conn.close()
+    failed = next((n for n, (status,) in enumerate(statuses) if status != "failed"), len(statuses))
+    swept = datetime.datetime.fromisoformat(last_sweep.replace("Z", "+00:00")) if last_sweep else None
+    due = last_sweep_due(datetime.datetime.now().astimezone())
+    return {
+        "failed": failed if failed >= FAILED_IN_A_ROW else 0,
+        "lastSweep": swept.astimezone().isoformat(timespec="minutes") if swept else None,
+        "sweepStale": swept is None or swept < due - SWEEP_EARLY,
+    }
 
 
 def log_event(event: dict) -> None:
@@ -177,6 +232,7 @@ def load_state() -> dict:
         "efforts": efforts(),
         "repos": repos(),
         "listening": listening(),
+        "health": desk_health(),
         "incoming": [e for e in incoming.values() if incoming_shown(e)],
         "proposals": [p for p in proposals if p["state"] in SHOWN_PROPOSALS],
         "autostart": autostart_setting(),

@@ -13,7 +13,9 @@ the situation.
   one per line. In replies to a user's issue and in Discord messages, links go
   inline in the sentence instead.
 - State opinions in first person with the reason ("I think X, since Y").
-- Don't use "genuinely", "notably", or "essentially".
+- Don't use "genuinely", "notably", "essentially", "additionally", "crucial",
+  "delve", "enhance", "pivotal", "showcase", "underscore" or "serves as", and
+  no "not just X, but Y".
 - Use plain, common words and the host project's vocabulary. If a word needs
   defining, pick another word. Leave out names the reader has never seen, such
   as our test setups ("sync lab") or terms we made up in the session.
@@ -31,9 +33,13 @@ the situation.
   for one to copy.
 - In review comments, put each sentence on its own line and prefer a question
   to a verdict. For a decision, write "Should we X? If yes ... If no ...".
-- Before showing a draft, check it against this list and the PR rules in
-  `~/.claude/pr-guidelines.md` (length, a title that claims no more than the
-  change does) and fix what fails.
+- Before showing a draft you wrote, tighten it once as its editor: cut filler,
+  a sentence that could stand unchanged in another project's docs, a list of
+  three that only sounds complete, and a closing "-ing" phrase that adds no
+  fact, and keep the voice of the examples below. Then check it against this
+  list and the PR rules in `~/.claude/pr-guidelines.md` (length, a title that
+  claims no more than the change does), fix what fails, and show only the
+  result.
 - When I hand you my draft, keep its structure and wording and only fix what's
   wrong.
 - Never attribute words or a stance to me or anyone else that they didn't

@@ -23,6 +23,7 @@ PROSE_SUFFIXES = {".md", ".markdown", ".mdx", ".txt", ".rst", ".adoc"}
 TIERS = ["fixup", "small", "normal", "risky"]
 TIER_TAGS = {"fixup": "good", "small": "", "normal": "warn", "risky": "bad"}
 RISK_TAGS = {"low": "", "medium": "warn", "high": "bad"}
+PROOF_TAGS = {"test": ("good", "Test"), "run": ("good", "Run"), "recording": ("good", "Recording"), "none": ("warn", "No proof")}
 STATUS_TAGS = {"changed": ("good", "Changed"), "partly": ("warn", "Partly changed"), "declined": ("warn", "Not changed")}
 DIFF_ARGS = ["--no-color", "--no-ext-diff", "--no-textconv", "--unified=3", "--src-prefix=a/", "--dst-prefix=b/"]
 HUNK_RE = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@ ?(.*)$")
@@ -822,6 +823,69 @@ def behavior_table(behavior: Any, linker: Linker) -> str:
     )
 
 
+def claims_section(narrative: Dict[str, Any], change: Change, linker: Linker) -> str:
+    claims = narrative.get("claims") or []
+    rows, unproven = "", 0
+    for number, claim in enumerate(claims, 1):
+        proof = claim.get("proof", "none")
+        if proof not in PROOF_TAGS:
+            raise KitError(f"Claim {number}: `proof` must be one of {list(PROOF_TAGS)}, got {proof!r}")
+        unproven += proof == "none"
+        tag, label = PROOF_TAGS[proof]
+        body = f'<span class="tag {tag}">{label}</span>'
+        body += f"<code>{esc(claim['name'])}</code>" if claim.get("name") else ""
+        if proof == "test":
+            without = claim.get("fails_without")
+            body += {
+                True: ' <span class="res good">fails without the change</span>',
+                False: ' <span class="res warn">passes without the change</span>',
+            }.get(without, ' <span class="res">not run without the change</span>')
+        body += prose(claim.get("detail", ""), linker)
+        links = "".join(ref_links(ref, change, linker) for ref in claim.get("refs", []))
+        body += f"<p>{links}</p>" if links else ""
+        rows += (
+            f'<div class="claim{" unchecked" if proof == "none" else ""}"><div class="ct">{number}. '
+            f'{inline(claim.get("claim", ""), linker)}</div><div class="pf">{body}</div></div>'
+        )
+    if not rows:
+        return ""
+    count = plural(len(claims), "claim") + (f", {unproven} without proof" if unproven else "")
+    note = f'<p class="sub">{inline(narrative["claims_note"], linker)}</p>' if narrative.get("claims_note") else ""
+    return (
+        f'<section id="claims"><h2>Claims and proof <span class="count">{count}</span></h2>{note}'
+        f'<div class="claims">{rows}</div></section>'
+    )
+
+
+def reviewers_section(narrative: Dict[str, Any], linker: Linker) -> str:
+    rows = ""
+    for reviewer in narrative.get("reviewers") or []:
+        fixed = reviewer.get("fixed") or []
+        kept = reviewer.get("kept") or []
+        counts = []
+        if "fixed" in reviewer:
+            counts.append(f"Fixed {fixed if isinstance(fixed, int) else len(fixed)}.")
+        if "kept" in reviewer:
+            counts.append(f"Kept {len(kept)}.")
+        if "skipped" in reviewer:
+            counts.append(f"Skipped {esc(reviewer['skipped'])} theoretical.")
+        line = f"<p>{' '.join(counts)}</p>" if counts else ""
+        items = "" if isinstance(fixed, int) else "".join(f"<li>Fixed: {inline(f, linker)}</li>" for f in fixed)
+        for item in kept:
+            finding, why = (item.get("finding", ""), item.get("why", "")) if isinstance(item, dict) else (item, "")
+            items += f"<li>Kept: {inline(finding, linker)}" + (f" Why: {inline(why, linker)}" if why else "") + "</li>"
+        note = prose(reviewer.get("note", ""), linker)
+        rows += (
+            f'<div class="rev-row"><b>{inline(reviewer.get("name", ""))}</b><div>{line}'
+            f'{f"<ul>{items}</ul>" if items else ""}{note}</div></div>'
+        )
+    intro = f'<p class="sub">{inline(narrative["reviewers_note"], linker)}</p>' if narrative.get("reviewers_note") else ""
+    if not rows and not intro:
+        return ""
+    card = f'<div class="card rev">{rows}</div>' if rows else ""
+    return f'<section id="reviewers"><h2>What the reviewers found</h2>{intro}{card}</section>'
+
+
 def is_test_path(path: str) -> bool:
     parts = path.lower().split("/")
     return any(p in ("test", "tests", "__tests__", "spec", "specs") for p in parts[:-1]) or bool(
@@ -928,6 +992,7 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
 
     sections = decide_cards(narrative.get("decide", []), change, linker, narrative.get("decide_order", ""))
     sections += behavior_table(narrative.get("behavior"), linker)
+    sections += claims_section(narrative, change, linker) + reviewers_section(narrative, linker)
     if round_two:
         feedback_html = ""
         for index, item in enumerate(narrative["feedback"], 1):

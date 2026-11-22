@@ -73,6 +73,25 @@ table.beh td { font-size: 14px; }
   table.beh td[data-l]::before { content: attr(data-l); display: block; font-size: 12px; color: var(--muted); font-weight: 600; }
 }
 
+/* Claims and reviewers */
+.claims { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.claim { display: grid; gap: 4px 20px; padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.claim:last-child { border-bottom: 0; }
+.claim.unchecked { box-shadow: inset 3px 0 var(--warn); background: var(--warn-soft); }
+.claim .ct { font-weight: 500; }
+.claim .pf p { margin: 4px 0 0; }
+.claim .pf .tag { margin-right: 6px; }
+@media (min-width: 900px) { .claim { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); } }
+.res { font-family: var(--mono); font-size: 12px; padding: 1px 6px; border-radius: 4px; white-space: nowrap; display: inline-block; margin: 2px 0; background: var(--surface-2); color: var(--muted); }
+.res.good { background: var(--good-soft); color: var(--good); }
+.res.warn { background: var(--warn-soft); color: var(--warn); }
+.rev { font-size: 14px; padding-top: 4px; padding-bottom: 4px; }
+.rev-row { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 12px; padding: 8px 0; }
+.rev-row + .rev-row { border-top: 1px solid var(--border); }
+.rev-row p { margin: 0 0 4px; }
+.rev-row ul { margin: 0 0 4px; padding-left: 18px; }
+@media (max-width: 560px) { .rev-row { grid-template-columns: 1fr; gap: 2px; } }
+
 /* Groups */
 .group { margin-top: 22px; }
 .group > h3, .group > summary { font-size: 15px; margin-bottom: 4px; }

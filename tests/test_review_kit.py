@@ -195,6 +195,39 @@ class ReviewKitTests(unittest.TestCase):
         lines = diff.stdout.decode().split("\n")
         self.assertEqual(shown, [line for line in lines if line and line[0] in " +-\\" and not line.startswith(("--- ", "+++ "))])
 
+    def test_narrative_text_never_reaches_the_page_as_markup(self) -> None:
+        ref = {
+            "file": "app.py",
+            "lines": "10-12",
+            "note": "x",
+            "look": "x",
+            "context": [{"file": "app.py", "lines": "1-2", "note": "x"}],
+        }
+        narrative = {
+            **dict.fromkeys(("title", "repo", "branch", "summary", "worst_case", "tested", "tier_reason", "decide_order"), "x"),
+            **dict.fromkeys(("claims_note", "reviewers_note"), "x"),
+            "meta": ["x"],
+            "facts": [{"label": "x", "text": "x"}],
+            "decide": [
+                {
+                    **dict.fromkeys(("title", "risk_level", "undo", "risk", "evidence", "pick", "why"), "x"),
+                    "refs": [ref],
+                    "context": [{"file": "app.py", "lines": "1-2", "note": "x"}],
+                    "options": [{"id": "x", "text": "x"}],
+                }
+            ],
+            "behavior": {"rows": [{"case": "x", "before": "x", "after": "x"}], "unchanged": "x"},
+            "claims": [{"claim": "x", "proof": "test", "name": "x", "fails_without": "x", "detail": "x", "refs": [ref]}],
+            "reviewers": [{"name": "x", "fixed": ["x"], "kept": [{"finding": "x", "why": "x"}], "skipped": "x", "note": "x"}],
+            "groups": [
+                {"title": "x", "note": "x", "hunks": [ref]},
+                {"unimportant": "x", "reason": "x", "hunks": [{"file": "README.md"}]},
+            ],
+        }
+        markup = '"><i data-x>'
+        page = self.build_page(json.loads(json.dumps(narrative).replace('"x"', json.dumps(markup))))
+        self.assertNotIn("<i data-x", page)
+
     def test_only_web_addresses_in_text_become_links(self) -> None:
         text = build_review.inline('See https://example.com/a?b=1&c="2". Not javascript:alert(1) or `https://example.com/x`.')
         self.assertIn('<a href="https://example.com/a?b=1&amp;c=" target="_blank"', text)

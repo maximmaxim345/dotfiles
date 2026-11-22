@@ -73,6 +73,18 @@ Every field is optional. An empty object `{}` gives a page with every hunk under
     "rows": [{"case": "The server restarts.", "before": "The client stays offline.", "after": "The client reconnects."}],
     "unchanged": "What stays the same that a reader might expect to change."
   },
+  "claims_note": "Tests ran in a fresh clone.",
+  "claims": [
+    {"claim": "The client reconnects after a server restart.", "proof": "test", "name": "test_reconnect_after_restart",
+     "fails_without": true, "refs": [{"file": "tests/test_client.py", "lines": "40-60"}]},
+    {"claim": "The other client tests still pass.", "proof": "run", "name": "uv run pytest tests/test_client.py", "detail": "62 passed"},
+    {"claim": "It works on a real speaker.", "proof": "none", "detail": "No hand test yet."}
+  ],
+  "reviewers_note": "Optional line, such as which reviewers did not run.",
+  "reviewers": [
+    {"name": "Copilot", "fixed": ["The retry loop never gave up."], "kept": [{"finding": "Retry forever.", "why": "The caller sets a deadline."}],
+     "skipped": 2}
+  ],
   "groups": [
     {
       "title": "Core",
@@ -93,6 +105,8 @@ Every field is optional. An empty object `{}` gives a page with every hunk under
 - `repo` and `branch` name the page in the browser tab and the top bar. Without them the page takes the repository from the `upstream` or `origin` remote and the branch from `--head` or the end of `--range`, never from the checkout's folder or its current branch.
 - `worst_case` and `tested` sit next to the tier at the top, as do the `facts`.
 - `decide` cards come first on the page, in the order given. The heading shows their count, followed by `decide_order` when set (for example "riskiest first"). See "Decide cards" below.
+- `claims` lists each behavior the change claims, with its `proof`: `test`, `run` (a command and its result), `recording` or `none`. `name` is the test, the command or the recording, `detail` adds the result. For a test, `fails_without` says whether it fails without the change (`true`), passes without it (`false`) or was not tried (left out). Claims without proof are marked. `refs` link to hunks as on decide cards.
+- `reviewers` gives one line per reviewer: what it found that was fixed (a list, or a count), what was kept and why, and how many theoretical findings were skipped. Each of the three counts shows only when its field is given. `note` adds text to a reviewer, such as the findings of your own pass. `reviewers_note` shows even without reviewers.
 - `groups` set the reading order. A group is shown in full, or collapsed under its one-line `reason` when `unimportant` is true. A collapsed group takes no `note`: put it on one of its hunks. Every hunk the groups do not place appears in a last group, "Not mentioned by the author". Nothing is dropped.
 
 ### Paths to look at closely
@@ -158,7 +172,7 @@ A round two narrative has a `feedback` list and needs `--since`. Hunks here are 
 
 ## What the page does
 
-- Decide cards first, then the before and after table, then the diff in reading order with each note above its hunk. When the range has more than one commit, a By commit switch regroups the same hunks under the commit that touched them, oldest first, and each hunk shows its commits.
+- Decide cards first, then the before and after table, the claims and what the reviewers found, then the diff in reading order with each note above its hunk. When the range has more than one commit, a By commit switch regroups the same hunks under the commit that touched them, oldest first, and each hunk shows its commits.
 - A `path:line` or `path:10-20` in any text of the narrative links to that line when the page shows it, inside a hunk or in its unchanged lines. A path may be shortened to its end, like `worktree-due:40`, as long as only one changed file ends that way. Following such a link or a card ref opens the hunk, reveals the lines and marks them.
 - Side by side diff on screens 900 pixels and wider, stacked below that, with word-level highlights inside changed lines. The top bar switches between Auto, Side by side and Stacked.
 - A carriage return shows as a small ␍, and a line without a final newline carries a "No newline at end of file" note, so a change of line endings is visible.

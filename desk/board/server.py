@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve the desk board on localhost."""
+"""Serve the desk board on localhost, and with a token on the tailnet address in ~/desk/board.json when one is set."""
 
 from __future__ import annotations
 
@@ -7,15 +7,22 @@ import argparse
 import contextlib
 import datetime
 import fcntl
+import hmac
+import ipaddress
 import json
 import os
 import re
+import secrets
 import sqlite3
+import sys
 import tempfile
+import threading
+import time
+from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Iterator
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 DESK = Path.home() / "desk"
 BACKLOG = DESK / "backlog"
@@ -40,10 +47,45 @@ SHOWN_PROPOSALS = {"open", "approved", "failed"}
 SETTABLE_STATUSES = {"open", "next", "requested", "done", "dropped"}
 CLOSED_STATUSES = {"done", "dropped"}
 START_GRANTS = ("draft_pr", "babysit", "second_opinion")
+BOARD_CONFIG = DESK / "board.json"
+TOKEN = STATE / "board.token"
+LOGIN = STATE / "board.login"
+LOGIN_FOR = 10 * 60
+COOKIE = "desk_token"
 FAILED_IN_A_ROW = 3
 SWEEP_HOUR = 9
 SWEEP_GRACE = datetime.timedelta(hours=2)
 SWEEP_EARLY = datetime.timedelta(hours=12)
+
+
+def tailnet_address() -> str | None:
+    address = json.loads(BOARD_CONFIG.read_text()).get("tailnet") if BOARD_CONFIG.exists() else None
+    if address:
+        try:
+            valid = not ipaddress.IPv4Address(address).is_unspecified
+        except ValueError:
+            valid = False
+        if not valid:
+            sys.exit(f"{BOARD_CONFIG}: tailnet must be the Mac's Tailscale IPv4 address, not {address}")
+    return address
+
+
+def new_secret(path: Path, nbytes: int) -> str:
+    """Write a random secret readable only by me and return it."""
+    STATE.mkdir(exist_ok=True)
+    secret = secrets.token_urlsafe(nbytes)
+    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "w") as f:
+        f.write(secret)
+    return secret
+
+
+def board_token() -> str:
+    return TOKEN.read_text().strip() if TOKEN.exists() else new_secret(TOKEN, 32)
+
+
+def login_url(address: str, port: int) -> str:
+    LOGIN.unlink(missing_ok=True)
+    return f"http://{address}:{port}/login?code={new_secret(LOGIN, 16)}"
 
 
 def write_json(path: Path, data: dict) -> None:
@@ -416,14 +458,47 @@ class Handler(BaseHTTPRequestHandler):
     def send_json(self, status: int, data: object) -> None:
         self.send(status, json.dumps(data).encode(), "application/json")
 
-    def local_host(self) -> bool:
-        port = self.server.server_address[1]
-        return self.headers.get("Host") in (f"127.0.0.1:{port}", f"localhost:{port}")
+    def remote(self) -> bool:
+        return self.server.server_address[0] != "127.0.0.1"
+
+    def allowed(self) -> bool:
+        if not self.remote():
+            port = self.server.server_address[1]
+            return self.headers.get("Host") in (f"127.0.0.1:{port}", f"localhost:{port}")
+        try:
+            cookie = SimpleCookie(self.headers.get("Cookie", ""))
+        except CookieError:
+            return False
+        token = board_token()
+        return bool(token) and COOKIE in cookie and hmac.compare_digest(cookie[COOKIE].value.encode(), token.encode())
+
+    def login(self, code: str) -> None:
+        try:
+            expected = LOGIN.read_text().strip()
+            valid = (
+                bool(expected)
+                and time.time() - LOGIN.stat().st_mtime < LOGIN_FOR
+                and hmac.compare_digest(code.encode(), expected.encode())
+            )
+        except OSError:
+            valid = False
+        if not valid:
+            self.send_json(403, {"error": "this login link is used or expired, run bin/board --login-url for a new one"})
+            return
+        LOGIN.unlink(missing_ok=True)
+        self.send_response(303)
+        self.send_header("Set-Cookie", f"{COOKIE}={board_token()}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax")
+        self.send_header("Location", "/")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
     def do_GET(self) -> None:
-        if not self.local_host():
+        url = urlsplit(self.path)
+        if self.remote() and url.path == "/login":
+            self.login(parse_qs(url.query).get("code", [""])[0])
+        elif not self.allowed():
             self.send_json(403, {"error": "forbidden"})
-        elif urlsplit(self.path).path == "/":
+        elif url.path == "/":
             self.send(200, PAGE.read_bytes(), "text/html; charset=utf-8")
         elif self.path == "/api/state":
             self.send_json(200, load_state())
@@ -431,7 +506,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(404, {"error": "not found"})
 
     def do_POST(self) -> None:
-        if not self.local_host() or self.headers.get("Content-Type") != "application/json":
+        if not self.allowed() or self.headers.get("Content-Type") != "application/json":
             self.send_json(403, {"error": "forbidden"})
             return
         length = int(self.headers.get("Content-Length", 0))
@@ -577,12 +652,37 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json(200, load_state())
 
 
+def serve_tailnet(address: str, port: int) -> None:
+    """Serve on the tailnet address once it exists, since Tailscale may connect after the board starts."""
+    waited = False
+    while True:
+        try:
+            server = ThreadingHTTPServer((address, port), Handler)
+        except OSError as err:
+            if not waited:
+                print(f"waiting for {address} to come up: {err}", file=sys.stderr, flush=True)
+                waited = True
+            time.sleep(30)
+            continue
+        server.serve_forever()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--login-url", action="store_true", help="print a link that lets one browser on the tailnet in, once")
     args = parser.parse_args()
+    address = tailnet_address()
+    if args.login_url:
+        if not address:
+            sys.exit(f"set tailnet in {BOARD_CONFIG} first")
+        print(login_url(address, args.port))
+        return
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
-    print(f"http://127.0.0.1:{args.port}")
+    if address:
+        board_token()
+        threading.Thread(target=serve_tailnet, args=(address, args.port), daemon=True).start()
+    print(f"http://127.0.0.1:{args.port}" + (f" and http://{address}:{args.port}" if address else ""))
     server.serve_forever()
 
 

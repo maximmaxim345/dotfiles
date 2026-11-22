@@ -13,6 +13,7 @@ This repo holds the state of my work across repos: efforts, the backlog and the 
 - `bin/`: scripts the routines call.
 - `repos.json`: optional, repo names that have no T3 project.
 - `watch.json`: the GitHub sources the desk watches, see "Watching".
+- `board.json`: optional, the address the board also listens on, see "Board".
 - `state/`: the board's and listener's runtime state, not committed.
 
 `AGENTS.md`, `TASK.md`, `bin/` and `board/` are links into my dotfiles. Don't edit them: add a backlog item with repo `dotfiles` instead.
@@ -296,3 +297,5 @@ A brief uses these `##` sections, in this order, and leaves out the ones that do
 A snoozed thread goes only in `snoozed`, with its wake time in local time. The board puts a started item without `asks` whose thread is in `waiting` in the In review column, and an open item with an open blocker in Blocked. The board adds items with `asks` to Needs you itself and drops a `needsYou` entry for the same thread in their favor.
 
 On the board I can capture notes (status `new`), comment on items, order my Next column, start, pause, finish (Done), drop or reopen items, archive a lane's Done cards, add spaces, turn them on or off and move efforts between them (see "Spaces"), set blockers, change their effort or repo, hide Incoming entries (status dismissed) or snooze them until tomorrow or next week, apply or dismiss proposed project board changes, write in the chat of an Incoming entry or a proposed change, and set auto-start (see "Auto-start"). The server logs each action to `state/events.jsonl` for `bin/desk-wait`. It never launches anything itself.
+
+The board listens only on 127.0.0.1 unless `board.json` names my Mac's Tailscale address (`{"tailnet": "100.x.y.z"}`). Then it also listens there after a restart (`launchctl kickstart -k gui/$(id -u)/local.desk-board`), and every request on that address needs the token in `state/board.token`. `bin/board --login-url` prints a link that sets the token as a cookie in the browser that opens it, once and within 10 minutes.

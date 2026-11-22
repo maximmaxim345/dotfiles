@@ -62,11 +62,15 @@ DEFAULT_BUDGET = 240
 SIZE_MINUTES = {"S": 10, "M": 20, "L": 40}
 ASK_MINUTES = {"decide": 5, "review": 20, "push": 5, "post": 5, "device-test": 30, "question": 10}
 OTHER_MINUTES = {"start": 5, "reply": 10, "failed": 5, "worktree": 5, "desk": 10}
+KIND_MINUTES = {"bugfix": 15, "feature": 20, "review": 15, "design": 30, "test": 10, "docs": 10}
+PLACES = ("today", "later")
 SAMPLES_NEEDED = 5
 LONGEST_SAMPLE = 120
 LABEL_ORDER = {"user-visible bug": 0, "reachable but rare": 1}
 WORKTREES = STATE / "worktrees.json"
 GOALS = DESK / "goals"
+PARKED_AFTER = datetime.timedelta(days=14)
+FATES = ("keep", "start", "drop")
 MILESTONE = re.compile(r"([a-z0-9][a-z0-9-]*)#([1-9][0-9]*)")
 
 
@@ -289,11 +293,9 @@ def load_state() -> dict:
     shown = [e for e in incoming.values() if incoming_shown(e)]
     health = desk_health()
     worktrees = json.loads(WORKTREES.read_text()) if WORKTREES.exists() else {}
-    now = now_rows(by_id, threads or {}, shown, health, worktrees)
-    plan, minutes = today_plan(by_id), budget()
-    waiting = sum(row["minutes"] for row in now)
+    day = plan_day(by_id, threads or {}, shown, health, worktrees)
     return {
-        "items": list(by_id.values()),
+        "items": [{**item, "estimate": item_minutes(item)} for item in by_id.values()],
         "threads": threads,
         "efforts": efforts(),
         "repos": repos(),
@@ -303,11 +305,12 @@ def load_state() -> dict:
         "proposals": [p for p in proposals if p["state"] in SHOWN_PROPOSALS],
         "autostart": autostart_setting(),
         "spaces": spaces_setting(),
-        "now": now,
-        "today": {"date": plan["date"], "budget": minutes, "waiting": waiting, "rows": today_rows(by_id, plan, minutes, waiting)},
+        "now": day["now"],
+        "today": {key: day[key] for key in ("date", "budget", "waiting", "rows")},
         "askMinutes": ask_minutes(list(by_id.values())),
         "worktrees": worktrees,
         "goals": load_goals(list(by_id.values())),
+        "parked": [i for i, item in by_id.items() if parked(item, by_id) and i not in day["moves"]],
     }
 
 
@@ -332,7 +335,10 @@ def parse_time(value: str) -> datetime.datetime:
 
 
 def item_minutes(item: dict) -> int:
-    return item.get("minutes") or SIZE_MINUTES.get(item.get("size") or "", SIZE_MINUTES["M"])
+    """My minutes for the item, guessed from its kind, PR and thread when it has no size."""
+    if item.get("minutes") or item.get("size"):
+        return item.get("minutes") or SIZE_MINUTES[item["size"]]
+    return 10 if item.get("pr") else 15 if item.get("thread") else KIND_MINUTES.get(item.get("kind") or "", 15)
 
 
 def answer_times(item: dict) -> Iterator[tuple[str, float]]:
@@ -377,7 +383,9 @@ def load_goals(items: list[dict]) -> list[dict]:
     return goals
 
 
-def now_rows(items: dict[str, dict], threads: dict, incoming: list[dict], health: dict | None, worktrees: dict) -> list[dict]:
+def now_rows(
+    items: dict[str, dict], threads: dict, incoming: list[dict], health: dict | None, worktrees: dict, spaces: dict
+) -> list[dict]:
     """What waits on me, the row to do first on top."""
     estimates = ask_minutes(list(items.values()))
     snoozed = {t["thread"] for t in threads.get("snoozed") or []}
@@ -411,18 +419,18 @@ def now_rows(items: dict[str, dict], threads: dict, incoming: list[dict], health
             add(2, kind, estimates[kind]["minutes"], entry["title"], entry["why"], entry.get("since"), **links(entry))
     for entry in threads.get("failed") or []:
         add(2, "failed", OTHER_MINUTES["failed"], entry["title"], entry["why"], entry.get("since"), **links(entry))
-    for entry in incoming:
-        if entry["status"] == "needs-you" and (entry.get("chat") or [{}])[-1].get("by") != "me":
-            add(
-                1,
-                "reply",
-                OTHER_MINUTES["reply"],
-                entry["title"],
-                entry.get("action") or "",
-                entry.get("updated"),
-                url=entry["url"],
-                effort=entry.get("effort"),
-            )
+    off = set(spaces["off"])
+    replies = [
+        e
+        for e in incoming
+        if e["status"] == "needs-you"
+        and (e.get("chat") or [{}])[-1].get("by") != "me"
+        and space_of(e.get("effort"), spaces) not in off
+    ]
+    if replies:
+        title = f"{len(replies)} GitHub {'entry waits' if len(replies) == 1 else 'entries wait'} for my reply"
+        oldest = min((e.get("updated") or "" for e in replies), default="") or None
+        add(1, "reply", OTHER_MINUTES["reply"], title, ", ".join(e["title"] for e in replies[:3]), oldest)
     for entry in worktrees.get("held") or []:
         add(
             3,
@@ -434,81 +442,118 @@ def now_rows(items: dict[str, dict], threads: dict, incoming: list[dict], health
             path=entry["path"],
             thread=entry["thread"],
         )
+    rows = [r for r in rows if r["kind"] == "reply" or space_of(r.get("effort"), spaces) not in off]
     rows.sort(key=lambda r: (r["tier"], r["minutes"], r["at"] or ""))
     return rows
 
 
-def today_order(items: dict[str, dict]) -> list[str]:
-    """Items I could start, most important first."""
-
-    def startable(item: dict) -> bool:
-        return item["status"] == "open" and not item.get("needs") and not open_blockers(item, items)
-
-    def priority(item: dict) -> tuple:
-        return (
-            not item.get("urgent"),
-            not item.get("suggested"),
-            LABEL_ORDER.get(item.get("label") or "", len(LABEL_ORDER)),
-            not item.get("seen"),
-            item["created"],
-            item["id"],
-        )
-
-    return [item["id"] for item in sorted(filter(startable, items.values()), key=priority)]
+def last_touched(item: dict, items: dict[str, dict]) -> str:
+    """The day of the item's last comment, answer, question, pause, unblock or keep, or of its creation."""
+    asks, answer = item.get("asks") or {}, item.get("answer") or {}
+    dates = [item["created"], item.get("paused"), item.get("unblocked"), item.get("kept"), asks.get("at"), answer.get("at")]
+    blockers = [items[b].get("done") for b in item.get("blockedBy") or [] if b in items]
+    return max(d[:10] for d in dates + blockers + [c["at"] for c in item["comments"]] if d)
 
 
-def fill_today(items: dict[str, dict], old: dict, day: str) -> dict:
-    """Plan today, keeping today's moves, the rows I moved onto an earlier day that are still open, and my old Next column."""
-    moves = dict(old.get("moves") or {}) if old.get("date") == day else {}
-    if old.get("date") != day:
-        moves.update(
-            {i: to for i, to in (old.get("moves") or {}).items() if to == "today" and items.get(i, {}).get("status") == "open"}
-        )
-    nexts = sorted((i for i in items.values() if i["status"] == "next"), key=lambda i: i.get("rank") or 0)
-    for item in nexts:
-        note = f"Moved from my Next column (rank {item.get('rank')}) onto my Today list, since the board has no Next column now."
-        apply_status(item, "open")
-        item["comments"].append({"at": datetime.datetime.now().isoformat(timespec="seconds"), "by": "desk", "text": note})
-        write_json(item_path(item["id"]), item)
-        moves[item["id"]] = "today"
-    order = dict.fromkeys([i["id"] for i in nexts] + today_order(items))
-    return {"date": day, "order": list(order), "moves": {i: to for i, to in moves.items() if i in items}}
+def parked(item: dict, items: dict[str, dict]) -> bool:
+    if item["status"] != "open" or item.get("thread") or item.get("urgent") or item.get("suggested"):
+        return False
+    return not open_blockers(item, items) and last_touched(item, items) <= (datetime.date.today() - PARKED_AFTER).isoformat()
 
 
-def today_plan(items: dict[str, dict], refill: bool = False) -> dict:
+def priority(item: dict) -> tuple:
+    return (
+        not item.get("urgent"),
+        not item.get("suggested"),
+        LABEL_ORDER.get(item.get("label") or "", len(LABEL_ORDER)),
+        not item.get("seen"),
+        item["created"],
+        item["id"],
+    )
+
+
+def today_plan(items: dict[str, dict]) -> dict:
+    """Today's moves, keeping the rows I moved onto an earlier day that are still open, and my old Next column."""
     day = datetime.date.today().isoformat()
     STATE.mkdir(exist_ok=True)
     with locked(TODAY):
-        plan = json.loads(TODAY.read_text()) if TODAY.exists() else {}
-        if refill or plan.get("date") != day:
-            plan = fill_today(items, plan, day)
-            write_json(TODAY, plan)
+        old = json.loads(TODAY.read_text()) if TODAY.exists() else {}
+        nexts = sorted((i for i in items.values() if i["status"] == "next"), key=lambda i: i.get("rank") or 0)
+        if old.get("date") == day and not nexts:
+            return {"date": day, "moves": old.get("moves") or {}}
+        moves = old.get("moves") or {}
+        if old.get("date") != day:
+            moves = {i: to for i, to in moves.items() if to == "today" and items.get(i, {}).get("status") == "open"}
+        for item in nexts:
+            note = (
+                f"Moved from my Next column (rank {item.get('rank')}) onto my Today list, since the board has no Next column now."
+            )
+            apply_status(item, "open")
+            item["comments"].append({"at": datetime.datetime.now().isoformat(timespec="seconds"), "by": "desk", "text": note})
+            write_json(item_path(item["id"]), item)
+            moves[item["id"]] = "today"
+        plan = {"date": day, "moves": moves}
+        write_json(TODAY, plan)
     return plan
+
+
+def place_today(item_id: str, to: str | None) -> None:
+    """Move an item above or below my Today line, or back to where the plan puts it."""
+    if to not in (*PLACES, None):
+        raise ValueError(f"unknown place {to}")
+    item_path(item_id)
+    plan = today_plan(all_items())
+    with locked(TODAY):
+        plan["moves"].pop(item_id, None)
+        if to:
+            plan["moves"][item_id] = to
+        write_json(TODAY, plan)
+
+
+def plan_changed() -> None:
+    if autostart_setting()["mode"] != "off":
+        log_event({"type": "today"})
 
 
 def budget() -> int:
     return json.loads(BUDGET.read_text())["minutes"] if BUDGET.exists() else DEFAULT_BUDGET
 
 
-def today_rows(items: dict[str, dict], plan: dict, minutes: int, waiting: int) -> list[dict]:
-    """The planned rows, each marked above or below the line that the waiting minutes and the budget draw."""
+def today_rows(items: dict[str, dict], plan: dict, minutes: int, waiting: int, spaces: dict) -> list[dict]:
+    """The items I could start, above the line my moves, urgent items and then the budget draw, the rest below."""
     moves = plan.get("moves") or {}
-    used, full, rows = waiting, False, []
-    for item_id in dict.fromkeys(plan["order"] + list(moves)):
-        item = items.get(item_id)
-        if item is None or item["status"] in CLOSED_STATUSES:
-            continue
-        cost, move = item_minutes(item), moves.get(item_id)
-        if move:
-            above = move == "today"
-        elif item.get("urgent"):
-            above = True
-        else:
-            above = not full and used + cost <= minutes
-            full = full or not above
-        used += cost if above else 0
-        rows.append({"id": item_id, "minutes": cost, "today": above, "moved": move})
-    return rows
+
+    def startable(item: dict) -> bool:
+        if item["status"] != "open" or item.get("needs") or open_blockers(item, items):
+            return False
+        return space_of(item.get("effort"), spaces) not in spaces["off"] and (item["id"] in moves or not parked(item, items))
+
+    ready = sorted(filter(startable, items.values()), key=priority)
+    moved_up = [items[i] for i in moves if moves[i] == "today" and i in items and startable(items[i])]
+    forced = moved_up + [i for i in ready if i.get("urgent") and i["id"] not in moves]
+    rest = [i for i in ready if i["id"] not in moves and not i.get("urgent")]
+    later = [i for i in ready if moves.get(i["id"]) == "later"]
+    used, full, above, below = waiting + sum(item_minutes(i) for i in forced), False, [], []
+    for item in rest:
+        fits = not full and used + item_minutes(item) <= minutes
+        full = full or not fits
+        used += item_minutes(item) if fits else 0
+        (above if fits else below).append(item)
+    return [
+        {"id": item["id"], "minutes": item_minutes(item), "today": up, "moved": moves.get(item["id"])}
+        for items_, up in ((forced, True), (above, True), (below, False), (later, False))
+        for item in items_
+    ]
+
+
+def plan_day(items: dict[str, dict], threads: dict, incoming: list[dict], health: dict | None, worktrees: dict) -> dict:
+    """What waits on me, and the Today list that fits in the rest of my budget."""
+    spaces = spaces_setting()
+    now = now_rows(items, threads, incoming, health, worktrees, spaces)
+    plan, minutes = today_plan(items), budget()
+    waiting = sum(row["minutes"] for row in now)
+    rows = today_rows(items, plan, minutes, waiting, spaces)
+    return {"now": now, "date": plan["date"], "moves": plan["moves"], "budget": minutes, "waiting": waiting, "rows": rows}
 
 
 def apply_status(item: dict, status: str) -> None:
@@ -779,20 +824,28 @@ class Handler(BaseHTTPRequestHandler):
                 if archived:
                     log_event({"type": "archive", "ids": archived})
             elif self.path == "/api/today":
-                if body.get("to") not in ("today", "later", None):
-                    raise ValueError(f"unknown place {body['to']}")
-                item_path(body["id"])
-                plan = today_plan(all_items())
-                with locked(TODAY):
-                    plan["moves"].pop(body["id"], None)
-                    if body["to"]:
-                        plan["moves"][body["id"]] = body["to"]
-                    write_json(TODAY, plan)
+                place_today(body["id"], body.get("to"))
+                if body.get("to") == "today":
+                    plan_changed()
             elif self.path == "/api/budget":
                 minutes = int(body["minutes"])
                 if not 0 <= minutes <= 24 * 60:
                     raise ValueError("give the budget in minutes of one day")
                 write_json(BUDGET, {"minutes": minutes})
+                plan_changed()
+            elif self.path == "/api/fate":
+                if body["pick"] not in FATES:
+                    raise ValueError(f"unknown fate {body['pick']}")
+                path = item_path(body["id"])
+                item = json.loads(path.read_text())
+                item.pop("fate", None)
+                if body["pick"] == "keep":
+                    item["kept"] = datetime.datetime.now().isoformat(timespec="seconds")
+                write_json(path, item)
+                if body["pick"] == "keep":
+                    plan_changed()
+                else:
+                    set_status([body["id"]], "requested" if body["pick"] == "start" else "dropped")
             elif self.path == "/api/ask/open":
                 path = item_path(body["id"])
                 item = json.loads(path.read_text())
@@ -859,12 +912,16 @@ class Handler(BaseHTTPRequestHandler):
                 for item_id in body["ids"]:
                     path = item_path(item_id)
                     item = json.loads(path.read_text())
+                    if "blockedBy" in fields and item.get("blockedBy") and not fields["blockedBy"]:
+                        item["unblocked"] = now
+                    elif fields.get("blockedBy"):
+                        item.pop("unblocked", None)
                     item.update(fields)
                     if "urgent" in fields and not fields["urgent"]:
                         item.pop("urgent")
-                    if "blockedBy" in fields:
-                        item.pop("unblocked", None)
                     write_json(path, item)
+                if fields.get("urgent"):
+                    plan_changed()
             else:
                 self.send_json(404, {"error": "not found"})
                 return

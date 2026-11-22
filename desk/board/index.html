@@ -267,6 +267,7 @@ const TABS = [["now", "Now"], ["today", "Today"], ["backlog", "Backlog"], ["inco
 const KIND_NAME = { decide: "Decide", review: "Review", push: "Push OK", post: "Post OK", "device-test": "Test on device", question: "Answer", reply: "Reply",
   start: "Start", failed: "Run failed", worktree: "Worktree", desk: "Desk" };
 const CLOSED = ["done", "dropped"];
+const FATE_NAMES = [["keep", "Keep"], ["start", "Start"], ["drop", "Drop"]];
 const OLD_MINUTES = 2 * 1440;
 const params = new URLSearchParams(location.search);
 const store = (() => { try { return JSON.parse(localStorage.getItem("desk-board") || "{}"); } catch { return {}; } })();
@@ -278,7 +279,7 @@ const ui = {
   selecting: false, selected: new Set(), openId: null, capture: false, settings: false, highlight: null, drag: null,
   folds: new Set(), chatDrafts: {}, startNotes: {}, picked: new Set(), proposalsOpen: null, blockerEdit: null,
 };
-let state = { items: [], threads: null, efforts: [], repos: [], now: [], today: { rows: [], budget: 240, waiting: 0 }, incoming: [], proposals: [], goals: [] };
+let state = { items: [], threads: null, efforts: [], repos: [], now: [], today: { rows: [], budget: 240, waiting: 0 }, incoming: [], proposals: [], goals: [], parked: [] };
 let lastJson = "";
 
 const $ = id => document.getElementById(id);
@@ -627,8 +628,10 @@ function filterRow() {
 function renderBacklog() {
   const items = state.items.filter(i => !CLOSED.includes(i.status) && matches(i)
     && (!ui.ready || startable(i) && !openBlockers(i).length && !i.needs) && (!ui.seen || i.seen) && (!ui.active || ["requested", "started"].includes(i.status)));
+  const parkedIds = new Set(state.parked || []);
+  const parked = items.filter(i => parkedIds.has(i.id)).sort((a, b) => !!b.fate - !!a.fate || a.created.localeCompare(b.created));
   const groups = new Map();
-  for (const item of items) { const k = groupKey(item); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(item); }
+  for (const item of items.filter(i => !parkedIds.has(i.id))) { const k = groupKey(item); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(item); }
   const goals = ui.groupBy === "effort" ? (state.goals || []).filter(g => inScope(g.effort)) : [];
   if (!ui.q) goals.forEach(g => { if (!groups.has(g.effort || "")) groups.set(g.effort || "", []); });
   const keys = [...groups.keys()].sort((a, b) => (a === "") - (b === "") || groupName(a).localeCompare(groupName(b)));
@@ -654,7 +657,20 @@ function renderBacklog() {
           ui.groupBy === "effort" && k && el("div", { class: "gfoot" }, el("span", { class: "mono" }, k), managerOf(k) && threadLink(managerOf(k), "manager thread"),
             (state.spaces?.spaces || []).length > 1 && el("label", {}, "Space ", el("select", { onchange: e => post("/api/spaces", { effort: k, space: e.target.value }, `Moved to ${e.target.value}`) },
               state.spaces.spaces.map(n => el("option", { value: n, selected: n === spaceOf(k) }, n)))))));
-    }) : el("div", { class: "empty" }, "No items match."));
+    }) : el("div", { class: "empty" }, "No items match."),
+    parked.length > 0 && parkedGroup(parked, isOpen("parked"), () => toggle("parked")));
+}
+function parkedGroup(parked, open, toggle) {
+  const fates = parked.filter(i => i.fate);
+  const settle = (i, pick) => post("/api/fate", { id: i.id, pick }, pick === "keep" ? "Kept, back in the backlog" : pick === "start" ? startMsg() : "Dropped");
+  const fateRow = i => itemRow(i, {
+    withEffort: true, context: [el("b", {}, `Desk suggests ${i.fate.pick}: `), i.fate.why],
+    action: FATE_NAMES.map(([pick, label]) => button(label, () => settle(i, pick), pick === i.fate.pick ? "primary" : "", { title: pick === i.fate.pick ? "The desk's pick" : "" })),
+  });
+  return el("div", { class: `grp${open ? " open" : ""}`, style: { marginTop: "16px" } },
+    el("button", { class: "gh", type: "button", "aria-expanded": String(!!open), onclick: toggle }, el("span", { class: "gn" }, "Parked"),
+      el("span", { class: "gc" }, [`${parked.length} ${parked.length === 1 ? "item" : "items"} untouched for 14 days or more`, fates.length && `this week's ${fates.length} to settle`].filter(Boolean).join(" · ")), el("span", { class: "chev" }, open ? "Hide" : "Show")),
+    open && el("div", { class: "gb" }, el("div", { class: "list" }, fates.map(fateRow), parked.filter(i => !i.fate).map(i => itemRow(i, { withEffort: true })))));
 }
 
 function milestoneState(list) {

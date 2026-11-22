@@ -16,15 +16,12 @@ from server import (  # noqa: E402
     WORKTREES,
     all_items,
     autostart_setting,
-    budget,
     handed_over,
     incoming_shown,
-    now_rows,
     open_blockers,
+    plan_day,
     space_of,
     spaces_setting,
-    today_plan,
-    today_rows,
 )
 
 WORK_SLOTS = 5
@@ -98,11 +95,12 @@ def main() -> None:
     if not in_window(now):
         return
 
-    candidates = [i for i in items.values() if startable(i) and allowed(i)]
     incoming = [e for e in (json.loads(INCOMING.read_text()) if INCOMING.exists() else {}).values() if incoming_shown(e)]
     worktrees = json.loads(WORKTREES.read_text()) if WORKTREES.exists() else {}
-    waiting = sum(row["minutes"] for row in now_rows(items, threads, incoming, None, worktrees))
-    planned = [row["id"] for row in today_rows(items, today_plan(items), budget(), waiting) if row["today"]]
+    day = plan_day(items, threads, incoming, None, worktrees)
+    later = {i for i, to in day["moves"].items() if to == "later"}
+    candidates = [i for i in items.values() if startable(i) and allowed(i) and i["id"] not in later]
+    planned = [row["id"] for row in day["rows"] if row["today"]]
     todays = [i for i in candidates if i["id"] in planned]
     todays.sort(key=lambda i: planned.index(i["id"]))
     picks = sorted((i for i in candidates if i["status"] == "open" and i.get("suggested")), key=lambda i: i["id"])

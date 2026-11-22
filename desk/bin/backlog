@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Add, list, adopt, move, rename, comment on, unblock, link or set the status of items, ask, note findings, or keep goals."""
+"""Add, list, adopt, move, fill in, place and change items, ask questions, note findings and keep goals."""
 
 from __future__ import annotations
 
@@ -25,7 +25,22 @@ FIELD_LIMITS = {"title": 70, "why": 140, "seen": 140, "from_me": 80, "start": 24
 ASK_KINDS = ["decide", "review", "push", "post", "device-test"]
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import GOALS, MILESTONE, add_item, apply_status, free_path, log_event, repos, slug_id, write_json  # noqa: E402
+from server import (  # noqa: E402
+    FATES,
+    GOALS,
+    MILESTONE,
+    PLACES,
+    add_item,
+    all_items,
+    apply_status,
+    free_path,
+    log_event,
+    parked,
+    place_today,
+    repos,
+    slug_id,
+    write_json,
+)
 
 
 def create(args: argparse.Namespace, brief: str, **extra: object) -> dict:
@@ -364,9 +379,55 @@ def goal_list(args: argparse.Namespace) -> None:
         print(f"{goal['slug']}  {goal.get('effort') or 'no effort'}: {goal['title']}{milestones}")
 
 
+def fate(args: argparse.Namespace) -> None:
+    path = BACKLOG / f"{args.id}.json"
+    if not path.exists():
+        sys.exit(f"no item {args.id}")
+    item = json.loads(path.read_text())
+    item["fate"] = {"pick": args.pick, "why": " ".join(args.why.split()), "at": datetime.date.today().isoformat()}
+    write_json(path, item)
+
+
+def fill(args: argparse.Namespace) -> None:
+    path = BACKLOG / f"{args.id}.json"
+    if not path.exists():
+        sys.exit(f"no item {args.id}")
+    item = json.loads(path.read_text())
+    for name, field in (("why", "why"), ("from_me", "fromMe"), ("start", "start")):
+        value = " ".join((getattr(args, name) or "").split())
+        if len(value) > FIELD_LIMITS[name]:
+            sys.exit(f"--{name.replace('_', '-')} has {len(value)} characters, keep it to {FIELD_LIMITS[name]}")
+        if value:
+            item[field] = value
+    if args.size:
+        item["size"], item["minutes"] = args.size
+    write_json(path, item)
+
+
+def urgent(args: argparse.Namespace) -> None:
+    path = BACKLOG / f"{args.id}.json"
+    if not path.exists():
+        sys.exit(f"no item {args.id}")
+    item = json.loads(path.read_text())
+    if args.clear:
+        item.pop("urgent", None)
+    else:
+        item["urgent"] = True
+    write_json(path, item)
+
+
+def place(args: argparse.Namespace) -> None:
+    try:
+        place_today(args.id, None if args.to == "plan" else args.to)
+    except FileNotFoundError:
+        sys.exit(f"no item {args.id}")
+
+
 def list_items(args: argparse.Namespace) -> None:
-    for path in sorted(BACKLOG.glob("*.json")):
-        item = json.loads(path.read_text())
+    items = all_items()
+    for item in items.values():
+        if args.parked and not parked(item, items):
+            continue
         if args.all or item["status"] in ("new", "open", "requested", "started"):
             if args.repo and item["repo"] != args.repo:
                 continue
@@ -484,7 +545,32 @@ def main() -> None:
     p_list = sub.add_parser("list", help="list items that are not done or dropped")
     p_list.add_argument("--repo")
     p_list.add_argument("--all", action="store_true", help="include done and dropped")
+    p_list.add_argument("--parked", action="store_true", help="only parked items, see Backlog items in ~/desk/AGENTS.md")
     p_list.set_defaults(func=list_items)
+
+    p_fill = sub.add_parser("fill", help="fill in the size, why, from-me or start of an existing item")
+    p_fill.add_argument("id")
+    p_fill.add_argument("--size", type=size_and_minutes, help="S, M or L and my minutes for it, like S:10")
+    p_fill.add_argument("--why", help="one line: who notices what, and how often")
+    p_fill.add_argument("--from-me", help="what it needs from me")
+    p_fill.add_argument("--start", help="the first concrete step")
+    p_fill.set_defaults(func=fill)
+
+    p_urgent = sub.add_parser("urgent", help="keep an item above my Today line whatever its minutes, or stop that")
+    p_urgent.add_argument("id")
+    p_urgent.add_argument("--clear", action="store_true")
+    p_urgent.set_defaults(func=urgent)
+
+    p_place = sub.add_parser("place", help="move an item above or below my Today line, or back to where the plan puts it")
+    p_place.add_argument("id")
+    p_place.add_argument("to", choices=[*PLACES, "plan"])
+    p_place.set_defaults(func=place)
+
+    p_fate = sub.add_parser("fate", help="suggest what becomes of a parked item, shown on the board for me to settle")
+    p_fate.add_argument("id")
+    p_fate.add_argument("pick", choices=FATES)
+    p_fate.add_argument("why", help="one line")
+    p_fate.set_defaults(func=fate)
 
     p_goal = sub.add_parser("goal", help="create or change a goal above items, see Goals in ~/desk/AGENTS.md")
     goals = p_goal.add_subparsers(dest="action", required=True)

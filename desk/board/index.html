@@ -155,6 +155,24 @@
   .grp .gb .list { border: 0; border-radius: 0; }
   .gfoot { padding: 8px 14px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
+  .crumb { font-size: 13px; color: var(--muted); }
+  .goal-h { font-size: 22px; margin: 2px 0 4px; }
+  .band { display: flex; flex-wrap: wrap; gap: 8px 24px; padding: 12px 16px; margin: 12px 0; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--accent-soft); font-size: 14px; }
+  .band b { font-size: 20px; color: var(--accent); margin-right: 6px; }
+  .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+  @media (max-width: 640px) { .pair { grid-template-columns: minmax(0, 1fr); } }
+  .pair h3, .ms h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 6px; }
+  .pair ul { margin: 0; padding-left: 18px; }
+  .ms { margin-bottom: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .ms .mh { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; }
+  .ms .num { flex: none; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--accent); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+  .ms .mt { font-weight: 600; font-size: 16px; }
+  .ms .mx { font-size: 13px; color: var(--muted); }
+  .ms .mx b { color: var(--text); }
+  .ms .research { padding: 8px 14px 10px; border-top: 1px solid var(--border); font-size: 13px; }
+  .ms .research ul { margin: 4px 0 0; padding-left: 18px; }
+  .ms .list { border: 0; border-top: 1px solid var(--border); border-radius: 0; }
+  .r.goal .t { color: var(--accent); }
   .ent { padding: 10px 14px; border-top: 1px solid var(--border); font-size: 14px; }
   .ent:first-child { border-top: 0; }
   .ent .t { font-weight: 600; overflow-wrap: anywhere; }
@@ -253,13 +271,14 @@ const OLD_MINUTES = 2 * 1440;
 const params = new URLSearchParams(location.search);
 const store = (() => { try { return JSON.parse(localStorage.getItem("desk-board") || "{}"); } catch { return {}; } })();
 const ui = {
-  tab: TABS.some(t => t[0] === location.hash.slice(1)) ? location.hash.slice(1) : "now",
+  tab: TABS.some(t => t[0] === location.hash.slice(1)) ? location.hash.slice(1) : location.hash.startsWith("#goal/") ? "goal" : "now",
+  goal: location.hash.startsWith("#goal/") ? decodeURIComponent(location.hash.slice(6)) : null,
   q: "", effort: params.get("effort") || "", space: "", repo: "", label: "", thread: "", groupBy: store.groupBy || "effort",
   ready: false, seen: false, active: false, openGroups: new Set(store.openGroups || []), doneDays: store.doneDays || 7, showLater: false,
   selecting: false, selected: new Set(), openId: null, capture: false, settings: false, highlight: null, drag: null,
   folds: new Set(), chatDrafts: {}, startNotes: {}, picked: new Set(), proposalsOpen: null, blockerEdit: null,
 };
-let state = { items: [], threads: null, efforts: [], repos: [], now: [], today: { rows: [], budget: 240, waiting: 0 }, incoming: [], proposals: [] };
+let state = { items: [], threads: null, efforts: [], repos: [], now: [], today: { rows: [], budget: 240, waiting: 0 }, incoming: [], proposals: [], goals: [] };
 let lastJson = "";
 
 const $ = id => document.getElementById(id);
@@ -379,7 +398,15 @@ function isManager(id) { return !!id && Object.values(state.threads?.managers ||
 function isManagerItem(item) { return !!item.move?.manager || isManager(item.thread); }
 function startable(item) { return ["new", "open"].includes(item.status); }
 function todayRow(id) { return state.today.rows.find(r => r.id === id); }
-function minutesOf(item) { return item.minutes || ({ S: 10, M: 20, L: 40 })[item.size] || 20; }
+function minutesOf(item) { return item.estimate ?? item.minutes ?? ({ S: 10, M: 20, L: 40 })[item.size] ?? 15; }
+function goalOf(parent) {
+  const m = /^([a-z0-9][a-z0-9-]*)#([1-9][0-9]*)$/.exec(parent || "");
+  const goal = m && (state.goals || []).find(g => g.slug === m[1]);
+  return goal ? { goal, n: Number(m[2]), milestone: goal.milestones[Number(m[2]) - 1] } : null;
+}
+function goalItems(goal) { return state.items.filter(i => goalOf(i.parent)?.goal === goal); }
+function waitsOnMe(i) { return i.status === "started" && i.asks && !i.answer; }
+function openGoal(slug) { location.hash = `goal/${encodeURIComponent(slug)}`; }
 function itemState(i) {
   if (i.status === "new") return ["Unsorted", "accent"];
   if (i.status === "requested") return i.needs ? ["Needs you", "bad"] : ["Starting", "warn"];
@@ -425,9 +452,9 @@ function itemRow(item, extra = {}) {
   const startBtn = startable(item) && !openBlockers(item).length && button("Start", () => post("/api/status", { ids: [item.id], status: "requested" }, startMsg()));
   return row({
     kinds: [ui.selecting && el("input", { type: "checkbox", checked: sel, "aria-label": "Select", onclick: e => e.stopPropagation(), onchange: () => { sel ? ui.selected.delete(item.id) : ui.selected.add(item.id); render(); } }),
-      !extra.finished && (item.size ? el("span", { class: "size", title: `Size ${item.size}` }, item.size) : !item.why && tag("old format", "", "Filed before items had why, seen and size")),
-      st && tag(st[0], st[1]), item.urgent && tag("Urgent", "warn"), extra.kinds],
-    title: item.title, context: extra.context || context(item, extra.withEffort), minutes: extra.finished ? null : minutesOf(item), at: extra.at || item.done || item.created,
+      !extra.finished && item.size && el("span", { class: "size", title: `Size ${item.size}` }, item.size),
+      st && tag(st[0], st[1], st[0] === "Desk pick" ? item.suggested : undefined), item.urgent && tag("Urgent", "warn"), !extra.inGoal && goalOf(item.parent) && tag(`${goalOf(item.parent).goal.title} #${goalOf(item.parent).n}`, "", "Part of this goal milestone"), extra.kinds],
+    title: item.title, context: extra.context || context(item, extra.withEffort), meta: itemMeta(item), minutes: extra.finished ? null : minutesOf(item), at: extra.at || item.done || item.created,
     action: extra.action !== undefined ? extra.action : startBtn, cls: `${extra.cls || ""}${sel ? " selected" : ""}`, attrs: extra.attrs || {},
     onclick: e => { if (ui.selecting || e.metaKey || e.ctrlKey || e.shiftKey) toggleSelect(item.id); else openItem(item.id); },
   });
@@ -602,6 +629,8 @@ function renderBacklog() {
     && (!ui.ready || startable(i) && !openBlockers(i).length && !i.needs) && (!ui.seen || i.seen) && (!ui.active || ["requested", "started"].includes(i.status)));
   const groups = new Map();
   for (const item of items) { const k = groupKey(item); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(item); }
+  const goals = ui.groupBy === "effort" ? (state.goals || []).filter(g => inScope(g.effort)) : [];
+  if (!ui.q) goals.forEach(g => { if (!groups.has(g.effort || "")) groups.set(g.effort || "", []); });
   const keys = [...groups.keys()].sort((a, b) => (a === "") - (b === "") || groupName(a).localeCompare(groupName(b)));
   const isOpen = k => ui.groupBy === "none" || ui.q || ui.openGroups.has(`${ui.groupBy}:${k}`) || ui.effort;
   const toggle = k => { const key = `${ui.groupBy}:${k}`; ui.openGroups.has(key) ? ui.openGroups.delete(key) : ui.openGroups.add(key); save(); render(); };
@@ -618,11 +647,68 @@ function renderBacklog() {
       const counts = [`${list.length} items`, started && `${started} started`, blocked && `${blocked} blocked`].filter(Boolean).join(" · ");
       return el("div", { class: `grp${open ? " open" : ""}` },
         el("button", { class: "gh", type: "button", "aria-expanded": String(!!open), onclick: () => toggle(k) }, el("span", { class: "gn" }, groupName(k)), el("span", { class: "gc" }, counts), el("span", { class: "chev" }, open ? "Hide" : "Show")),
-        open && el("div", { class: "gb" }, el("div", { class: "list" }, nested(list, (i, child) => itemRow(i, { withEffort: ui.groupBy !== "effort", cls: child ? "child" : "" }))),
+        open && el("div", { class: "gb" }, el("div", { class: "list" },
+          goals.filter(g => (g.effort || "") === k).flatMap(g => [goalRow(g), ...list.filter(i => goalOf(i.parent)?.goal === g).sort((a, b) => goalOf(a.parent).n - goalOf(b.parent).n)
+            .map(i => itemRow(i, { cls: "child", inGoal: true, kinds: tag(`#${goalOf(i.parent).n}`, "", goalOf(i.parent).milestone?.title) }))]),
+          nested(list.filter(i => !goals.some(g => goalOf(i.parent)?.goal === g && (g.effort || "") === k)), (i, child) => itemRow(i, { withEffort: ui.groupBy !== "effort", cls: child ? "child" : "" }))),
           ui.groupBy === "effort" && k && el("div", { class: "gfoot" }, el("span", { class: "mono" }, k), managerOf(k) && threadLink(managerOf(k), "manager thread"),
             (state.spaces?.spaces || []).length > 1 && el("label", {}, "Space ", el("select", { onchange: e => post("/api/spaces", { effort: k, space: e.target.value }, `Moved to ${e.target.value}`) },
               state.spaces.spaces.map(n => el("option", { value: n, selected: n === spaceOf(k) }, n)))))));
     }) : el("div", { class: "empty" }, "No items match."));
+}
+
+function milestoneState(list) {
+  if (list.length && list.every(i => CLOSED.includes(i.status))) return ["Done", "good"];
+  if (list.some(i => ["requested", "started"].includes(i.status) || i.status === "done")) return ["In progress", "accent"];
+  return ["Not started", ""];
+}
+function goalRow(goal) {
+  const items = goalItems(goal), done = items.filter(i => i.status === "done").length;
+  const current = goal.milestones.findIndex((m, n) => milestoneState(items.filter(i => goalOf(i.parent).n === n + 1))[0] !== "Done");
+  const asks = items.filter(waitsOnMe).length;
+  return row({
+    kinds: tag("Goal", "accent"), title: goal.title, cls: "goal", onclick: () => openGoal(goal.slug),
+    context: [`${done} of ${items.length} items done`, current >= 0 && `milestone ${current + 1} of ${goal.milestones.length}: ${goal.milestones[current].title}`, asks && `${asks} wait on you`].filter(Boolean).join(" · "),
+    minutes: items.filter(i => !CLOSED.includes(i.status)).reduce((s, i) => s + minutesOf(i), 0),
+  });
+}
+function renderGoal() {
+  const goal = (state.goals || []).find(g => g.slug === ui.goal);
+  if (!goal) return el("div", { class: "empty" }, `No goal ${ui.goal}. `, el("button", { class: "quiet", onclick: () => go("backlog") }, "Back to the backlog"));
+  const items = goalItems(goal), asks = items.filter(waitsOnMe).sort((a, b) => a.asks.at.localeCompare(b.asks.at));
+  const prs = items.filter(i => !CLOSED.includes(i.status)).flatMap(i => i.prs || (i.pr ? [i.pr] : []));
+  const manager = managerOf(goal.effort);
+  const byMilestone = n => items.filter(i => goalOf(i.parent).n === n).sort((a, b) => CLOSED.includes(a.status) - CLOSED.includes(b.status) || backlogRank(a) - backlogRank(b) || a.created.localeCompare(b.created));
+  const stray = items.filter(i => !goalOf(i.parent).milestone);
+  const milestone = (m, n) => {
+    const list = byMilestone(n), open = list.filter(i => !CLOSED.includes(i.status)), st = milestoneState(list);
+    return [el("div", { class: "ms" },
+      el("div", { class: "mh" }, el("span", { class: "num" }, String(n)),
+        el("div", { class: "grow" }, el("div", { class: "row", style: { justifyContent: "space-between" } }, el("span", { class: "mt" }, m.title), tag(st[0], st[1])),
+          el("div", { class: "mx" }, el("b", {}, "Try on a device: "), m.try),
+          el("div", { class: "mx" }, "Your minutes so far: ", el("b", {}, `${m.spent} min`), " · Expected for the rest: ", el("b", {}, `${open.reduce((s, i) => s + minutesOf(i), 0)} min`),
+            ` · ${list.length - open.length} of ${list.length} items finished`, open[0] && [" · Next: ", el("b", {}, open[0].title)]))),
+      (m.research || []).length > 0 && el("div", { class: "research" }, el("b", {}, "Open research"), el("ul", {}, m.research.map(r => el("li", {}, r)))),
+      list.length > 0 && el("div", { class: "list" }, list.map(i => itemRow(i, { inGoal: true, finished: CLOSED.includes(i.status), withEffort: false })))),
+      goal.cut === n && n < goal.milestones.length && el("div", { class: "cut", style: { margin: "0 0 12px", borderRadius: "var(--radius)" } }, "Ships first above this line")];
+  };
+  return el("div", {},
+    el("div", { class: "crumb" }, el("button", { class: "quiet ref", onclick: () => go("backlog") }, "Backlog"), ` · ${goal.effort ? effortTitle(goal.effort) : "No effort"} · Goal`),
+    el("h1", { class: "goal-h" }, goal.title),
+    el("div", { class: "crumb" }, `Since ${goal.created} · `, manager ? threadLink(manager, "kept by the effort's manager") : "kept by the desk"),
+    el("div", { class: "band" },
+      el("span", {}, el("b", {}, String(asks.length)), asks.length ? `wait on you, the oldest since ${ago(asks[0].asks.at)}` : "wait on you"),
+      el("span", {}, el("b", {}, `${items.filter(i => i.status === "done").length}/${items.length}`), "items done"),
+      el("span", {}, el("b", {}, String(prs.length)), "open PRs")),
+    el("div", { class: "pair" },
+      el("div", { class: "card" }, el("h3", {}, "Outcome"), el("div", {}, goal.outcome)),
+      el("div", { class: "card" }, el("h3", {}, "Out of scope"), goal.outOfScope.length ? el("ul", {}, goal.outOfScope.map(o => el("li", {}, o))) : el("div", { class: "muted" }, "Nothing yet."))),
+    el("div", { class: "sh" }, el("h2", {}, "Milestones"), el("span", { class: "n" }, `${goal.milestones.length}, each ends in something to try on a real device`)),
+    goal.milestones.length ? goal.milestones.flatMap((m, i) => milestone(m, i + 1)) : el("div", { class: "empty" }, "No milestones yet."),
+    stray.length > 0 && [el("div", { class: "sh" }, el("h2", {}, "Not in a milestone")), el("div", { class: "list" }, stray.map(i => itemRow(i, { inGoal: true })))],
+    asks.length > 0 && [el("div", { class: "sh" }, el("h2", {}, "Open decisions that wait on you"), el("span", { class: "n" }, String(asks.length))),
+      el("div", { class: "list" }, asks.map(i => row({ kinds: el("span", { class: `kind ${i.asks.kind || "question"}` }, KIND_NAME[i.asks.kind || "question"] || i.asks.kind), title: i.title, context: i.asks.text,
+        at: i.asks.at, warn: true, onclick: () => openItem(i.id) })))]);
 }
 
 const INCOMING_BADGE = { "needs-you": ["bad", "needs you"], sent: ["", "sent, waiting for the desk"], waiting: ["", "waiting for them"], new: ["accent", "new"], filed: ["good", "filed"],
@@ -819,7 +905,8 @@ function renderSheet() {
             : el("div", {}, el("div", { class: "row", style: { marginBottom: "6px" } }, button("Go", () => answer(item.id, "go", item.asks.text), "primary", { title: "Accept the thread's pick and let it do what the question names" })), replyBox, replyBtn))),
         el("dl", { class: "fields" },
           dd("Seen", item.seen), dd("Needs you", item.fromMe), dd("Start", item.start),
-          dd("Part of", item.parent && (byId(item.parent) ? el("button", { class: "quiet ref", onclick: () => openItem(item.parent) }, byId(item.parent).title) : item.parent)),
+          dd("Part of", item.parent && (byId(item.parent) ? el("button", { class: "quiet ref", onclick: () => openItem(item.parent) }, byId(item.parent).title)
+            : goalOf(item.parent) ? el("button", { class: "quiet ref", onclick: () => { ui.openId = null; openGoal(goalOf(item.parent).goal.slug); } }, `${goalOf(item.parent).goal.title}, milestone ${goalOf(item.parent).n}: ${goalOf(item.parent).milestone?.title || "missing"}`) : item.parent)),
           dd("Parts", children.length > 0 && el("div", { class: "refs" }, children.map(c => el("button", { class: "quiet ref", onclick: () => openItem(c.id) }, c.title)))),
           dd("Start note", item.start_note && [item.start_note.text, item.start_note.draft_pr && "may open a draft PR", item.start_note.babysit && "babysit", item.start_note.second_opinion && "second opinion first"].filter(Boolean).join(" · ")),
           dd("State", !item.asks && th && `${th.label}${th.why ? ": " + th.why : ""}`),
@@ -954,7 +1041,7 @@ function renderBulk() {
 function render() {
   const y = scrollY;
   renderTop();
-  const view = { now: renderNow, today: renderToday, backlog: renderBacklog, incoming: renderIncoming, done: renderDone }[ui.tab];
+  const view = { now: renderNow, today: renderToday, backlog: renderBacklog, incoming: renderIncoming, done: renderDone, goal: renderGoal }[ui.tab];
   $("panel").replaceChildren(view());
   renderBulk(); renderSheet();
   scrollTo(0, y);
@@ -964,7 +1051,11 @@ function render() {
 $("q").addEventListener("input", e => { ui.q = e.target.value; if (!["backlog", "done"].includes(ui.tab)) ui.tab = "backlog"; render(); });
 $("captureBtn").addEventListener("click", () => { ui.capture = true; render(); });
 $("settingsBtn").addEventListener("click", () => { ui.settings = true; render(); });
-addEventListener("hashchange", () => { const tab = location.hash.slice(1); if (TABS.some(t => t[0] === tab)) { ui.tab = tab; render(); } });
+addEventListener("hashchange", () => {
+  const tab = location.hash.slice(1);
+  if (TABS.some(t => t[0] === tab)) { ui.tab = tab; render(); }
+  else if (tab.startsWith("goal/")) { ui.tab = "goal"; ui.goal = decodeURIComponent(tab.slice(5)); scrollTo(0, 0); render(); }
+});
 document.addEventListener("keydown", e => {
   const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
   if (e.key === "Escape") { if (ui.openId || ui.capture || ui.settings) closeOverlay(); else if (ui.selecting) { ui.selecting = false; ui.selected.clear(); render(); } else if (typing) document.activeElement.blur(); }

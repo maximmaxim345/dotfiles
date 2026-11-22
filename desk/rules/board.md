@@ -1,6 +1,6 @@
 ## Board
 
-`bin/board` serves the board at http://127.0.0.1:8765. It shows the backlog, a Done view, and the threads from `state/threads.json`, which `bin/board-threads` writes in each sweep and refresh. It leaves out threads whose item is done or dropped, and those whose item is paused unless they run or wait on me, since their cards show them. It keeps the desk's earlier `needsYou` whys while the thread waits, and adds `item` and `effort` to each entry:
+`bin/board` serves the board at http://127.0.0.1:8765. It shows the backlog, a Done view, a page per goal, and the threads from `state/threads.json`, which `bin/board-threads` writes in each sweep and refresh. It leaves out threads whose item is done or dropped, and those whose item is paused unless they run or wait on me, since their cards show them. It keeps the desk's earlier `needsYou` whys while the thread waits, and adds `item` and `effort` to each entry:
 
 ```json
 {

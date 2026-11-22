@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Add, list, adopt, move, rename, comment on, unblock, link or set the status of items, show a question, or note a finding."""
+"""Add, list, adopt, move, rename, comment on, unblock, link or set the status of items, ask, note findings, or keep goals."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ FIELD_LIMITS = {"title": 70, "why": 140, "seen": 140, "from_me": 80, "start": 24
 ASK_KINDS = ["decide", "review", "push", "post", "device-test"]
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import add_item, apply_status, free_path, log_event, repos, slug_id, write_json  # noqa: E402
+from server import GOALS, MILESTONE, add_item, apply_status, free_path, log_event, repos, slug_id, write_json  # noqa: E402
 
 
 def create(args: argparse.Namespace, brief: str, **extra: object) -> dict:
@@ -80,6 +80,8 @@ def add(args: argparse.Namespace) -> None:
     missing = [s for s in BRIEF_SECTIONS if not re.search(rf"^##\s+{s}\b", brief, re.M | re.I)]
     if missing:
         print(f"warning: the brief has no {', '.join(missing)} section, see Backlog items in ~/desk/AGENTS.md", file=sys.stderr)
+    if args.parent:
+        check_parent(args.parent)
     fields = {"seen": args.seen, "why": args.why, "size": args.size[0], "minutes": args.size[1], "fromMe": args.from_me}
     item = create(args, brief, **fields, start=args.start, **({"parent": args.parent} if args.parent else {}))
     print(BACKLOG / f"{item['id']}.json")
@@ -277,6 +279,91 @@ def wait_moved(args: argparse.Namespace) -> None:
         time.sleep(10)
 
 
+def load_goal(slug: str) -> dict:
+    path = GOALS / f"{slug}.json"
+    if not path.exists():
+        sys.exit(f"no goal {slug}, see `bin/backlog goal list`")
+    return json.loads(path.read_text())
+
+
+def check_parent(parent: str) -> None:
+    match = MILESTONE.fullmatch(parent)
+    if match and not 1 <= int(match[2]) <= len(load_goal(match[1])["milestones"]):
+        sys.exit(f"goal {match[1]} has no milestone {match[2]}")
+
+
+def goal_new(args: argparse.Namespace) -> None:
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", args.slug):
+        sys.exit(f"goal {args.slug!r} is not a short lowercase slug")
+    path = GOALS / f"{args.slug}.json"
+    if path.exists():
+        sys.exit(f"goal {args.slug} exists, change it with `bin/backlog goal set`")
+    if args.effort and not (EFFORTS / args.effort).exists():
+        sys.exit(f"no effort {args.effort}")
+    GOALS.mkdir(parents=True, exist_ok=True)
+    goal = {"slug": args.slug, "title": args.title, "effort": args.effort, "outcome": args.outcome, "outOfScope": [], "cut": None}
+    write_json(path, {**goal, "created": datetime.date.today().isoformat(), "milestones": []})
+    print(path)
+
+
+def goal_set(args: argparse.Namespace) -> None:
+    goal = load_goal(args.slug)
+    for field in ("title", "outcome"):
+        if getattr(args, field):
+            goal[field] = getattr(args, field)
+    goal["outOfScope"] += args.out or []
+    for text in args.back or []:
+        if text not in goal["outOfScope"]:
+            sys.exit(f"{text!r} is not out of scope, it lists: {goal['outOfScope']}")
+        goal["outOfScope"].remove(text)
+    if args.cut is not None:
+        if not 0 <= args.cut <= len(goal["milestones"]):
+            sys.exit(f"goal {args.slug} has {len(goal['milestones'])} milestones")
+        goal["cut"] = args.cut or None
+    write_json(GOALS / f"{args.slug}.json", goal)
+
+
+def goal_milestone(args: argparse.Namespace) -> None:
+    goal = load_goal(args.slug)
+    milestones = goal["milestones"]
+    if args.number is None:
+        if not args.title or not args.try_on:
+            sys.exit("a new milestone needs --title and --try")
+        milestones.append({"title": args.title, "try": args.try_on, "research": []})
+        number = len(milestones)
+    else:
+        number = args.number
+        if not 1 <= number <= len(milestones):
+            sys.exit(f"goal {args.slug} has no milestone {number}")
+    milestone = milestones[number - 1]
+    milestone.update({k: v for k, v in (("title", args.title), ("try", args.try_on)) if v})
+    milestone["research"] = [r for r in milestone["research"] + (args.research or []) if r not in (args.settled or [])]
+    write_json(GOALS / f"{args.slug}.json", goal)
+    print(f"{args.slug}#{number}")
+
+
+def goal_attach(args: argparse.Namespace) -> None:
+    if args.milestone and not MILESTONE.fullmatch(args.milestone):
+        sys.exit("name the milestone as <goal slug>#<number>")
+    check_parent(args.milestone)
+    path = BACKLOG / f"{args.id}.json"
+    if not path.exists():
+        sys.exit(f"no item {args.id}")
+    item = json.loads(path.read_text())
+    if args.milestone:
+        item["parent"] = args.milestone
+    else:
+        item.pop("parent", None)
+    write_json(path, item)
+
+
+def goal_list(args: argparse.Namespace) -> None:
+    for path in sorted(GOALS.glob("*.json")) if GOALS.exists() else []:
+        goal = json.loads(path.read_text())
+        milestones = "".join(f"\n  #{n} {m['title']}" for n, m in enumerate(goal["milestones"], 1))
+        print(f"{goal['slug']}  {goal.get('effort') or 'no effort'}: {goal['title']}{milestones}")
+
+
 def list_items(args: argparse.Namespace) -> None:
     for path in sorted(BACKLOG.glob("*.json")):
         item = json.loads(path.read_text())
@@ -398,6 +485,37 @@ def main() -> None:
     p_list.add_argument("--repo")
     p_list.add_argument("--all", action="store_true", help="include done and dropped")
     p_list.set_defaults(func=list_items)
+
+    p_goal = sub.add_parser("goal", help="create or change a goal above items, see Goals in ~/desk/AGENTS.md")
+    goals = p_goal.add_subparsers(dest="action", required=True)
+    g_new = goals.add_parser("new", help="create a goal and print its path")
+    g_new.add_argument("slug")
+    g_new.add_argument("--title", required=True)
+    g_new.add_argument("--outcome", required=True, help="what I can check once the goal is reached")
+    g_new.add_argument("--effort", default=None)
+    g_new.set_defaults(func=goal_new)
+    g_set = goals.add_parser("set", help="change a goal's title, outcome, scope or cut line")
+    g_set.add_argument("slug")
+    g_set.add_argument("--title")
+    g_set.add_argument("--outcome")
+    g_set.add_argument("--out", action="append", help="add a line to what's out of scope, repeatable")
+    g_set.add_argument("--back", action="append", help="remove a line from what's out of scope, repeatable")
+    g_set.add_argument("--cut", type=int, help="the last milestone that ships first, 0 for no cut line")
+    g_set.set_defaults(func=goal_set)
+    g_milestone = goals.add_parser("milestone", help="add a milestone, or change one by its number, and print it")
+    g_milestone.add_argument("slug")
+    g_milestone.add_argument("number", nargs="?", type=int)
+    g_milestone.add_argument("--title")
+    g_milestone.add_argument("--try", dest="try_on", help="what I try on a real device once it's done")
+    g_milestone.add_argument("--research", action="append", help="add an open research question, repeatable")
+    g_milestone.add_argument("--settled", action="append", help="remove a research question, repeatable")
+    g_milestone.set_defaults(func=goal_milestone)
+    g_attach = goals.add_parser("attach", help="make an item part of a milestone, or detach it with an empty milestone")
+    g_attach.add_argument("id")
+    g_attach.add_argument("milestone", help="<goal slug>#<milestone number>")
+    g_attach.set_defaults(func=goal_attach)
+    g_list = goals.add_parser("list", help="list goals and their milestones")
+    g_list.set_defaults(func=goal_list)
 
     args = parser.parse_args()
     args.func(args)

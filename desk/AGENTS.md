@@ -9,6 +9,7 @@ This repo holds the state of my work across repos: efforts, the backlog and the 
 - `efforts/<effort>/evidence/`, `work/`: logs and scratch data, not committed.
 - `efforts/<effort>/findings.md`, and `findings.md` for findings without an effort: findings nobody saw, one line each, see "Backlog items".
 - `backlog/<id>.json`: one item per file, see "Backlog items".
+- `goals/<slug>.json`: goals that take weeks, see "Goals".
 - `board/`: the local board page and its server.
 - `bin/`: scripts the routines call.
 - `repos.json`: optional, repo names that have no T3 project.
@@ -178,3 +179,7 @@ A brief uses these `##` sections, in this order, and leaves out the ones that do
 ## Effort status files
 
 `efforts/<effort>/status.md` starts with a `Scope:` line naming the repos, labels or topics the effort covers, which "Watching" routes by, and an `Issue:` line with its parent issue when it has one (see "Project boards"). Its sections, in this order: Resume here, Tasks (table: thread, repo, branch, PR, state, blocked by), Defaults (model and repos), Open decisions, Log (dated, newest last).
+
+## Goals
+
+A goal is work that takes weeks, kept in `goals/<slug>.json` above its items: the outcome I can check, what's out of scope, three to five milestones that each end in something I try on a real device, with their open research, and the cut line after the milestones that ship first. An item joins milestone 2 of the goal `kettle-temp` with the `parent` `kettle-temp#2`. Create a goal only when I ask for one, with `bin/backlog goal new`. The effort's manager keeps its goals current with `bin/backlog goal`, or the desk when the effort has no manager: attach new items to their milestone and add or remove research questions. Move the cut line or change the outcome, the scope or the milestones only when I say so.

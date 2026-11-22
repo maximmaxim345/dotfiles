@@ -66,6 +66,8 @@ SAMPLES_NEEDED = 5
 LONGEST_SAMPLE = 120
 LABEL_ORDER = {"user-visible bug": 0, "reachable but rare": 1}
 WORKTREES = STATE / "worktrees.json"
+GOALS = DESK / "goals"
+MILESTONE = re.compile(r"([a-z0-9][a-z0-9-]*)#([1-9][0-9]*)")
 
 
 def tailnet_address() -> str | None:
@@ -305,6 +307,7 @@ def load_state() -> dict:
         "today": {"date": plan["date"], "budget": minutes, "waiting": waiting, "rows": today_rows(by_id, plan, minutes, waiting)},
         "askMinutes": ask_minutes(list(by_id.values())),
         "worktrees": worktrees,
+        "goals": load_goals(list(by_id.values())),
     }
 
 
@@ -357,6 +360,21 @@ def ask_minutes(items: list[dict]) -> dict[str, dict]:
         used = max(1, median) if median is not None and len(found) >= SAMPLES_NEEDED else default
         result[kind] = {"default": default, "samples": len(found), "median": median, "minutes": used}
     return result
+
+
+def load_goals(items: list[dict]) -> list[dict]:
+    """Each goal file, with my measured minutes per milestone added as `spent`."""
+    spent: dict[str, float] = {}
+    for item in items:
+        if MILESTONE.fullmatch(item.get("parent") or ""):
+            spent[item["parent"]] = spent.get(item["parent"], 0) + sum(m for _, m in answer_times(item))
+    goals = []
+    for path in sorted(GOALS.glob("*.json")) if GOALS.exists() else []:
+        goal = json.loads(path.read_text())
+        for n, milestone in enumerate(goal.get("milestones") or [], 1):
+            milestone["spent"] = round(spent.get(f"{goal['slug']}#{n}", 0))
+        goals.append(goal)
+    return goals
 
 
 def now_rows(items: dict[str, dict], threads: dict, incoming: list[dict], health: dict | None, worktrees: dict) -> list[dict]:

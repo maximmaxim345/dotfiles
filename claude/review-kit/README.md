@@ -38,6 +38,12 @@ The commits of a hunk come from `git blame` over the reviewed range: the commits
 
 The script exits with an error and a message when a reference in the narrative matches no hunk, or when the diff has a line it cannot read. After writing the page it prints how many hunks the narrative does not mention.
 
+## Showing a page
+
+A review page opens from its absolute file path in a browser. Comments and changed picks stay in that browser's storage, and Copy for chat puts the answer on the clipboard for the chat.
+
+In T3 Code, a page that is only looked at, the decision sheet and the architecture page, can also show inline in the thread: check it with `html_preview` on the file path, then pass the path and the `contentHeight` it reports to `html_render`. An inline render has no URL and sends nothing back to the thread, so the answer comes in chat. A review page always goes out as its path, since its comments need a browser.
+
 ## The review narrative
 
 Every field is optional. An empty object `{}` gives a page with every hunk under "Not mentioned by the author".

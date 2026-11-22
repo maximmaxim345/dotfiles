@@ -220,7 +220,7 @@ details.ctxp table.d td.c { color: var(--text); }
 .bar .status { font-size: 14px; margin-right: auto; min-width: 0; }
 .bar .status.ok { color: var(--good); }
 .bar .btn { min-height: 44px; padding: 0 18px; font-weight: 600; }
-.tray { max-width: 1240px; margin: 0 auto 10px; max-height: 50vh; overflow-y: auto; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+.tray { max-width: 1240px; margin: 0 auto 10px; max-height: 360px; overflow-y: auto; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
 .tray[hidden] { display: none; }
 .tray h3 { display: flex; align-items: center; gap: 8px; }
 .tray h3 .linkbtn { margin-left: auto; }

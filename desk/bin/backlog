@@ -25,46 +25,12 @@ FIELD_LIMITS = {"title": 70, "why": 140, "seen": 140, "from_me": 80, "start": 24
 ASK_KINDS = ["decide", "review", "push", "post", "device-test"]
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import apply_status, log_event, repos, write_json  # noqa: E402
-
-
-def slug_id(day: datetime.date, title: str) -> str:
-    return f"{day:%Y%m%d}-" + re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:60]
-
-
-def free_path(base: str) -> Path:
-    path = BACKLOG / f"{base}.json"
-    n = 2
-    while path.exists():
-        path = BACKLOG / f"{base}-{n}.json"
-        n += 1
-    return path
+from server import add_item, apply_status, free_path, log_event, repos, slug_id, write_json  # noqa: E402
 
 
 def create(args: argparse.Namespace, brief: str, **extra: object) -> dict:
-    today = datetime.date.today()
-    path = free_path(slug_id(today, args.title))
-    item = {
-        "id": path.stem,
-        "title": args.title,
-        "repo": args.repo,
-        "effort": args.effort,
-        "kind": args.kind,
-        "label": args.label,
-        "summary": args.summary,
-        "brief": brief,
-        "source": args.source,
-        "created": today.isoformat(),
-        "status": "open",
-        "thread": None,
-        "pr": None,
-        "done": None,
-        "comments": [],
-        **extra,
-    }
-    BACKLOG.mkdir(exist_ok=True)
-    write_json(path, item)
-    return item
+    fields = {"repo": args.repo, "effort": args.effort, "kind": args.kind, "label": args.label, "summary": args.summary}
+    return add_item(args.title, **fields, brief=brief, source=args.source, **extra)
 
 
 def size_and_minutes(value: str) -> tuple[str, int]:

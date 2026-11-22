@@ -317,6 +317,46 @@ def set_status(ids: list[str], status: str, note: dict | None = None) -> None:
         log_event({"type": "status", "changes": changes})
 
 
+def slug_id(day: datetime.date, title: str) -> str:
+    return f"{day:%Y%m%d}-" + re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:60]
+
+
+def free_path(base: str) -> Path:
+    path = BACKLOG / f"{base}.json"
+    n = 2
+    while path.exists():
+        path = BACKLOG / f"{base}-{n}.json"
+        n += 1
+    return path
+
+
+def add_item(title: str, **fields: object) -> dict:
+    """Write a new open item, named after today's date and its title, and return it."""
+    today = datetime.date.today()
+    path = free_path(slug_id(today, title))
+    item = {
+        "id": path.stem,
+        "title": title,
+        "repo": None,
+        "effort": None,
+        "kind": None,
+        "label": None,
+        "summary": "",
+        "brief": "",
+        "source": "unknown",
+        "created": today.isoformat(),
+        "status": "open",
+        "thread": None,
+        "pr": None,
+        "done": None,
+        "comments": [],
+        **fields,
+    }
+    BACKLOG.mkdir(exist_ok=True)
+    write_json(path, item)
+    return item
+
+
 def capture(text: str, repo: str | None, effort: str | None) -> None:
     text = text.strip()
     check_repo(repo)

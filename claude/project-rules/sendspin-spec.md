@@ -14,3 +14,5 @@
 - Leave per-connection scope implied. Don't add "on the same connection" to a rule.
 - Dynamic pairing code is the primary pairing method, ahead of static code and pairing PSK. Never call a dynamic-flow rule low-impact.
 - Clients see no paused state. A paused group is `playback_state: 'stopped'` with metadata and artwork kept, so don't propose pause rules for clients.
+- Always look closely, however small the change: a MUST or SHOULD that is added, removed or reworded, message fields and enum values, pairing and security, and time sync.
+- A change reaches these surfaces, and the plan names each as changed or not needed: the split sources with the generated `README.md`, aiosendspin, sendspin-js and sendspin-cpp.

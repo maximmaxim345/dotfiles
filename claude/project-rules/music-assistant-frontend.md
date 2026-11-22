@@ -6,3 +6,5 @@
 - For fields, commands and events shared with the server, follow "Models, commands and events" in `music-assistant-server.md`.
 - Users read the docs at music-assistant/music-assistant.io (`~/projects/music-assistant/music-assistant.io`). When a change alters what users see, set up or configure, ask for a companion PR that updates them as "Companion PRs" in `~/desk/TASK.md` says, targeting the main or beta branch as its `CONTRIBUTING.md` says.
 - PRs: fill the template as-is. Keep the "Related issue" header and leave it empty when there's no issue, never the placeholder. Tick exactly one "Types of changes" box, and the checklist boxes as `pr-guidelines.md` says. The title becomes the changelog line.
+- Always look closely, however small the change: fields, commands and events shared with the server, text users see, and settings stored in the browser.
+- A feature reaches these surfaces, and the plan names each as changed or not needed: the frontend, the server and music-assistant/models, and the docs at music-assistant/music-assistant.io.

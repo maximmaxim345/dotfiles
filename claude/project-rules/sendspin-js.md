@@ -7,3 +7,5 @@
 - Keep experimental work in `wip:` commits on separate branches.
 - PRs: fill `.github/PULL_REQUEST_TEMPLATE.md` and tick exactly one "Types of changes" box, or the Verify check fails.
 - To measure playback offset with a mic (browsers, phones, native players, bad network), follow `~/projects/music-assistant/sendspin-sync-measure/AGENTS.md`.
+- Always look closely, however small the change: `src/types.ts` and the option allowlist in `src/index.ts` (the public API), the protocol and time sync code in `src/core/`, `src/sync-delay.ts`, and audio scheduling in `src/audio/`.
+- A feature reaches these surfaces, and the plan names each as changed or not needed: the library, its README, the Music Assistant frontend that passes the options, and Sendspin/spec when the wire changes.

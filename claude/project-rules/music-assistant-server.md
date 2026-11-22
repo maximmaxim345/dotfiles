@@ -18,6 +18,8 @@
 - Users read the docs at music-assistant/music-assistant.io (`~/projects/music-assistant/music-assistant.io`). When a change alters what users see, set up or configure, ask for a companion PR that updates them as "Companion PRs" in `~/desk/TASK.md` says, targeting the main or beta branch as its `CONTRIBUTING.md` says.
 - PRs: fill the template as-is. Keep the "Related issue" header and leave it empty when there's no issue, never the placeholder. Tick exactly one "Types of changes" box (it picks the release-notes section), and the checklist boxes as `pr-guidelines.md` says. The title becomes the changelog line. Don't add `#` sections inside the description of a small PR.
 - To measure playback offset with a mic (browsers, phones, native players, bad network), follow `~/projects/music-assistant/sendspin-sync-measure/AGENTS.md`.
+- Always look closely, however small the change: `music_assistant/models/` and music-assistant/models, `music_assistant/controllers/`, stored data and its migrations (config entries, the library database, cache keys), commands and events a client reads, `strings.json` and other text users see, and pairing and `security.py` in the Sendspin provider.
+- A feature reaches these surfaces, and the plan names each as changed or not needed: the server with the provider's `manifest.json` and `strings.json`, music-assistant/models, music-assistant/frontend, and the docs at music-assistant/music-assistant.io.
 
 ## Models, commands and events
 

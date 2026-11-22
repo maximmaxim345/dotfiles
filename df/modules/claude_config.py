@@ -57,11 +57,16 @@ ENTRIES: List[Tuple[str, str, str]] = [
     ("skills/architecture", "skills/architecture", "old_skill_architecture"),
     ("hooks/recap-after-break.py", "hooks/recap-after-break.py", "old_hook_recap_after_break"),
     ("hooks/after-compact.py", "hooks/after-compact.py", "old_hook_after_compact"),
+    ("hooks/check-commands.py", "hooks/check-commands.py", "old_hook_check_commands"),
+    ("hooks/ask-line.py", "hooks/ask-line.py", "old_hook_ask_line"),
 ]
 # Hooks registered in settings.json (event, command)
+# A missing script makes python3 exit with 2, which Claude Code reads as a block, so those two hooks end in "|| true"
 HOOKS: List[Tuple[str, str]] = [
     ("UserPromptSubmit", f"python3 {claude_path / 'hooks' / 'recap-after-break.py'}"),
     ("SessionStart", f"python3 {claude_path / 'hooks' / 'after-compact.py'}"),
+    ("PreToolUse", f"python3 {claude_path / 'hooks' / 'check-commands.py'} || true"),
+    ("Stop", f"python3 {claude_path / 'hooks' / 'ask-line.py'} || true"),
 ]
 # Entries dropped from ENTRIES, whose links existing installs still have (target, config key for the backup)
 REMOVED: List[Tuple[str, str]] = [

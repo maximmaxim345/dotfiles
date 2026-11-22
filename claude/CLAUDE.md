@@ -110,12 +110,8 @@ Use the project's package manager, don't reach for a default. When a project
 uses `uv`, set up its environment with `uv`, not pip or a manual venv. When it
 uses `yarn`, run `yarn`, not npm.
 
-macOS has no `timeout` or `gtimeout`. Use `perl -e 'alarm N; exec @ARGV' cmd`
-or a Python subprocess timeout.
-
-The Bash tool runs zsh. Separate outputs with `echo ---`, never `echo ===`,
-which zsh reads as a command and stops on, and quote a glob that may match
-nothing (`--include='*.py'`).
+The Bash tool runs zsh. Separate outputs with `echo ---`, and quote a glob that
+may match nothing (`--include='*.py'`).
 
 ## Delegating to subagents
 

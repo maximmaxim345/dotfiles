@@ -1,6 +1,6 @@
 # Desk
 
-This repo holds the state of my work across repos: efforts, the backlog and the board. Threads in this project are managers. Task threads in other projects only add backlog items and comments here, set their own item's `asks` and status with `/desk`, and write the files `TASK.md` names.
+This repo holds the state of my work across repos: efforts, the backlog and the board. Threads in this project are managers. Task threads in other projects only add backlog items and comments here, set their own item's `asks` and status with `/desk`, note my corrections with `bin/corrections`, and write the files `TASK.md` names.
 
 ## Layout
 

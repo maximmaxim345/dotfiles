@@ -51,6 +51,14 @@ Record my decisions, the options I rejected and my open feedback in a
 working file (handoff, notes, the status file from "Long-running work"), without
 asking. Read it before proposing an option, a test or an analysis again.
 
+When I correct how you work (a rule you broke, a habit I don't want, something
+I had to tell you twice) and not what the task should do, note it once with
+`~/desk/bin/corrections add --did "<what you did>" --wanted "<what I wanted>"`,
+with `--rule <file>` for the rules file or skill that covers it or should, and
+`--thread <your thread id>` when you know it. Don't ask first and don't change
+the rules yourself. Skip it when that script doesn't exist. In a subagent,
+report the correction to your caller instead.
+
 When acting on my review or GitHub comment changes the approach, restate it as
 one concrete change ("you mean: X stays, Y goes") and wait for my yes before
 reworking anything or touching other backlog items or threads. Say so when you

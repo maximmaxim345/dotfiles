@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+"""Note a correction I gave an agent, list the ones no rule proposal covers yet, or mark some as proposed."""
+
+from __future__ import annotations
+
+import argparse
+import datetime
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import STATE, locked, write_json  # noqa: E402
+
+CORRECTIONS = STATE / "corrections.json"
+
+
+def load() -> list[dict]:
+    return json.loads(CORRECTIONS.read_text()) if CORRECTIONS.exists() else []
+
+
+def add(args: argparse.Namespace) -> None:
+    STATE.mkdir(parents=True, exist_ok=True)
+    with locked(CORRECTIONS):
+        entries = load()
+        entry = {
+            "id": max((e["id"] for e in entries), default=0) + 1,
+            "at": datetime.date.today().isoformat(),
+            "did": args.did,
+            "wanted": args.wanted,
+        }
+        entry.update({key: value for key in ("rule", "thread") if (value := getattr(args, key))})
+        write_json(CORRECTIONS, [*entries, entry])
+    print(entry["id"])
+
+
+def proposed(args: argparse.Namespace) -> None:
+    with locked(CORRECTIONS):
+        entries = load()
+        unknown = set(args.ids) - {e["id"] for e in entries}
+        if unknown:
+            sys.exit(f"no correction with id {', '.join(map(str, sorted(unknown)))}")
+        for entry in entries:
+            if entry["id"] in args.ids:
+                entry["item"] = args.item
+        write_json(CORRECTIONS, entries)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    commands = parser.add_subparsers(dest="command", required=True)
+    adding = commands.add_parser("add", help="note one correction")
+    adding.add_argument("--did", required=True, help="what the agent did, in one sentence")
+    adding.add_argument("--wanted", required=True, help="what I wanted instead, in one sentence")
+    adding.add_argument("--rule", help="the rules file or skill that covers it or should")
+    adding.add_argument("--thread", help="the T3 thread id")
+    commands.add_parser("list", help="print the corrections no proposal covers, one JSON line each")
+    marking = commands.add_parser("proposed", help="mark corrections as covered by a backlog item")
+    marking.add_argument("ids", nargs="+", type=int)
+    marking.add_argument("--item", required=True, help="the backlog item with the proposed rule change")
+    args = parser.parse_args()
+    if args.command == "add":
+        add(args)
+    elif args.command == "proposed":
+        proposed(args)
+    else:
+        for entry in load():
+            if "item" not in entry:
+                print(json.dumps(entry))
+
+
+if __name__ == "__main__":
+    main()

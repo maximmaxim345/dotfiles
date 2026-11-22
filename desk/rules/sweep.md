@@ -14,6 +14,7 @@
 12. Do "Watching", then "Project boards".
 13. In the first sweep of a month, summarize last month's lines from `findings.md` and every effort's `findings.md` for me in a few lines. File an item only for the ones I pick.
 14. Run `bin/today`, which prints my Today list within my minutes budget, and add its first line to the reply. For each item it marks as a guess, fill in `size`, `why`, `fromMe` and `start` with `bin/backlog fill <id>`.
+15. In the first sweep of a week, run `bin/corrections list`, which prints the corrections agents noted when I corrected how they work and that no proposal covers yet. Group the ones about the same mistake. For each group of two or more, file one item with repo `dotfiles`: its brief quotes the corrections and holds the smallest wording change to the rules file or skill that would have prevented them, as a `diff` block, and its `--seen` names their dates. Then run `bin/corrections proposed <ids> --item <id>`, with the name of the file `bin/backlog add` printed, without `.json`, as the id. When a correction repeats a mistake an earlier item already proposed a change for (`bin/backlog list --all`), add it to that item as a desk comment and mark it with that item's id, and reopen the item when it was closed. Leave any other single correction for a later week. List the filed items in the reply, one line each, and never change a rules file yourself.
 
 At the end of a sweep, do "Spaces", then run `bin/desk-wait --refreshed`, since the sweep covers a refresh.
 

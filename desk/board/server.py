@@ -232,6 +232,10 @@ def open_blockers(item: dict, items: dict[str, dict]) -> list[str]:
     return [b for b in item.get("blockedBy") or [] if b not in items or items[b]["status"] not in CLOSED_STATUSES]
 
 
+def in_window(now: datetime.datetime) -> bool:
+    return now.weekday() < 5 and 8 <= now.hour < 20
+
+
 def autostart_setting() -> dict:
     return json.loads(AUTOSTART.read_text()) if AUTOSTART.exists() else {"mode": "off", "efforts": [], "reviews": False}
 

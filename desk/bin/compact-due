@@ -12,10 +12,12 @@ from pathlib import Path
 DESK = Path.home() / "desk"
 BACKLOG = DESK / "backlog"
 COMPACTED = DESK / "state" / "compacted.json"
+THREADS = DESK / "state" / "threads.json"
 DB = Path.home() / ".t3" / "userdata" / "statev2.sqlite"
 IDLE = datetime.timedelta(minutes=50)
 CACHED = datetime.timedelta(minutes=60)
 RECENT = datetime.timedelta(hours=3)
+WAITS_FOR_ME = datetime.timedelta(hours=24)
 SETTLED_FOR = datetime.timedelta(days=7)
 MIN_ITEMS = 40
 COMPACTABLE = ("claudeAgent", "codex")
@@ -46,7 +48,10 @@ def main() -> None:
         sys.exit(f"could not read {DB}: {err}")
     conn.close()
     seen = json.loads(COMPACTED.read_text()) if COMPACTED.exists() else []
-    managed = {item.get("thread") for item in (json.loads(p.read_text()) for p in BACKLOG.glob("*.json"))}
+    backlog = [json.loads(p.read_text()) for p in BACKLOG.glob("*.json")]
+    managed = {item.get("thread") for item in backlog}
+    needs_you = (json.loads(THREADS.read_text()) if THREADS.exists() else {}).get("needsYou") or []
+    asking = {item.get("thread") for item in backlog if item.get("asks")} | {entry["thread"] for entry in needs_you}
     now = datetime.datetime.now(datetime.timezone.utc)
     due: dict[str, list[dict]] = {"compact": [], "settle": [], "archive": []}
     for thread_id, title, payload, run_id, status, completed_at, provider, items, pending in rows:
@@ -73,17 +78,18 @@ def main() -> None:
                 due["archive"].append({"thread": thread_id, "title": title})
                 seen.append(marker)
             continue
-        if (
-            payload.get("settledOverride") == "settled"
-            or status not in ENDED
-            or pending
-            or completed is None
-            or run_id in seen
-            or not IDLE <= now - completed < RECENT
-        ):
+        if payload.get("settledOverride") == "settled" or status not in ENDED or pending or completed is None or run_id in seen:
             continue
-        compact = items >= MIN_ITEMS and provider.startswith(COMPACTABLE) and now - completed < CACHED
-        due["compact" if compact else "settle"].append({"thread": thread_id, "title": title})
+        idle = now - completed
+        compactable = items >= MIN_ITEMS and provider.startswith(COMPACTABLE)
+        if thread_id in asking:
+            if not (compactable and WAITS_FOR_ME <= idle < WAITS_FOR_ME + RECENT):
+                continue
+            due["compact"].append({"thread": thread_id, "title": title})
+        elif IDLE <= idle < RECENT:
+            due["compact" if compactable and idle < CACHED else "settle"].append({"thread": thread_id, "title": title})
+        else:
+            continue
         seen.append(run_id)
     if any(due.values()):
         write_json(COMPACTED, seen)

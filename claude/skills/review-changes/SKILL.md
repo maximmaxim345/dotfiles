@@ -1,6 +1,6 @@
 ---
 name: review-changes
-description: Review a PR or the local changes with parallel reviewers, verify every finding, and draft inline comments in my voice
+description: Review a PR or the local changes with parallel reviewers, verify every finding, and draft inline comments in my voice. Use when I ask for a review of someone's PR or of my local changes.
 argument-hint: "[PR number or URL] [sage|nosage]"
 ---
 

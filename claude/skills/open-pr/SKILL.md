@@ -1,6 +1,6 @@
 ---
 name: open-pr
-description: Commit, push, and open a PR for the current branch, as a draft, a draft I babysit, ready for review, or babysat through to the merge, picked in a popup
+description: Commit, push, and open a PR for the current branch, as a draft, a draft I babysit, ready for review, or babysat through to the merge, picked in a popup. Use when I say open, ship or push for a branch, never without my go-ahead.
 argument-hint: "[draft|ready|babysit|merge]"
 ---
 

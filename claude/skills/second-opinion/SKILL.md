@@ -1,8 +1,7 @@
 ---
 name: second-opinion
-description: Have reviewers from other models check the current change, a PR or spec text, picked with their reasoning effort in a popup, or GPT-6.2 Sol at high effort when I ask in plain words
+description: Have reviewers from other models check the current change, a PR or spec text, picked with their reasoning effort in a popup, or GPT-6.2 Sol at high effort when I ask in plain words. Use when I ask for a second opinion or another model's view, or a desk item's start note asks for one.
 argument-hint: "[PR URL or number, commit range, or what to check]"
-disable-model-invocation: true
 ---
 
 Target: `$ARGUMENTS`. A PR reviews that PR, a range reviews those commits, and other words name what to check, like a spec proposal in this thread. Empty means the current branch against its merge base with the default branch, uncommitted changes included.

@@ -1,8 +1,7 @@
 ---
 name: architecture
-description: Draw how a change fits together as a diagram, with new, changed and removed parts marked, when it adds a component, moves a responsibility or adds a flow between components
+description: Draw how a change fits together as a diagram, with new, changed and removed parts marked. Use when I ask how a change fits together, or a plan or brief covers a change that adds a component, moves a responsibility or adds a flow between components.
 argument-hint: "[PR URL or number, commit range, plan, or empty for the current branch]"
-disable-model-invocation: true
 ---
 
 Target: `$ARGUMENTS`. A PR, a commit range, or empty for the current branch against its merge base with the default branch, uncommitted changes included. `plan` draws the plan in this thread before its code exists: skip step 1, take the planned parts from the plan and the rest from the code it touches, and give each planned part the file it is planned in.

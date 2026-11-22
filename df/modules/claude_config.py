@@ -42,6 +42,7 @@ ENTRIES: List[Tuple[str, str, str]] = [
     ("pr-followup.md", "pr-followup.md", "old_pr_followup"),
     ("output-styles", "output-styles", "old_output_styles"),
     ("project-rules", "project-rules", "old_project_rules"),
+    ("review-kit", "review-kit", "old_review_kit"),
     ("skills/implement", "skills/implement", "old_skill_implement"),
     ("skills/review-brief", "skills/review-brief", "old_skill_review_brief"),
     ("skills/blast-radius", "skills/blast-radius", "old_skill_blast_radius"),

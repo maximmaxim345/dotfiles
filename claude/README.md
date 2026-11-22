@@ -17,6 +17,7 @@ live on every device without re-running anything.
 | `pr-followup.md` | What to do once a PR is published, read on demand as `CLAUDE.md` says |
 | `output-styles/` | Output styles, linked as a whole directory |
 | `project-rules/` | Per-repo rules, read on demand as listed in `CLAUDE.md` |
+| `review-kit/` | Builds the review pages, decision sheets and architecture pages the skills hand over, see its `README.md` |
 | `skills/implement/` | My implementation workflow skill, linked into `~/.claude/skills/` |
 | `skills/review-brief/` | Briefing before I review a session's changes, linked into `~/.claude/skills/` |
 | `skills/ma-dev/` | Starts a Music Assistant dev server on a copy of my configured data folder |

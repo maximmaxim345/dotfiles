@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""Print archived threads with a backlog item whose worktree can go with them, and the ones held back with the reason."""
+
+from __future__ import annotations
+
+import datetime
+import json
+import sqlite3
+import subprocess
+import sys
+from pathlib import Path
+
+DESK = Path.home() / "desk"
+BACKLOG = DESK / "backlog"
+DB = Path.home() / ".t3" / "userdata" / "statev2.sqlite"
+ARCHIVED_FOR = datetime.timedelta(days=14)
+# Ignored paths a build or install recreates, so they never hold a worktree back
+REBUILDABLE = {
+    "node_modules",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".pytest_cache",
+    ".husky",
+    ".astro",
+    ".DS_Store",
+    "dist",
+    "build",
+    "target",
+}
+
+
+def git(path: str, *args: str) -> str:
+    return subprocess.run(
+        ["git", "--no-optional-locks", "-C", path, *args], capture_output=True, text=True, check=True
+    ).stdout.strip()
+
+
+def held_because(path: str) -> str | None:
+    try:
+        status = git(path, "status", "--porcelain", "--ignored").splitlines()
+        if any(not line.startswith("!! ") for line in status):
+            return "uncommitted changes"
+        kept = [
+            line[3:]
+            for line in status
+            if not REBUILDABLE.intersection(Path(line[3:]).parts) and not line.rstrip("/").endswith(".egg-info")
+        ]
+        if kept:
+            return f"ignored files that exist only here, such as {kept[0]}"
+        unpushed = git(path, "rev-list", "--count", "HEAD", "--not", "--remotes")
+    except subprocess.CalledProcessError as err:
+        return f"git failed: {err.stderr.strip().splitlines()[-1] if err.stderr.strip() else err.returncode}"
+    return f"{unpushed} commits on no remote branch" if unpushed != "0" else None
+
+
+def main() -> None:
+    try:
+        conn = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+        rows = conn.execute(
+            "SELECT thread_id, title, archived_at, json_extract(payload_json, '$.worktreePath')"
+            " FROM orchestration_v2_projection_threads WHERE deleted_at IS NULL"
+            " AND json_extract(payload_json, '$.lineage.relationshipToParent') IS NULL"
+        ).fetchall()
+    except sqlite3.Error as err:
+        sys.exit(f"could not read {DB}: {err}")
+    conn.close()
+    managed = {json.loads(p.read_text()).get("thread") for p in BACKLOG.glob("*.json")}
+    now = datetime.datetime.now(datetime.timezone.utc)
+
+    def due(archived_at: str | None, thread: str) -> bool:
+        archived = datetime.datetime.fromisoformat(archived_at.replace("Z", "+00:00")) if archived_at else None
+        return thread in managed and archived is not None and now - archived >= ARCHIVED_FOR
+
+    users: dict[str, list[str]] = {}
+    for thread, _, archived_at, path in rows:
+        if path and not due(archived_at, thread):
+            users.setdefault(path, []).append(thread)
+    for thread, title, archived_at, path in sorted(rows, key=lambda row: row[2] or ""):
+        if not path or not due(archived_at, thread) or not Path(path).is_dir():
+            continue
+        reason = f"worktree also used by thread {users[path][0]}" if path in users else held_because(path)
+        print(f"held {thread} {title} ({path}): {reason}" if reason else f"due {thread} {title} ({path})")
+
+
+if __name__ == "__main__":
+    main()

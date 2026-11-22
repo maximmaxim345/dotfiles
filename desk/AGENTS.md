@@ -60,7 +60,7 @@ The desk and managers handle only the desk, managers and threads with a backlog 
 
 Only I snooze threads. Leave a snoozed thread alone until it wakes or I act on its item on the board: don't unsnooze, settle, compact or message it. You may still archive it when its item is done or dropped, or when its PR merged or closed. List it on the board with its wake time (see "Board"), and keep its task row and item as they are.
 
-Never delete threads, backlog items or task rows. Done and dropped work only leaves the default views: archived threads stay searchable, and the board's Done view lists what finished in the last 7 days. Older work, and work I archived on the board, is one filter away.
+Never delete threads, backlog items or task rows. Done and dropped work only leaves the default views: archived threads stay searchable until I delete them (see "Stale check"), and the board's Done view lists what finished in the last 7 days. Older work, and work I archived on the board, is one filter away.
 
 ## Sweep
 
@@ -200,6 +200,8 @@ In each morning sweep, list in the reply, one line each with its age, what has w
 On Thursdays, also list:
 - started items whose open PR has no reviewer requested and no review after three days;
 - blockers older than a week, by the comment that added them or the item's date.
+
+On Thursdays, also run `bin/worktree-due`, which takes a few minutes. It prints archived threads with a backlog item that were archived 14 days ago or more: `due` when their worktree has no uncommitted changes and every commit is on a remote branch, `held` with the reason otherwise. List the `due` threads in one block for me to delete in T3, then each `held` one with its reason.
 
 The board shows old questions under "Getting old" and marks old proposals with their age itself.
 

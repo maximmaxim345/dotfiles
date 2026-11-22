@@ -55,6 +55,7 @@ ENTRIES: List[Tuple[str, str, str]] = [
     ("skills/lab-gate", "skills/lab-gate", "old_skill_lab_gate"),
     ("skills/second-opinion", "skills/second-opinion", "old_skill_second_opinion"),
     ("skills/architecture", "skills/architecture", "old_skill_architecture"),
+    ("skills/diagnose", "skills/diagnose", "old_skill_diagnose"),
     ("hooks/recap-after-break.py", "hooks/recap-after-break.py", "old_hook_recap_after_break"),
     ("hooks/after-compact.py", "hooks/after-compact.py", "old_hook_after_compact"),
     ("hooks/check-commands.py", "hooks/check-commands.py", "old_hook_check_commands"),

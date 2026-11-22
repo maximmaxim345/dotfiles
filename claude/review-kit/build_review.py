@@ -36,6 +36,9 @@ BOTTOM_BAR = (
     '<span class="status" id="status"></span><button class="btn" id="show">Show</button>'
     '<button class="btn primary" id="copy">Copy comments</button></div></div>'
 )
+UNCOMMITTED = "uncommitted"
+BLAME_RE = re.compile(r"^([0-9a-f]{40}) \d+ (\d+)(?: \d+)?$")
+LINE_REF_RE = re.compile(r"(?<![\w/.~-])([\w.~-]+(?:/[\w.~-]+)*):(\d+)(?:-(\d+))?(?![\w-])")
 DIFF_HEADERS = (
     "index ",
     "--- ",
@@ -70,6 +73,7 @@ SVG_ATTRIBUTES = set(
     ).split()
 )
 EXTERNAL_URL_RE = re.compile(r"url\(\s*['\"]?(?!#)", re.I)
+WEB_URL_RE = re.compile(r"(https?://[^\s<>\"'`]*[^\s<>\"'`.,:;)])")
 
 ReadLines = Callable[[str], Optional[List[str]]]
 
@@ -92,6 +96,8 @@ class Hunk:
     id: str = ""
     above: Optional[Dict[str, Any]] = None
     below: Optional[Dict[str, Any]] = None
+    commits: List[str] = field(default_factory=list)
+    skim: str = ""
     no_newline: List[int] = field(default_factory=list)
 
     @property
@@ -109,6 +115,36 @@ class Hunk:
     @property
     def removed(self) -> int:
         return sum(1 for kind, _ in self.lines if kind == "-")
+
+    @property
+    def prose(self) -> bool:
+        return Path(self.path).suffix.lower() in PROSE_SUFFIXES
+
+    def numbered(self) -> List[Tuple[str, int]]:
+        old, new, out = self.old_start, self.new_start, []
+        for kind, _ in self.lines:
+            if kind == "-":
+                out.append(("-", old))
+                old += 1
+            elif kind == "+":
+                out.append(("+", new))
+                new += 1
+            else:
+                old += 1
+                new += 1
+        return out
+
+    def changed(self, kind: str) -> str:
+        numbers = [n for k, n in self.numbered() if k == kind]
+        if not numbers:
+            return ""
+        return f"{numbers[0]}-{numbers[-1]}" if numbers[-1] > numbers[0] else str(numbers[0])
+
+    @property
+    def shown(self) -> Tuple[int, int]:
+        first = self.above["new"] if self.above else self.first_new
+        last = self.below["new"] + len(self.below["lines"]) - 1 if self.below else self.last_new
+        return first, last
 
     @property
     def range_label(self) -> str:
@@ -129,12 +165,14 @@ class Hunk:
             "oldCount": self.old_count,
             "newStart": self.new_start,
             "newCount": self.new_count,
-            "header": self.header,
+            "header": "" if self.prose else self.header,
             "lines": self.lines,
             "note": self.note,
-            "prose": Path(self.path).suffix.lower() in PROSE_SUFFIXES,
+            "prose": self.prose,
             "above": self.above,
             "below": self.below,
+            "commits": [c[:7] if c != UNCOMMITTED else c for c in self.commits],
+            "skim": self.skim,
             "noNewline": self.no_newline,
         }
 
@@ -145,7 +183,7 @@ class Change:
     start: str
     head: Optional[str]
     base: str
-    commits: List[str]
+    commits: List[Tuple[str, str]]
     read: ReadLines
     reviewed: str = ""
     notice: str = ""
@@ -368,6 +406,56 @@ def remote_names(repo: Path) -> List[str]:
     return names
 
 
+def blame(repo: Path, path: str, ranges: List[str], *revs: str) -> Optional[Dict[int, str]]:
+    args = ["blame", "--porcelain", *revs]
+    for spec in ranges:
+        first, last = parse_lines(spec)
+        args += ["-L", f"{first},{last}"]
+    result = run_git(repo, *args, "--", path)
+    if result.returncode != 0:
+        return None
+    return {int(m[2]): m[1] for m in map(BLAME_RE.match, result.stdout.split("\n")) if m}
+
+
+def attribute(repo: Path, change: Change, log_from: str) -> None:
+    order = [sha for sha, _ in change.commits]
+    found: Dict[str, set] = {h.id: set() for h in change.hunks}
+    added: Dict[str, List[Hunk]] = {}
+    removed: Dict[str, List[Hunk]] = {}
+    for hunk in change.hunks:
+        if hunk.added:
+            added.setdefault(hunk.path, []).append(hunk)
+        if hunk.removed and change.start == log_from:
+            removed.setdefault(hunk.old_path, []).append(hunk)
+    span = f"{log_from}..{change.head}" if change.head else f"^{log_from}"
+    for path, hunks in added.items():
+        lines = blame(repo, path, [h.changed("+") for h in hunks], span)
+        for hunk in hunks:
+            if lines is None:
+                found[hunk.id].update([UNCOMMITTED] if change.head is None else [])
+                continue
+            for kind, number in hunk.numbered():
+                sha = lines.get(number, "") if kind == "+" else ""
+                if sha and not sha.strip("0"):
+                    found[hunk.id].add(UNCOMMITTED)
+                elif sha in order:
+                    found[hunk.id].add(sha)
+    for path, hunks in removed.items():
+        lines = blame(repo, path, [h.changed("-") for h in hunks], "--reverse", f"{log_from}..{change.head or 'HEAD'}")
+        for hunk in hunks:
+            for kind, number in hunk.numbered():
+                sha = (lines or {}).get(number, "") if kind == "-" else ""
+                if sha == log_from and order:
+                    found[hunk.id].add(order[0])
+                elif sha in order[:-1]:
+                    found[hunk.id].add(order[order.index(sha) + 1])
+                elif sha and sha == (order[-1] if order else log_from) and change.head is None:
+                    found[hunk.id].add(UNCOMMITTED)
+    rank = {sha: index for index, sha in enumerate(order + [UNCOMMITTED])}
+    for hunk in change.hunks:
+        hunk.commits = sorted(found[hunk.id], key=rank.__getitem__)
+
+
 def replay_start(repo: Path, base_ref: str, base: str, since: str) -> Tuple[str, str]:
     old_head = rev(repo, since)
     old_base = git(repo, "merge-base", base_ref, old_head).strip()
@@ -405,7 +493,8 @@ def collect(
     reviewed = rev(repo, since) if since is not None else ""
     if reviewed and run_git(repo, "merge-base", "--is-ancestor", reviewed, head).returncode == 0:
         log_from = reviewed
-    commits = [line for line in git(repo, "log", "--format=%h %s", f"{log_from}..{head}").split("\n") if line]
+    log = git(repo, "log", "--reverse", "--format=%H%x09%s", f"{log_from}..{head}").split("\n")
+    commits = [(line[:40], line[41:]) for line in log if line]
     tree_head: Optional[str] = head
     if uncommitted:
         if head != rev(repo, "HEAD"):
@@ -415,7 +504,7 @@ def collect(
     hunks = parse_diff(text)
     read = file_reader(repo, tree_head)
     add_windows(hunks, read)
-    return Change(
+    change = Change(
         hunks=hunks,
         start=start,
         head=tree_head,
@@ -428,6 +517,8 @@ def collect(
         remotes=remote_names(repo),
         diff_hash="" if tree_head else hashlib.sha1(text.encode("utf-8")).hexdigest(),
     )
+    attribute(repo, change, log_from)
+    return change
 
 
 def plural(count: int, word: str) -> str:
@@ -442,16 +533,57 @@ def esc_line(text: str) -> str:
     return esc(text).replace("\r", CR_MARK)
 
 
-def inline(text: Any) -> str:
-    parts = re.split(r"(`[^`\n]+`)", str(text))
-    return "".join(
-        f"<code>{esc(p[1:-1])}</code>" if p.startswith("`") and p.endswith("`") and len(p) > 2 else esc(p) for p in parts
-    )
+class Linker:
+    def __init__(self, hunks: List[Hunk]) -> None:
+        self.hunks = [h for h in hunks if h.lines]
+
+    def anchor(self, hunk: Hunk, first: int, last: int, label: str, cls: str = "lref") -> str:
+        return f'<a class="{cls}" href="#hunk-{hunk.id}" data-lines="{first}-{last}">{label}</a>'
+
+    def link(self, match: "re.Match[str]", label: str) -> Optional[str]:
+        first = int(match[2])
+        paths = {h.path for h in self.hunks if h.path == match[1] or h.path.endswith("/" + match[1])}
+        if len(paths) != 1:
+            return None
+        held = [h for h in self.hunks if h.path in paths and h.shown[0] <= first <= h.shown[1]]
+        hunk = next((h for h in held if h.first_new <= first <= h.last_new), held[0] if held else None)
+        if not hunk:
+            return None
+        last = min(max(first, int(match[3] or first)), hunk.shown[1])
+        return self.anchor(hunk, first, last, label)
+
+    def text(self, raw: str) -> str:
+        out, at = "", 0
+        for match in LINE_REF_RE.finditer(raw):
+            link = self.link(match, esc(match[0]))
+            if link:
+                out += esc(raw[at : match.start()]) + link
+                at = match.end()
+        return out + esc(raw[at:])
+
+    def code(self, raw: str) -> str:
+        match = LINE_REF_RE.fullmatch(raw)
+        code = f"<code>{esc(raw)}</code>"
+        return (self.link(match, code) if match else None) or code
 
 
-def prose(text: Any) -> str:
+def inline(text: Any, linker: Optional[Linker] = None, links: bool = True) -> str:
+    out = ""
+    for part in re.split(r"(`[^`\n]+`)", str(text)):
+        if part.startswith("`") and part.endswith("`") and len(part) > 2:
+            out += linker.code(part[1:-1]) if linker else f"<code>{esc(part[1:-1])}</code>"
+            continue
+        for index, piece in enumerate(WEB_URL_RE.split(part) if links else [part]):
+            if index % 2:
+                out += f'<a href="{esc(piece)}" target="_blank" rel="noreferrer">{esc(piece)}</a>'
+            else:
+                out += linker.text(piece) if linker else esc(piece)
+    return out
+
+
+def prose(text: Any, linker: Optional[Linker] = None) -> str:
     paragraphs = [p.strip() for p in re.split(r"\n\s*\n", str(text or "")) if p.strip()]
-    return "".join("<p>" + inline(p).replace("\n", "<br>") + "</p>" for p in paragraphs)
+    return "".join("<p>" + inline(p, linker).replace("\n", "<br>") + "</p>" for p in paragraphs)
 
 
 def parse_lines(spec: Any) -> Tuple[int, int]:
@@ -504,10 +636,11 @@ def context_panel(ref: Dict[str, Any], read: ReadLines) -> str:
 class Layout:
     def __init__(self, change: Change) -> None:
         self.change = change
+        self.linker = Linker(change.hunks)
         self.placed: Dict[str, str] = {}
         self.unplaced = 0
 
-    def entries(self, items: List[Any], where: str) -> str:
+    def entries(self, items: List[Any], where: str, skim: str = "") -> str:
         out = ""
         for item in items:
             meta = item if isinstance(item, dict) else {}
@@ -515,18 +648,19 @@ class Layout:
             if "file" in meta and "lines" not in meta:
                 found = [h for h in found if h.id not in self.placed] or found
             for index, hunk in enumerate(found):
-                out += self.entry(hunk, meta if index == 0 else {}, where)
+                out += self.entry(hunk, meta if index == 0 else {}, where, skim)
         return out
 
-    def entry(self, hunk: Hunk, meta: Dict[str, Any], where: str) -> str:
+    def entry(self, hunk: Hunk, meta: Dict[str, Any], where: str, skim: str = "") -> str:
         if hunk.id in self.placed:
-            note = f" {inline(meta['note'])}" if meta.get("note") else ""
+            note = f" {inline(meta['note'], self.linker)}" if meta.get("note") else ""
             return (
                 f'<div class="alias">Shown under {esc(self.placed[hunk.id])}: '
                 f'<a href="#hunk-{hunk.id}"><code>{esc(hunk.where)}</code></a>.{note}</div>'
             )
         self.placed[hunk.id] = where
-        why = prose(meta.get("note", ""))
+        hunk.skim = skim
+        why = prose(meta.get("note", ""), self.linker)
         look = meta.get("look")
         if look:
             label = "Look closely" if look is True else f"Look closely: {look}"
@@ -549,7 +683,7 @@ class Layout:
             count = len({h.id for item in hunks for h in resolve(item, self.change.hunks)})
             files = len({h.path for item in hunks for h in resolve(item, self.change.hunks)})
             label = group["reason"]
-            body = self.entries(hunks, f'"{label}"')
+            body = self.entries(hunks, f'"{label}"', label)
             return (
                 f'<details class="group skim"><summary><b>{inline(label)}</b>'
                 f'<span class="count">{plural(count, "hunk")} in {plural(files, "file")}</span>'
@@ -557,7 +691,7 @@ class Layout:
             )
         title = group.get("title") or f"Group {number}"
         body = self.entries(hunks, f'"{number}. {title}"')
-        note = f'<div class="gnote">{prose(group["note"])}</div>' if group.get("note") else ""
+        note = f'<div class="gnote">{prose(group["note"], self.linker)}</div>' if group.get("note") else ""
         return f'<section class="group"><h3>{number}. {inline(title)}</h3>{note}{body}</section>'
 
     def groups(self, groups: List[Dict[str, Any]]) -> str:
@@ -586,29 +720,25 @@ def choices(options: List[Dict[str, Any]], pick: Any, where: str) -> Tuple[str, 
         sug = "<span class=sug>Pick</span>" if oid == pick else ""
         buttons += (
             f'<button class="opt{" suggest" if oid == pick else ""}" data-opt="{esc(oid)}"><span class="ol">{esc(oid)}</span>'
-            f'<span>{inline(opt.get("text", ""))}</span>{sug}</button>'
+            f'<span>{inline(opt.get("text", ""), links=False)}</span>{sug}</button>'
         )
     return str(pick), buttons
 
 
-def anchor(hunk: Hunk, first: int, last: int, label: str, cls: str) -> str:
-    return f'<a class="{cls}" href="#hunk-{hunk.id}" data-lines="{first}-{last}">{label}</a>'
-
-
-def ref_links(ref: Any, change: Change) -> str:
+def ref_links(ref: Any, change: Change, linker: Linker) -> str:
     out = ""
     for hunk in resolve(ref, change.hunks):
         if isinstance(ref, dict) and "lines" in ref and hunk.lines:
             first, last = parse_lines(ref["lines"])
             first, last = max(first, hunk.first_new), min(last, max(hunk.last_new, hunk.first_new))
             label = f"{hunk.path}:{first}-{last}" if last > first else f"{hunk.path}:{first}"
-            out += anchor(hunk, first, last, esc(label), "golink")
+            out += linker.anchor(hunk, first, last, esc(label), "golink")
         else:
             out += f'<a class="golink" href="#hunk-{hunk.id}">{esc(hunk.where)}</a>'
     return out
 
 
-def decide_cards(cards: List[Dict[str, Any]], change: Change) -> str:
+def decide_cards(cards: List[Dict[str, Any]], change: Change, linker: Linker, order: str) -> str:
     if not cards:
         return ""
     out = ""
@@ -617,23 +747,23 @@ def decide_cards(cards: List[Dict[str, Any]], change: Change) -> str:
         risk = str(card.get("risk_level", "")).lower()
         tags = f'<span class="tag {RISK_TAGS.get(risk, "")}">{esc(risk.capitalize())} risk</span>' if risk else ""
         tags += f'<span class="tag">{inline(card["undo"])}</span>' if card.get("undo") else ""
-        links = "".join(ref_links(ref, change) for ref in card.get("refs", []))
+        links = "".join(ref_links(ref, change, linker) for ref in card.get("refs", []))
         body = ""
         for key, label in (("risk", "Risk."), ("evidence", "Evidence.")):
             if card.get(key):
-                body += f'<p><span class="lbl">{label}</span> {inline(card[key])}</p>'
+                body += f'<p><span class="lbl">{label}</span> {inline(card[key], linker)}</p>'
         if links:
             body += f"<p>{links}</p>"
         if card.get("why"):
-            body += f'<p><span class="lbl">Pick {esc(pick)}.</span> {inline(card["why"])}</p>'
+            body += f'<p><span class="lbl">Pick {esc(pick)}.</span> {inline(card["why"], linker)}</p>'
         panels = "".join(context_panel(ref, change.read) for ref in card.get("context", []))
         out += (
             f'<article class="card call" data-call="{number}" data-pick="{esc(pick)}">'
             f'<div class="call-top"><span class="num">Decide {number}</span>{tags}</div>'
-            f'<h3>{inline(card.get("title", ""))}</h3><div class="prose">{body}</div>{panels}'
+            f'<h3>{inline(card.get("title", ""), linker)}</h3><div class="prose">{body}</div>{panels}'
             f'<div class="opts">{buttons}</div></article>'
         )
-    count = f"{len(cards)}, riskiest first" if len(cards) > 1 else "1"
+    count = f"{len(cards)}, {esc(order)}" if order else str(len(cards))
     return (
         f'<section id="decide"><h2>Decide <span class="count">{count}</span></h2>'
         f'<p class="sub">Each card has a pick. Pick another option to change it, it goes out with Copy comments.</p>'
@@ -641,17 +771,17 @@ def decide_cards(cards: List[Dict[str, Any]], change: Change) -> str:
     )
 
 
-def behavior_table(behavior: Any) -> str:
+def behavior_table(behavior: Any, linker: Linker) -> str:
     if not behavior:
         return ""
     rows = behavior.get("rows", []) if isinstance(behavior, dict) else behavior
     body = "".join(
-        f'<tr><td>{inline(r.get("case", ""))}</td><td data-l="Before">{inline(r.get("before", ""))}</td>'
-        f'<td data-l="After">{inline(r.get("after", ""))}</td></tr>'
+        f'<tr><td>{inline(r.get("case", ""), linker)}</td><td data-l="Before">{inline(r.get("before", ""), linker)}</td>'
+        f'<td data-l="After">{inline(r.get("after", ""), linker)}</td></tr>'
         for r in rows
     )
     unchanged = behavior.get("unchanged") if isinstance(behavior, dict) else None
-    tail = f'<div class="small muted" style="margin-top:8px">{prose(unchanged)}</div>' if unchanged else ""
+    tail = f'<div class="small muted" style="margin-top:8px">{prose(unchanged, linker)}</div>' if unchanged else ""
     return (
         '<section id="behavior"><h2>Behavior before and after</h2>'
         f'<table class="beh card"><thead><tr><th>Case</th><th>Before</th><th>After</th></tr></thead><tbody>{body}</tbody></table>'
@@ -701,20 +831,14 @@ def page(title: str, body: str, css: List[str], js: Optional[str] = None, data: 
     )
 
 
-def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
+def header(narrative: Dict[str, Any], change: Change, tier: str, tier_line: str, linker: Linker) -> str:
     round_two = narrative.get("feedback") is not None
-    if round_two and not change.reviewed:
-        raise KitError("The narrative has `feedback`, which needs --since with the previously reviewed head")
-    layout = Layout(change)
     repo = narrative.get("repo") or (change.remotes[0] if change.remotes else "")
     branch = narrative.get("branch") or change.branch
-    kind = "Round two" if round_two else "Review"
     head_label = change.head[:7] if change.head else "uncommitted changes"
     added = sum(h.added for h in change.hunks)
     removed = sum(h.removed for h in change.hunks)
     files = len({h.path for h in change.hunks})
-    tier, tier_line = pick_tier(narrative, change.hunks, round_two)
-
     meta = [f"<span><code>{esc(repo)}</code></span>"] if repo else []
     if branch:
         meta.append(f"<span>branch <code>{esc(branch)}</code></span>")
@@ -723,26 +847,50 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
     else:
         meta.append(f"<span>base <code>{change.base[:7]}</code>, head <code>{esc(head_label)}</code></span>")
     meta.append(f"<span>{plural(len(change.commits), 'commit')}, +{added} -{removed} in {plural(files, 'file')}</span>")
-    for item in narrative.get("meta", []):
-        meta.append(f"<span>{inline(item)}</span>")
+    meta += [f"<span>{inline(item)}</span>" for item in narrative.get("meta", [])]
 
-    facts = f'<dt>Tier</dt><dd><span class="tag {TIER_TAGS[tier]}">{tier.capitalize()}</span> '
-    facts += inline(narrative.get("tier_reason", ""))
-    facts += f'<div class="small muted">{esc(tier_line)}</div></dd>'
+    tiles = [
+        '<div class="fact"><div class="k">Tier</div>'
+        f'<div class="v"><span class="tag {TIER_TAGS[tier]}">{tier.capitalize()}</span> '
+        f'{inline(narrative.get("tier_reason", ""), linker)}<div class="small muted">{esc(tier_line)}</div></div></div>'
+    ]
+    for key, label, cls in (("worst_case", "Worst case", "warn"), ("tested", "Tested", "")):
+        if narrative.get(key):
+            tiles.append(
+                f'<div class="fact {cls}"><div class="k">{label}</div><div class="v">{prose(narrative[key], linker)}</div></div>'
+            )
     for fact in narrative.get("facts", []):
-        facts += f'<dt>{inline(fact.get("label", ""))}</dt><dd>{inline(fact.get("text", ""))}</dd>'
+        tiles.append(
+            f'<div class="fact"><div class="k">{inline(fact.get("label", ""))}</div>'
+            f'<div class="v">{prose(fact.get("text", ""), linker)}</div></div>'
+        )
     if change.commits:
-        items = "".join(f"<li><code>{esc(c[:7])}</code> {esc(c[8:])}</li>" for c in change.commits)
-        summary = plural(len(change.commits), "commit")
-        facts += f"<dt>Commits</dt><dd><details><summary>{summary}</summary><ul>{items}</ul></details></dd>"
+        items = "".join(f"<li><code>{sha[:7]}</code> {esc(subject)}</li>" for sha, subject in change.commits)
+        tiles.append(
+            f'<div class="fact"><div class="k">Commits</div><div class="v"><details><summary>'
+            f'{plural(len(change.commits), "commit")}, oldest first</summary><ol>{items}</ol></details></div></div>'
+        )
     notice = f'<div class="warnbox">{esc(change.notice)}</div>' if change.notice else ""
-    head = (
-        f'<div class="head"><div><h1>{inline(narrative.get("title", "Review"))}</h1><p class="meta">{"".join(meta)}</p>'
-        f'<div class="prose">{prose(narrative.get("summary", ""))}</div>{notice}</div>'
-        f'<div class="card facts"><dl>{facts}</dl></div></div>'
+    return (
+        f'<div class="head"><h1>{inline(narrative.get("title", "Review"), linker)}</h1><p class="meta">{"".join(meta)}</p>'
+        f'<div class="prose lead">{prose(narrative.get("summary", ""), linker)}</div>{notice}'
+        f'<div class="facts">{"".join(tiles)}</div></div>'
     )
 
-    sections = decide_cards(narrative.get("decide", []), change) + behavior_table(narrative.get("behavior"))
+
+def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
+    round_two = narrative.get("feedback") is not None
+    if round_two and not change.reviewed:
+        raise KitError("The narrative has `feedback`, which needs --since with the previously reviewed head")
+    layout = Layout(change)
+    linker = layout.linker
+    head_label = change.head[:7] if change.head else "uncommitted changes"
+    files = len({h.path for h in change.hunks})
+    tier, tier_line = pick_tier(narrative, change.hunks, round_two)
+    head = header(narrative, change, tier, tier_line, linker)
+
+    sections = decide_cards(narrative.get("decide", []), change, linker, narrative.get("decide_order", ""))
+    sections += behavior_table(narrative.get("behavior"), linker)
     if round_two:
         feedback_html = ""
         for index, item in enumerate(narrative["feedback"], 1):
@@ -757,7 +905,7 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
                 f'<div class="cm-q"><span class="who">Your comment {index}{on}</span>'
                 f'<div class="txt">{esc(item.get("comment", ""))}</div></div>'
                 f'<div class="cm-a"><span class="who">Author <span class="tag {tag}">{esc(label)}</span></span>'
-                f'{prose(item.get("reply", ""))}</div>'
+                f'{prose(item.get("reply", ""), linker)}</div>'
                 f'</div>{body}{panels}<div class="cm-foot"><button class="linkbtn" data-reply="{esc(fid)}">Reply</button>'
                 '<div class="replies"></div></div></div>'
             )
@@ -772,13 +920,22 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
         )
     else:
         diff = layout.groups(narrative.get("groups", [])) + layout.unmentioned()
+        order = ""
+        if len(change.commits) > 1:
+            order = (
+                '<span class="seg" role="group" aria-label="Order"><button data-order="reading">Reading order</button>'
+                '<button data-order="commit">By commit</button></span>'
+            )
         sections += (
-            f'<section id="diff"><h2>The diff, in reading order <span class="count">{plural(len(change.hunks), "hunk")} '
-            f'in {plural(files, "file")}</span></h2>'
+            f'<section id="diff"><div class="dhead"><h2>The diff <span class="count">{plural(len(change.hunks), "hunk")} '
+            f'in {plural(files, "file")}</span></h2>{order}</div>'
             '<p class="sub">Tap a line to comment on it. Comments stay in this browser until you copy them.</p>'
-            f"{diff or '<p class=muted>No changes.</p>'}</section>"
+            f'<div id="reading">{diff or "<p class=muted>No changes.</p>"}</div><div id="bycommit" hidden></div></section>'
         )
 
+    repo = narrative.get("repo") or (change.remotes[0] if change.remotes else "")
+    branch = narrative.get("branch") or change.branch
+    kind = "Round two" if round_two else "Review"
     brand = f"{kind} <span>{esc(' '.join(x for x in (repo, branch) if x))}</span>"
     body = (
         f'<header class="top"><div class="top-in"><div class="brand">{brand}</div>{TOP_BAR_CONTROLS}</div></header>'
@@ -791,16 +948,41 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
         "key": key,
         "subject": f"{repo} {span}".strip(),
         "hunks": {h.id: h.to_page() for h in change.hunks},
+        "commits": [[sha[:7], subject] for sha, subject in change.commits],
     }
     title = f"{kind}: {repo.split('/')[-1]} {branch}".strip() if repo or branch else f"{kind}: {span}"
     return page(title, body, ["base.css", "review.css"], "review.js", data), layout.unplaced
 
 
-def list_hunks(change: Change) -> str:
-    out = [change.notice] if change.notice else []
+def list_hunks(change: Change, as_json: bool) -> str:
+    rows: List[Dict[str, Any]] = []
     for hunk in change.hunks:
         first = next((text.strip() for kind, text in hunk.lines if kind != " " and text.strip()), hunk.note)
-        out.append(f"{hunk.id}  {hunk.where}  +{hunk.added} -{hunk.removed}  {first[:70]}")
+        rows.append(
+            {
+                "id": hunk.id,
+                "path": hunk.path,
+                "old_path": hunk.old_path,
+                "changed": hunk.changed("+"),
+                "removed_old": hunk.changed("-"),
+                "hunk": hunk.range_label,
+                "added": hunk.added,
+                "removed": hunk.removed,
+                "commits": [c[:7] if c != UNCOMMITTED else c for c in hunk.commits],
+                "first_line": first[:120],
+            }
+        )
+    if as_json:
+        commits = [{"sha": sha[:7], "subject": subject} for sha, subject in change.commits]
+        return json.dumps({"notice": change.notice, "commits": commits, "hunks": rows}, indent=2) + "\n"
+    out = [change.notice] if change.notice else []
+    for row in rows:
+        where = f"{row['path']}:{row['changed']}" if row["changed"] else f"{row['path']} (removed old {row['removed_old']})"
+        hunk_range = f"(hunk {row['hunk']})" if row["hunk"] else ""
+        out.append(
+            f"{row['id']}  {where}  {hunk_range}  +{row['added']} -{row['removed']}  "
+            f"{','.join(row['commits']) or '-'}  {row['first_line'][:70]}"
+        )
     return "\n".join(out) + "\n"
 
 
@@ -914,6 +1096,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     review.add_argument("--since", help="the head reviewed last round: show only what changed since it")
     review.add_argument("--narrative", help="the narrative JSON file")
     review.add_argument("--list-hunks", action="store_true", help="print the hunk ids instead of building a page")
+    review.add_argument("--json", action="store_true", help="with --list-hunks, print JSON")
     review.add_argument("-o", "--output", help="the HTML file to write")
     for name, text in (("decisions", "a decision sheet"), ("architecture", "an architecture page")):
         other = sub.add_parser(name, help=text)
@@ -929,7 +1112,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             repo = Path(args.repo).resolve()
             change = collect(repo, args.base, args.head, args.span, args.uncommitted, args.since)
             if args.list_hunks:
-                sys.stdout.write(list_hunks(change))
+                sys.stdout.write(list_hunks(change, args.json))
                 return 0
             if not args.output:
                 raise KitError("Pass -o FILE, or --list-hunks")

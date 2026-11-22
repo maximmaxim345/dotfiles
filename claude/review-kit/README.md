@@ -9,7 +9,7 @@ The script always takes the diff from `git diff`. You never type code into the n
 ```sh
 KIT=~/.claude/review-kit/build_review.py
 
-# List the hunks with their ids, to write the narrative against
+# List the hunks with their ids, to write the narrative against (add --json for JSON)
 python3 $KIT review --repo . --base main --list-hunks
 
 # First review: the branch against its merge base with main
@@ -32,6 +32,10 @@ python3 $KIT architecture architecture.json -o architecture.html
 
 `--since` takes the head commit of the last reviewed round. Record its sha when Maxim reviews. The script compares the trees of the old and the new head, so it works whether the fixes are separate commits or the history was squashed, amended or rebased. When the branch moved to a new base, the script first replays the old head onto the new base, so changes that came with the new base stay out. If that replay conflicts, the page says so and compares the two heads directly. The old commit must still exist in the repository (rewritten commits stay until git prunes them).
 
+`--list-hunks` prints one line per hunk: its id, the changed lines (`path:12-30`, counted in the new file), the whole hunk with its context lines (`hunk 9-33`), the added and removed counts, the commits that touched it, and its first changed line. `--json` prints the same as JSON, with `changed` (new-side range of the added lines), `removed_old` (old-side range of the removed lines), `hunk` (the whole hunk) and `commits` per hunk. A `lines` reference matches any hunk it overlaps, so the changed range and the hunk range both work.
+
+The commits of a hunk come from `git blame` over the reviewed range: the commits that added its lines, and for removed lines the commit after the last one that still had them.
+
 The script exits with an error and a message when a reference in the narrative matches no hunk, or when the diff has a line it cannot read. After writing the page it prints how many hunks the narrative does not mention.
 
 ## The review narrative
@@ -43,11 +47,14 @@ Every field is optional. An empty object `{}` gives a page with every hunk under
   "title": "One sentence: what behaves differently now.",
   "repo": "owner/name",
   "branch": "feat/retry",
-  "summary": "Optional paragraphs. Blank lines split paragraphs, `backticks` mark code.",
+  "summary": "Optional paragraphs. Blank lines split paragraphs, `backticks` mark code, web addresses become links.",
+  "worst_case": "What breaks, for whom, if this change is wrong.",
+  "tested": "What ran and what did not.",
   "tier": "normal",
   "tier_reason": "Why this tier, in one line.",
   "meta": ["draft PR 42"],
   "facts": [{"label": "After your go", "text": "The agent marks the PR ready."}],
+  "decide_order": "in the plan's order",
   "decide": [
     {
       "title": "Keep the retry loop?",
@@ -84,8 +91,23 @@ Every field is optional. An empty object `{}` gives a page with every hunk under
 
 - `tier` is one of `fixup`, `small`, `normal`, `risky`. The script computes the lowest tier from the size of the diff (changed lines outside tests: over 400 is risky, 50 or more is normal, otherwise small, and fixup only in round two at 15 or fewer). The narrative may raise the tier, never lower it. Leave it out to take the computed one.
 - `repo` and `branch` name the page in the browser tab and the top bar. Without them the page takes the repository from the `upstream` or `origin` remote and the branch from `--head` or the end of `--range`, never from the checkout's folder or its current branch.
-- `decide` cards come first on the page, in the order given, so put the riskiest first. `pick` must be one of the option ids, which default to A, B, C. `risk_level` is `low`, `medium` or `high`. `refs` become links that open the hunk, scroll to the lines and mark them. `context` shows unchanged code on the card.
+- `worst_case` and `tested` sit next to the tier at the top, as do the `facts`.
+- `decide` cards come first on the page, in the order given. The heading shows their count, followed by `decide_order` when set (for example "riskiest first"). See "Decide cards" below.
 - `groups` set the reading order. A group is shown in full, or collapsed under its one-line `reason` when `unimportant` is true. A collapsed group takes no `note`: put it on one of its hunks. Every hunk the groups do not place appears in a last group, "Not mentioned by the author". Nothing is dropped.
+
+### Decide cards
+
+A decide card asks Maxim one question that has a pick. Its fields:
+
+- `title`: the question, short enough to scan.
+- `risk_level`: `low`, `medium` or `high`, how much goes wrong if the pick is wrong. Shown as a tag.
+- `undo`: how hard the pick is to reverse later, such as "Two-way door" or "Needs a migration". Shown as a tag. Leave it out when `risk` already says it.
+- `risk`: what goes wrong, and for whom, if the pick is wrong.
+- `evidence`: what the pick rests on, such as a test, a measurement or a line of code. Write `path:line` and the page links it to that line.
+- `refs`: hunk references (see below) that the question is about. Each becomes a link that opens the hunk, scrolls to the lines and marks them.
+- `context`: unchanged code the question needs, shown on the card.
+- `options`: the choices, each `{"text": ...}` with an optional `id`. Ids default to A, B, C.
+- `pick`: the id of the recommended option. `why`: one line why.
 
 ### Hunk references
 
@@ -126,10 +148,11 @@ A round two narrative has a `feedback` list and needs `--since`. Hunks here are 
 
 ## What the page does
 
-- Decide cards first, then the before and after table, then the diff in reading order with each note above its hunk.
+- Decide cards first, then the before and after table, then the diff in reading order with each note above its hunk. When the range has more than one commit, a By commit switch regroups the same hunks under the commit that touched them, oldest first, and each hunk shows its commits.
+- A `path:line` or `path:10-20` in any text of the narrative links to that line when the page shows it, inside a hunk or in its unchanged lines. A path may be shortened to its end, like `worktree-due:40`, as long as only one changed file ends that way. Following such a link or a card ref opens the hunk, reveals the lines and marks them.
 - Side by side diff on screens 900 pixels and wider, stacked below that, with word-level highlights inside changed lines. The top bar switches between Auto, Side by side and Stacked.
 - A carriage return shows as a small ␍, and a line without a final newline carries a "No newline at end of file" note, so a change of line endings is visible.
-- Markdown and text files open in a Words view that shows the changed paragraphs with struck and marked words and wraps long lines. A Lines switch shows the usual diff.
+- Markdown and text files open in a Words view that shows the changed paragraphs with struck and marked words. The source text stays raw. Long lines wrap with a hanging indent under list markers. A Lines switch shows the usual diff. These files show no function line in the hunk header.
 - Wrap lines is off by default, so long lines scroll inside the diff. Side by side, each side scrolls on its own. A shadow on the right edge and a "scroll sideways" note in the hunk header show when lines continue. The choice is remembered in the browser.
 - Each hunk can show up to 100 unchanged lines above and below it, 20 per click, like GitHub.
 - Tapping a line, a word block or the Comment button on a hunk opens a comment box. Round two pages add a Reply button per feedback item. Comments and changed picks stay in the browser's local storage for that diff. Copy comments puts them on the clipboard as plain text with `path:line` references, for pasting into the chat.

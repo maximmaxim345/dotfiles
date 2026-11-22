@@ -20,9 +20,9 @@ function save(key, value) {
 
 const PREFS = 'review-kit:prefs';
 const PAGE = 'review-kit:page:' + KIT.key;
-const prefs = Object.assign({ wrap: false, layout: 'auto' }, load(PREFS, {}));
+const prefs = Object.assign({ wrap: false, layout: 'auto', order: 'reading' }, load(PREFS, {}));
 const page = Object.assign({ comments: [], picks: {}, nextId: 1 }, load(PAGE, {}));
-const ui = { open: null, expand: {}, view: {}, tray: false, mark: null };
+const ui = { open: null, expand: {}, view: {}, tray: false, mark: null, slots: {} };
 const persist = () => save(PAGE, page);
 
 function lcsPairs(a, b, eq) {
@@ -269,18 +269,37 @@ function renderTable(id, h) {
   return scroller(t + '</table>');
 }
 
+function hang(raw) {
+  const m = raw.match(/^([ \t]*)([-*+] |\d+[.)] |> )?/);
+  return m[1].replace(/\t/g, '    ').length + (m[2] ? m[2].length : 0);
+}
+
+// Each source line gets a hanging indent, so a wrapped list item lines up under its text.
+function wordLines(parts) {
+  const lines = [{ html: '', raw: '' }];
+  for (const [t, k] of parts) {
+    t.split('\n').forEach((piece, i) => {
+      if (i) lines.push({ html: '', raw: '' });
+      if (!piece) return;
+      const line = lines[lines.length - 1];
+      line.raw += piece;
+      line.html += k === 'same' ? escLine(piece) : k === 'del' ? `<del>${escLine(piece)}</del>` : `<ins>${escLine(piece)}</ins>`;
+    });
+  }
+  return lines.map(l => `<div class="wl" style="--i:${hang(l.raw)}">${l.html || '&nbsp;'}</div>`).join('');
+}
+
 function renderWords(id, h) {
   let html = '<div class="words">';
   for (const b of blocks(h)) {
     if (b.ctx) {
       if (!b.s.trim()) continue;
-      html += `<div class="wb ctx cl" data-key="R${b.n}">${escLine(b.s)}${b.e ? EOL : ''}</div>` + rowComments(id, 'R' + b.n);
+      html += `<div class="wb ctx cl" data-key="R${b.n}">${wordLines([[b.s, 'same']])}${b.e ? EOL : ''}</div>` + rowComments(id, 'R' + b.n);
       continue;
     }
-    let body = mergedDiff(b.R.map(x => x.s).join('\n'), b.A.map(x => x.s).join('\n'))
-      .map(([t, k]) => k === 'same' ? escLine(t) : k === 'del' ? `<del>${escLine(t)}</del>` : `<ins>${escLine(t)}</ins>`).join('');
-    if (b.R.some(x => x.e)) body += `<div><del>${EOL}</del></div>`;
-    if (b.A.some(x => x.e)) body += `<div><ins>${EOL}</ins></div>`;
+    let body = wordLines(mergedDiff(b.R.map(x => x.s).join('\n'), b.A.map(x => x.s).join('\n')));
+    if (b.R.some(x => x.e)) body += `<div class="wl"><del>${EOL}</del></div>`;
+    if (b.A.some(x => x.e)) body += `<div class="wl"><ins>${EOL}</ins></div>`;
     const key = b.A.length ? 'R' + b.A[0].n : 'L' + b.R[0].o;
     const span = b.A.length > 1 ? `${key}-${b.A[b.A.length - 1].n}` : key;
     html += `<div class="wb cl" data-key="${key}" data-span="${span}">${body}</div>` + rowComments(id, key);
@@ -295,6 +314,12 @@ function renderHunk(el) {
   const view = prose ? (ui.view[id] || 'words') : 'lines';
   let html = `<div class="hhead"><span class="fname">${esc(h.path)}</span><span class="rng">${rangeOf(h)}</span>`;
   if (h.header) html += `<span class="fn">${esc(h.header)}</span>`;
+  if (KIT.commits.length > 1) {
+    for (const sha of h.commits) {
+      const subject = SUBJECTS[sha];
+      html += subject ? `<span class="sha" title="${esc(subject)}">${sha}</span>` : `<span class="sha">${esc(sha)}</span>`;
+    }
+  }
   html += '<span class="sxhint" hidden>Long lines, scroll sideways</span><span class="acts">';
   if (prose) html += `<span class="seg" role="group" aria-label="View"><button data-view="${id}:words" aria-pressed="${view === 'words'}">Words</button><button data-view="${id}:lines" aria-pressed="${view === 'lines'}">Lines</button></span>`;
   html += '<button class="linkbtn" data-hc>Comment</button></span></div>';
@@ -473,6 +498,7 @@ document.addEventListener('click', e => {
     return;
   }
   if (d.layout) { prefs.layout = d.layout; save(PREFS, prefs); renderAll(); return; }
+  if (d.order) { prefs.order = d.order; save(PREFS, prefs); applyOrder(); return; }
   if (d.view) { const [id, v] = d.view.split(':'); ui.view[id] = v; renderHunk(host); return; }
   if (d.expand) { const [id, dir] = d.expand.split(':'); const ex = ui.expand[id] = ui.expand[id] || { up: 0, down: 0 }; ex[dir] += STEP; renderHunk(host); return; }
   if (d.hc !== undefined) {
@@ -516,6 +542,50 @@ document.addEventListener('toggle', e => {
   if (e.target.matches('details') && e.target.open) $$('.hunk[data-hunk]', e.target).forEach(h => { if (!h.dataset.rendered && visible(h)) renderHunk(h); });
 }, true);
 
+// By commit moves each hunk element under the first commit that touched it, and back again for reading order.
+function applyOrder() {
+  const reading = $('#reading'), byCommit = $('#bycommit');
+  if (!reading || !byCommit) return;
+  const want = KIT.commits.length > 1 && prefs.order === 'commit' ? 'commit' : 'reading';
+  $$('[data-order]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.order === want)));
+  if (want === (byCommit.hidden ? 'reading' : 'commit')) return;
+  if (want === 'reading') {
+    for (const el of $$('.hunk[data-hunk]', byCommit)) { ui.slots[el.dataset.hunk].replaceWith(el); }
+    byCommit.innerHTML = '';
+  } else {
+    const groups = new Map(KIT.commits.map(([sha, subject]) => [sha, { title: `<span class="sha">${sha}</span> ${esc(subject)}`, read: [], skim: [] }]));
+    groups.set('uncommitted', { title: 'Uncommitted changes', read: [], skim: [] });
+    groups.set('', { title: 'Not traced to a commit', read: [], skim: [] });
+    for (const el of $$('.hunk[data-hunk]', reading)) {
+      const h = KIT.hunks[el.dataset.hunk];
+      const g = groups.get(h.commits[0] || '');
+      const slot = document.createComment('');
+      el.before(slot);
+      ui.slots[el.dataset.hunk] = slot;
+      (h.skim ? g.skim : g.read).push(el);
+    }
+    for (const g of groups.values()) {
+      if (!g.read.length && !g.skim.length) continue;
+      const sec = document.createElement('section');
+      sec.className = 'group';
+      sec.innerHTML = `<h3>${g.title}</h3>`;
+      sec.append(...g.read);
+      if (g.skim.length) {
+        const det = document.createElement('details');
+        det.className = 'group skim';
+        det.innerHTML = `<summary><b>Marked unimportant</b><span class="count">${g.skim.length} hunk${g.skim.length === 1 ? '' : 's'}</span><span class="go">Show</span></summary>`;
+        det.append(...g.skim);
+        sec.append(det);
+      }
+      byCommit.append(sec);
+    }
+  }
+  reading.hidden = want === 'commit';
+  byCommit.hidden = want !== 'commit';
+  $$('.hunk[data-hunk]').forEach(h => { if (!h.dataset.rendered && visible(h)) renderHunk(h); });
+}
+
+const SUBJECTS = Object.fromEntries(KIT.commits);
 $('#wrap').addEventListener('change', e => { prefs.wrap = e.target.checked; save(PREFS, prefs); renderAll(); });
 document.addEventListener('scroll', e => {
   const s = e.target;
@@ -526,6 +596,7 @@ window.addEventListener('resize', () => {
   if (isSplit() !== wasSplit) { wasSplit = isSplit(); renderAll(); return; }
   $$('.hunk[data-rendered]').forEach(edges);
 });
+applyOrder();
 renderAll();
 if (location.hash.length > 1) reveal(location.hash.slice(1));
 })();

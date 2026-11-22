@@ -121,6 +121,22 @@ class ReviewKitTests(unittest.TestCase):
         self.assertIn("branch <code>feat/demo</code>", page)
         self.assertNotIn("<code>main</code>", page)
 
+    def test_list_hunks_json_names_ranges_and_commits(self) -> None:
+        self.two_commit_branch()
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            build_review.main(["review", "--repo", str(self.repo), "--range", "main..feat/demo", "--list-hunks", "--json"])
+        data = json.loads(out.getvalue())
+        subjects = {c["sha"]: c["subject"] for c in data["commits"]}
+        self.assertEqual(list(subjects.values()), ["first", "second"])
+        rows = [(h["changed"], h["hunk"], [subjects[c] for c in h["commits"]]) for h in data["hunks"]]
+        self.assertEqual(rows, [("10", "7-13", ["first"]), ("142", "139-145", ["second"])])
+
+    def test_path_line_in_text_links_only_lines_the_page_shows(self) -> None:
+        narrative = {"decide": [{"title": "Q", "evidence": "See `app.py:10` and app.py:155, not app.py:900 or lib.py:3."}]}
+        page = self.build_page(narrative)
+        self.assertEqual(re.findall(r'data-lines="([\d-]+)"', page), ["10-10", "155-155"])
+
     def test_round_two_after_rebase_and_amend_shows_only_the_fix(self) -> None:
         self.write("app.py", FUNCTIONS)
         self.commit("initial")
@@ -163,6 +179,13 @@ class ReviewKitTests(unittest.TestCase):
         diff = subprocess.run(["git", "diff", *build_review.DIFF_ARGS, "HEAD~1", "HEAD"], cwd=self.repo, capture_output=True)
         lines = diff.stdout.decode().split("\n")
         self.assertEqual(shown, [line for line in lines if line and line[0] in " +-\\" and not line.startswith(("--- ", "+++ "))])
+
+    def test_only_web_addresses_in_text_become_links(self) -> None:
+        text = build_review.inline('See https://example.com/a?b=1&c="2". Not javascript:alert(1) or `https://example.com/x`.')
+        self.assertIn('<a href="https://example.com/a?b=1&amp;c=" target="_blank"', text)
+        self.assertNotIn("javascript:alert(1)</a>", text)
+        self.assertIn("<code>https://example.com/x</code>", text)
+        self.assertNotIn("<a ", build_review.choices([{"text": "See https://example.com/a"}], "A", "x")[1])
 
     def test_svg_keeps_only_listed_elements_and_local_references(self) -> None:
         drawing = (

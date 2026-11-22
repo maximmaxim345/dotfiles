@@ -56,6 +56,16 @@ FAILED_IN_A_ROW = 3
 SWEEP_HOUR = 9
 SWEEP_GRACE = datetime.timedelta(hours=2)
 SWEEP_EARLY = datetime.timedelta(hours=12)
+TODAY = STATE / "today.json"
+BUDGET = STATE / "budget.json"
+DEFAULT_BUDGET = 240
+SIZE_MINUTES = {"S": 10, "M": 20, "L": 40}
+ASK_MINUTES = {"decide": 5, "review": 20, "push": 5, "post": 5, "device-test": 30, "question": 10}
+OTHER_MINUTES = {"start": 5, "reply": 10, "failed": 5, "worktree": 5, "desk": 10}
+SAMPLES_NEEDED = 5
+LONGEST_SAMPLE = 120
+LABEL_ORDER = {"user-visible bug": 0, "reachable but rare": 1}
+WORKTREES = STATE / "worktrees.json"
 
 
 def tailnet_address() -> str | None:
@@ -193,6 +203,7 @@ def desk_health() -> dict | None:
     swept = datetime.datetime.fromisoformat(last_sweep.replace("Z", "+00:00")) if last_sweep else None
     due = last_sweep_due(datetime.datetime.now().astimezone())
     return {
+        "thread": row[0],
         "failed": failed if failed >= FAILED_IN_A_ROW else 0,
         "lastSweep": swept.astimezone().isoformat(timespec="minutes") if swept else None,
         "sweepStale": swept is None or swept < due - SWEEP_EARLY,
@@ -269,21 +280,31 @@ def incoming_shown(entry: dict) -> bool:
 
 
 def load_state() -> dict:
-    items = list(all_items().values())
+    by_id = all_items()
     threads = json.loads(THREADS.read_text()) if THREADS.exists() else None
     incoming = json.loads(INCOMING.read_text()) if INCOMING.exists() else {}
     proposals = json.loads(PROPOSALS.read_text()) if PROPOSALS.exists() else []
+    shown = [e for e in incoming.values() if incoming_shown(e)]
+    health = desk_health()
+    worktrees = json.loads(WORKTREES.read_text()) if WORKTREES.exists() else {}
+    now = now_rows(by_id, threads or {}, shown, health, worktrees)
+    plan, minutes = today_plan(by_id), budget()
+    waiting = sum(row["minutes"] for row in now)
     return {
-        "items": items,
+        "items": list(by_id.values()),
         "threads": threads,
         "efforts": efforts(),
         "repos": repos(),
         "listening": listening(),
-        "health": desk_health(),
-        "incoming": [e for e in incoming.values() if incoming_shown(e)],
+        "health": health,
+        "incoming": shown,
         "proposals": [p for p in proposals if p["state"] in SHOWN_PROPOSALS],
         "autostart": autostart_setting(),
         "spaces": spaces_setting(),
+        "now": now,
+        "today": {"date": plan["date"], "budget": minutes, "waiting": waiting, "rows": today_rows(by_id, plan, minutes, waiting)},
+        "askMinutes": ask_minutes(list(by_id.values())),
+        "worktrees": worktrees,
     }
 
 
@@ -294,10 +315,176 @@ def close_ask(item: dict) -> None:
             {
                 "kind": item["asks"].get("kind"),
                 "asked": item["asks"]["at"],
+                "opened": item["asks"].get("opened"),
                 "answered": (item.get("answer") or {}).get("at"),
                 "cleared": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
             }
         )
+
+
+def parse_time(value: str) -> datetime.datetime:
+    """Read an ISO date or time, taking times without a zone as local."""
+    moment = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return moment if moment.tzinfo else moment.astimezone()
+
+
+def item_minutes(item: dict) -> int:
+    return item.get("minutes") or SIZE_MINUTES.get(item.get("size") or "", SIZE_MINUTES["M"])
+
+
+def ask_minutes(items: list[dict]) -> dict[str, dict]:
+    """Per ask kind: the default, my measured minutes and the estimate the board uses."""
+    samples: dict[str, list[float]] = {kind: [] for kind in ASK_MINUTES}
+    for item in items:
+        for entry in item.get("askLog") or []:
+            end = entry.get("answered") or entry.get("cleared")
+            if not entry.get("opened") or not end:
+                continue
+            minutes = (parse_time(end) - parse_time(entry["opened"])).total_seconds() / 60
+            if 0 <= minutes <= LONGEST_SAMPLE:
+                samples.setdefault(entry.get("kind") or "question", []).append(minutes)
+    result = {}
+    for kind, found in samples.items():
+        found.sort()
+        median = round((found[(len(found) - 1) // 2] + found[len(found) // 2]) / 2) if found else None
+        default = ASK_MINUTES.get(kind, ASK_MINUTES["question"])
+        used = max(1, median) if median is not None and len(found) >= SAMPLES_NEEDED else default
+        result[kind] = {"default": default, "samples": len(found), "median": median, "minutes": used}
+    return result
+
+
+def now_rows(items: dict[str, dict], threads: dict, incoming: list[dict], health: dict | None, worktrees: dict) -> list[dict]:
+    """What waits on me, the row to do first on top."""
+    estimates = ask_minutes(list(items.values()))
+    snoozed = {t["thread"] for t in threads.get("snoozed") or []}
+    rows = []
+
+    def add(tier: int, kind: str, minutes: int, title: str, text: str, at: str | None, **extra: object) -> None:
+        rows.append({"tier": tier, "kind": kind, "minutes": minutes, "title": title, "text": text, "at": at, **extra})
+
+    if health and (health["failed"] or health["sweepStale"]):
+        add(0, "desk", OTHER_MINUTES["desk"], "The desk is not running", "", None, thread=health.get("thread"))
+
+    def links(entry: dict) -> dict:
+        return {key: entry.get(key) for key in ("item", "effort", "thread", "pr")}
+
+    covered = set()
+    for item in items.values():
+        base = {"item": item["id"], "effort": item.get("effort"), "thread": item.get("thread"), "pr": item.get("pr")}
+        if item["status"] == "requested" and item.get("needs"):
+            add(2, "start", OTHER_MINUTES["start"], item["title"], item["needs"], item.get("paused"), **base)
+        elif item["status"] == "started" and item.get("asks") and item.get("thread") not in snoozed:
+            covered.add(item.get("thread"))
+            if not item.get("answer"):
+                kind = item["asks"].get("kind") or "question"
+                minutes = estimates.get(kind, estimates["question"])["minutes"]
+                add(
+                    1 if item.get("urgent") else 2, kind, minutes, item["title"], item["asks"]["text"], item["asks"]["at"], **base
+                )
+    for entry in threads.get("needsYou") or []:
+        if entry["thread"] not in covered:
+            kind = "review" if entry["title"].startswith("review: ") else "question"
+            add(2, kind, estimates[kind]["minutes"], entry["title"], entry["why"], entry.get("since"), **links(entry))
+    for entry in threads.get("failed") or []:
+        add(2, "failed", OTHER_MINUTES["failed"], entry["title"], entry["why"], entry.get("since"), **links(entry))
+    for entry in incoming:
+        if entry["status"] == "needs-you" and (entry.get("chat") or [{}])[-1].get("by") != "me":
+            add(
+                1,
+                "reply",
+                OTHER_MINUTES["reply"],
+                entry["title"],
+                entry.get("action") or "",
+                entry.get("updated"),
+                url=entry["url"],
+                effort=entry.get("effort"),
+            )
+    for entry in worktrees.get("held") or []:
+        add(
+            3,
+            "worktree",
+            OTHER_MINUTES["worktree"],
+            entry["title"],
+            entry["reason"],
+            worktrees.get("at"),
+            path=entry["path"],
+            thread=entry["thread"],
+        )
+    rows.sort(key=lambda r: (r["tier"], r["minutes"], r["at"] or ""))
+    return rows
+
+
+def today_order(items: dict[str, dict]) -> list[str]:
+    """Items I could start, most important first."""
+
+    def startable(item: dict) -> bool:
+        return item["status"] == "open" and not item.get("needs") and not open_blockers(item, items)
+
+    def priority(item: dict) -> tuple:
+        return (
+            not item.get("urgent"),
+            not item.get("suggested"),
+            LABEL_ORDER.get(item.get("label") or "", len(LABEL_ORDER)),
+            not item.get("seen"),
+            item["created"],
+            item["id"],
+        )
+
+    return [item["id"] for item in sorted(filter(startable, items.values()), key=priority)]
+
+
+def fill_today(items: dict[str, dict], old: dict, day: str) -> dict:
+    """Plan today, keeping today's moves, the rows I moved onto an earlier day that are still open, and my old Next column."""
+    moves = dict(old.get("moves") or {}) if old.get("date") == day else {}
+    if old.get("date") != day:
+        moves.update(
+            {i: to for i, to in (old.get("moves") or {}).items() if to == "today" and items.get(i, {}).get("status") == "open"}
+        )
+    nexts = sorted((i for i in items.values() if i["status"] == "next"), key=lambda i: i.get("rank") or 0)
+    for item in nexts:
+        note = f"Moved from my Next column (rank {item.get('rank')}) onto my Today list, since the board has no Next column now."
+        apply_status(item, "open")
+        item["comments"].append({"at": datetime.datetime.now().isoformat(timespec="seconds"), "by": "desk", "text": note})
+        write_json(item_path(item["id"]), item)
+        moves[item["id"]] = "today"
+    order = dict.fromkeys([i["id"] for i in nexts] + today_order(items))
+    return {"date": day, "order": list(order), "moves": {i: to for i, to in moves.items() if i in items}}
+
+
+def today_plan(items: dict[str, dict], refill: bool = False) -> dict:
+    day = datetime.date.today().isoformat()
+    STATE.mkdir(exist_ok=True)
+    with locked(TODAY):
+        plan = json.loads(TODAY.read_text()) if TODAY.exists() else {}
+        if refill or plan.get("date") != day:
+            plan = fill_today(items, plan, day)
+            write_json(TODAY, plan)
+    return plan
+
+
+def budget() -> int:
+    return json.loads(BUDGET.read_text())["minutes"] if BUDGET.exists() else DEFAULT_BUDGET
+
+
+def today_rows(items: dict[str, dict], plan: dict, minutes: int, waiting: int) -> list[dict]:
+    """The planned rows, each marked above or below the line that the waiting minutes and the budget draw."""
+    moves = plan.get("moves") or {}
+    used, full, rows = waiting, False, []
+    for item_id in dict.fromkeys(plan["order"] + list(moves)):
+        item = items.get(item_id)
+        if item is None or item["status"] in CLOSED_STATUSES:
+            continue
+        cost, move = item_minutes(item), moves.get(item_id)
+        if move:
+            above = move == "today"
+        elif item.get("urgent"):
+            above = True
+        else:
+            above = not full and used + cost <= minutes
+            full = full or not above
+        used += cost if above else 0
+        rows.append({"id": item_id, "minutes": cost, "today": above, "moved": move})
+    return rows
 
 
 def apply_status(item: dict, status: str) -> None:
@@ -572,6 +759,27 @@ class Handler(BaseHTTPRequestHandler):
                         archived.append(item_id)
                 if archived:
                     log_event({"type": "archive", "ids": archived})
+            elif self.path == "/api/today":
+                if body.get("to") not in ("today", "later", None):
+                    raise ValueError(f"unknown place {body['to']}")
+                item_path(body["id"])
+                plan = today_plan(all_items())
+                with locked(TODAY):
+                    plan["moves"].pop(body["id"], None)
+                    if body["to"]:
+                        plan["moves"][body["id"]] = body["to"]
+                    write_json(TODAY, plan)
+            elif self.path == "/api/budget":
+                minutes = int(body["minutes"])
+                if not 0 <= minutes <= 24 * 60:
+                    raise ValueError("give the budget in minutes of one day")
+                write_json(BUDGET, {"minutes": minutes})
+            elif self.path == "/api/ask/open":
+                path = item_path(body["id"])
+                item = json.loads(path.read_text())
+                if item.get("asks") and not item["asks"].get("opened"):
+                    item["asks"]["opened"] = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
+                    write_json(path, item)
             elif self.path == "/api/order":
                 for rank, item_id in enumerate(body["ids"], 1):
                     path = item_path(item_id)
@@ -627,7 +835,7 @@ class Handler(BaseHTTPRequestHandler):
                 change_spaces(body)
             elif self.path == "/api/update":
                 known = {e["slug"] for e in efforts()}
-                fields = {k: (v or None) for k, v in body["fields"].items() if k in ("effort", "repo")}
+                fields = {k: (v or None) for k, v in body["fields"].items() if k in ("effort", "repo", "urgent")}
                 if fields.get("effort") and fields["effort"] not in known:
                     raise ValueError(f"unknown effort {fields['effort']}")
                 check_repo(fields.get("repo"))
@@ -640,6 +848,8 @@ class Handler(BaseHTTPRequestHandler):
                     path = item_path(item_id)
                     item = json.loads(path.read_text())
                     item.update(fields)
+                    if "urgent" in fields and not fields["urgent"]:
+                        item.pop("urgent")
                     if "blockedBy" in fields:
                         item.pop("unblocked", None)
                     write_json(path, item)

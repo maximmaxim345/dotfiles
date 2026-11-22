@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+"""Print per ask kind the minutes the board estimates and the minutes I really took, from the items' askLog."""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import SAMPLES_NEEDED, all_items, ask_minutes  # noqa: E402
+
+
+def main() -> None:
+    print(f"kind          default  measured  samples  used (measured once {SAMPLES_NEEDED} samples exist)")
+    for kind, row in ask_minutes(list(all_items().values())).items():
+        measured = "-" if row["median"] is None else str(row["median"])
+        print(f"{kind:<13} {row['default']:>7}  {measured:>8}  {row['samples']:>7}  {row['minutes']:>4}")
+
+
+if __name__ == "__main__":
+    main()

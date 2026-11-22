@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+"""Plan my Today list again within my minutes budget and print it, the rows below the line under Later."""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import INCOMING, THREADS, WORKTREES, all_items, budget, incoming_shown, now_rows, today_plan, today_rows  # noqa: E402
+
+
+def main() -> None:
+    items = all_items()
+    threads = json.loads(THREADS.read_text()) if THREADS.exists() else {}
+    incoming = [e for e in (json.loads(INCOMING.read_text()) if INCOMING.exists() else {}).values() if incoming_shown(e)]
+    worktrees = json.loads(WORKTREES.read_text()) if WORKTREES.exists() else {}
+    waiting = sum(row["minutes"] for row in now_rows(items, threads, incoming, None, worktrees))
+    minutes = budget()
+    rows = today_rows(items, today_plan(items, refill=True), minutes, waiting)
+    above = [row for row in rows if row["today"]]
+    planned = waiting + sum(row["minutes"] for row in above)
+    print(
+        f"Today: {len(above)} items and {waiting} min that wait on me, {planned} of {minutes} min, {len(rows) - len(above)} later"
+    )
+    for row in above:
+        print(f"  {row['minutes']:>3} min  {items[row['id']]['title']}")
+
+
+if __name__ == "__main__":
+    main()

@@ -18,12 +18,13 @@ When I start an item on the board with a note, the board writes it to your item'
 - File each extra finding that doesn't belong in this change as a backlog item before you end your turn, without asking me first, and give its repo and a one-line TLDR in your reply. File it only when someone saw the problem or a test or reproduction shows it, and name who or what in `--seen`. Note a finding nobody saw in its effort's findings list instead. Check first that the default branch and `~/desk/bin/backlog list --all` don't already cover it. Write the brief so someone without this conversation can start from it, with the sections "Backlog items" in `~/desk/AGENTS.md` lists, and don't start the work yourself: I or a manager start it.
 
 ```sh
-~/desk/bin/backlog add --repo <repo name> --title "<imperative title>" \
+~/desk/bin/backlog add --repo <repo name> --title "<the outcome, verb first>" \
   --kind <bugfix|feature|review|design|test|docs> \
   --label "<user-visible bug|reachable but rare>" \
   --seen "<failing test, log line, user report, or who asked for it>" \
-  --summary "<one or two sentences>" --brief - \
-  [--effort <effort slug>]
+  --why "<one line: who notices what>" --size <S|M|L>:<my minutes> \
+  --from-me "<what it needs from me>" --start "<the first step>" --brief - \
+  [--effort <effort slug>] [--parent <item id or goal milestone>]
 ~/desk/bin/backlog finding --repo <repo name> "<the finding in one line>" \
   --source <your thread id> [--effort <effort slug>]
 ```
@@ -73,7 +74,7 @@ Partner threads message each other directly (`t3_thread_send` in T3, SendMessage
 
 End every turn that waits on me with the Ask line "Replies that wait on me" in my CLAUDE.md asks for.
 
-Before a turn ends with a question, a draft other than one I post myself, or a request for my OK, run `~/desk/bin/backlog ask --thread <your id> "<the question in one line>"`, which shows it on my board and needs no OK from me. Skip it while I'm active in the thread (my last message is less than 10 minutes old), since I see the question there. Your id comes from `t3_thread_configuration`. The command fails when your thread has no backlog item, and then the inbox is enough. Once I've answered, run it with `--clear`.
+Before a turn ends with a question, a draft other than one I post myself, or a request for my OK, run `~/desk/bin/backlog ask --thread <your id> --kind <decide|review|push|post|device-test> "<the question in one line>"`, which shows it on my board and needs no OK from me. Skip it while I'm active in the thread (my last message is less than 10 minutes old), since I see the question there. Your id comes from `t3_thread_configuration`. The command fails when your thread has no backlog item, and then the inbox is enough. Once I've answered, run it with `--clear`.
 
 I can also answer on the board. The desk then tells you to read your item's `answer`: its `text` is my reply, in my words, to the question in its `to`, and it counts like a message from me in this thread. `go` accepts your picks and covers the actions that question named, once. When the item has no `answer`, or its `to` isn't the question you last asked, ask again instead of acting. Run `--clear` after you've read it.
 

@@ -240,6 +240,19 @@ def load_state() -> dict:
     }
 
 
+def close_ask(item: dict) -> None:
+    """Keep when the item's question was asked, answered on the board and cleared, with its kind."""
+    if item.get("asks"):
+        item.setdefault("askLog", []).append(
+            {
+                "kind": item["asks"].get("kind"),
+                "asked": item["asks"]["at"],
+                "answered": (item.get("answer") or {}).get("at"),
+                "cleared": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+            }
+        )
+
+
 def apply_status(item: dict, status: str) -> None:
     """Set an item's status and the fields that follow from it, leaving a new Next rank to the caller."""
     if item["status"] == "started" and status in ("open", "next"):
@@ -249,6 +262,7 @@ def apply_status(item: dict, status: str) -> None:
         item.pop("unblocked", None)
     item["status"] = status
     item.pop("needs", None)
+    close_ask(item)
     item.pop("asks", None)
     item.pop("answer", None)
     item["done"] = datetime.date.today().isoformat() if status in CLOSED_STATUSES else None
@@ -395,11 +409,13 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 if item is None:
                     raise FileNotFoundError(f"no open item for thread {body['thread']}")
+                close_ask(item)
                 item.pop("answer", None)
                 if body.get("text"):
                     item["asks"] = {
                         "text": body["text"],
                         "at": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+                        **({"kind": body["kind"]} if body.get("kind") else {}),
                     }
                 else:
                     item.pop("asks", None)

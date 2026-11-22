@@ -12,11 +12,11 @@ Target: `$ARGUMENTS`. A PR, a commit range, or empty for the current branch agai
 4. Draw one diagram of the structure after the change, with what it was before marked on it:
    - Boxes are components, labeled with their name and file name. Group what the change doesn't touch into one box per area, and keep to about 10 boxes.
    - Arrows show who calls or sends to whom, labeled with the call, message or event name.
-   - Mark new boxes and arrows with `--success`, changed ones with `--warning`, and removed ones dashed in `--destructive`. Add a small legend.
-   - In T3, check it with `html_preview`, then show it with `html_render`, using the theme variables `html_render` lists. Elsewhere, draw it as text in a code block, with `[new]`, `[changed]` and `[removed]` tags instead of colors.
+   - Give new boxes the classes `box new`, changed ones `box chg` and removed ones `box del`, which draws them dashed, and arrows `edge new`, `edge chg` and `edge del`. Add a small legend.
+   - When the session has T3's `html_render`, draw it as the `svg` of a section on an architecture page, `architecture.html` built from `architecture.json` with the review kit's `architecture` subcommand (`~/.claude/review-kit/README.md`) in the page folder the `review-brief` skill names, and show it inline as the kit's README says. Otherwise draw it as text in a code block, with `[new]`, `[changed]` and `[removed]` tags instead of colors.
 5. Below the diagram, list each new, changed or removed box or arrow in one line: its absolute `path:line` in backticks, at the base commit for removed ones, and what it does.
 6. Below that, add:
-   - Alternative: the closest structure you didn't pick, as a second small diagram, and what each of the two costs in one concrete case, like the files that adding one more provider would touch.
+   - Alternative: the closest structure you didn't pick, as a second small diagram drawn the same way, and what each of the two costs in one concrete case, like the files that adding one more provider would touch.
    - Locks in: the choices that get expensive to change once other code builds on them.
    - Differs from: how the nearest existing feature solves the same problem, with its absolute `path:line`, and where this one departs from it.
    - For new or changed data shapes, a table of their fields with the type, what writes it and what reads it. Flag a field nothing reads and a type that repeats an existing one.

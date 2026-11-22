@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import THREADS, all_items, autostart_setting, open_blockers, space_of, spaces_setting  # noqa: E402
+from server import THREADS, all_items, autostart_setting, handed_over, open_blockers, space_of, spaces_setting  # noqa: E402
 
 WORK_SLOTS = 5
 REVIEW_SLOTS = 2
@@ -43,6 +43,7 @@ def main() -> None:
     def eligible(item: dict) -> bool:
         return (
             item["status"] in PAUSED
+            and handed_over(item)
             and not item.get("needs")
             and not item.get("move")
             and item.get("thread") not in managers

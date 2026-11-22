@@ -10,7 +10,17 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import CLOSED_STATUSES, STATE, T3_DB, THREADS, all_items, space_of, spaces_setting, write_json  # noqa: E402
+from server import (  # noqa: E402
+    CLOSED_STATUSES,
+    STATE,
+    T3_DB,
+    THREADS,
+    all_items,
+    handed_over,
+    space_of,
+    spaces_setting,
+    write_json,
+)
 
 PARKED = STATE / "parked.json"
 LIVE_RUNS = {"preparing", "queued", "starting", "running"}
@@ -60,7 +70,9 @@ def main() -> None:
     setting = spaces_setting()
     off = set(setting["off"])
     idle = idle_threads() if off else set()
-    by_thread = {i["thread"]: i for i in all_items().values() if i.get("thread") and i["status"] not in CLOSED_STATUSES}
+    by_thread = {
+        i["thread"]: i for i in all_items().values() if i.get("thread") and i["status"] not in CLOSED_STATUSES and handed_over(i)
+    }
     for thread, entry in list(parked.items()):
         item = by_thread.get(thread)
         if item and space_of(item.get("effort"), setting) in off:

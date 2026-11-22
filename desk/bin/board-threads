@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild the board's thread lists in ~/desk/state/threads.json from T3's threads and the backlog, and sync items' PRs."""
+"""Rebuild the board's thread lists in ~/desk/state/threads.json from T3's threads and the backlog, and sync items and PRs."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import argparse
 import datetime
 import json
 import sqlite3
+import subprocess
 import sys
 from pathlib import Path
 
@@ -21,14 +22,15 @@ RUN_STATUSES = LIVE_RUNS | {"idle", "waiting", "completed", "interrupted", "fail
 UNSTARTED = {"new", "open", "next", "requested"}
 CLOSED = {"done", "dropped"}
 COLUMNS = {
-    "orchestration_v2_projection_threads": {"thread_id", "title", "archived_at", "deleted_at", "payload_json"},
+    "orchestration_v2_projection_threads": {"thread_id", "project_id", "title", "archived_at", "deleted_at", "payload_json"},
+    "projection_projects": {"project_id", "title", "workspace_root", "deleted_at"},
     "orchestration_v2_projection_runs": {"thread_id", "ordinal", "status", "completed_at"},
     "orchestration_v2_projection_messages": {"thread_id", "role", "created_at", "payload_json"},
 }
 PAYLOAD_KEYS = {"lineage", "settledOverride", "snoozedUntil", "snoozedAt"}
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import apply_status, log_event, write_json  # noqa: E402
+from server import add_item, apply_status, log_event, repos, write_json  # noqa: E402
 
 
 def schema_changed(detail: str) -> None:
@@ -48,8 +50,14 @@ def from_db(db: Path) -> list[dict]:
             missing = columns - {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
             if missing:
                 schema_changed(f"{table} lacks {', '.join(sorted(missing))}")
+        projects = {
+            pid: (title, root)
+            for pid, title, root in conn.execute(
+                "SELECT project_id, title, workspace_root FROM projection_projects WHERE deleted_at IS NULL"
+            )
+        }
         rows = conn.execute(
-            "SELECT t.thread_id, t.title, t.payload_json, r.status, r.completed_at,"
+            "SELECT t.thread_id, t.project_id, t.title, t.payload_json, r.status, r.completed_at,"
             " (SELECT MAX(m.created_at) FROM orchestration_v2_projection_messages m WHERE m.thread_id = t.thread_id"
             " AND m.role = 'user' AND json_extract(m.payload_json, '$.createdBy') = 'user')"
             " FROM orchestration_v2_projection_threads t LEFT JOIN orchestration_v2_projection_runs r"
@@ -61,7 +69,7 @@ def from_db(db: Path) -> list[dict]:
         conn.close()
     now = datetime.datetime.now(datetime.timezone.utc)
     threads = []
-    for thread_id, title, payload, status, completed_at, last_user in rows:
+    for thread_id, project_id, title, payload, status, completed_at, last_user in rows:
         payload = json.loads(payload)
         status = status or "idle"
         if PAYLOAD_KEYS - payload.keys():
@@ -74,10 +82,14 @@ def from_db(db: Path) -> list[dict]:
             continue
         until, snoozed_at, completed = (parse_time(v) for v in (payload["snoozedUntil"], payload["snoozedAt"], completed_at))
         failed_since = status == "failed" and (snoozed_at is None or completed is not None and completed > snoozed_at)
+        project, root = projects.get(project_id, (None, None))
         threads.append(
             {
                 "id": thread_id,
                 "title": title,
+                "project": project,
+                "root": root,
+                "branch": payload.get("branch"),
                 "status": status,
                 "settled": payload["settledOverride"] == "settled",
                 "snoozedUntil": until if until and until > now and status != "waiting" and not failed_since else None,
@@ -109,6 +121,9 @@ def from_thread_list(data: object) -> list[dict]:
             {
                 "id": thread["threadId"],
                 "title": thread["title"],
+                "project": None,
+                "root": None,
+                "branch": None,
                 "status": thread["status"],
                 "settled": thread["settled"],
                 "snoozedUntil": parse_time(thread["snoozedUntil"]) if thread["snoozed"] else None,
@@ -133,6 +148,51 @@ def apply_pr_check(threads: list[dict], checked: dict) -> None:
             pr["merged"] = parse_time(seen.get("merged"))
 
 
+def own_prs(thread: dict) -> list[dict]:
+    """The thread's PRs, without the ones that had merged before it linked them, like a predecessor."""
+    return [pr for pr in thread["prs"] if not (pr["merged"] and pr["linked"] and pr["merged"] <= pr["linked"])]
+
+
+def committed_on_branch(root: str, branch: str) -> bool:
+    """Whether my git identity committed on a branch other than the remote's default branch."""
+
+    def git(*args: str) -> str:
+        result = subprocess.run(["git", "-C", root, *args], capture_output=True, text=True)
+        return result.stdout.strip() if result.returncode == 0 else ""
+
+    default, email = git("symbolic-ref", "--short", "refs/remotes/origin/HEAD"), git("config", "user.email")
+    if not default or not email or branch == default.partition("/")[2]:
+        return False
+    return git("rev-list", "--count", "-F", f"--committer={email}", f"{default}..refs/heads/{branch}") not in ("", "0")
+
+
+def adopt_threads(threads: list[dict], items: list[dict]) -> list[str]:
+    """Add a started item for a thread of mine in a repo once it links its own PR or I commit on its branch."""
+    claimed = {item.get("thread") for item in items}
+    known = set(repos())
+    notes = []
+    for thread in threads:
+        if thread["id"] in claimed or thread["project"] not in known or Path(thread["root"]).resolve() == DESK.resolve():
+            continue
+        prs = [pr["url"] for pr in own_prs(thread)]
+        if not prs and not (thread["branch"] and committed_on_branch(thread["root"], thread["branch"])):
+            continue
+        item = add_item(
+            thread["title"],
+            repo=thread["project"],
+            source=thread["id"],
+            status="started",
+            thread=thread["id"],
+            pr=prs[0] if prs else None,
+            prs=prs,
+            adopted="auto",
+        )
+        log_event({"type": "adopt", "id": item["id"], "by": "desk"})
+        items.append(item)
+        notes.append(f"adopt {item['id']}: thread {thread['id']} {thread['title']}")
+    return notes
+
+
 def sync_items(threads: list[dict], items: list[dict]) -> list[str]:
     """Add the PRs each thread linked to its item and mark a started item done once its thread is idle and its PRs merged."""
     by_id = {thread["id"]: thread for thread in threads if not thread["title"].startswith("manager - ")}
@@ -143,8 +203,7 @@ def sync_items(threads: list[dict], items: list[dict]) -> list[str]:
             continue
         urls = [u for u in [item.get("pr"), *(item.get("prs") or [])] if u]
         added = [pr["url"] for pr in thread["prs"] if pr["url"] not in urls]
-        # A PR that had merged before the thread linked it, like a predecessor, isn't the item's own work.
-        own = [pr for pr in thread["prs"] if not (pr["merged"] and pr["linked"] and pr["merged"] <= pr["linked"])]
+        own = own_prs(thread)
         done = (
             item["status"] == "started"
             and thread["status"] not in LIVE_RUNS | {"waiting"}
@@ -284,7 +343,7 @@ def main() -> None:
     items = [json.loads(p.read_text()) for p in sorted(BACKLOG.glob("*.json"))]
     checked = json.loads(PR_CHECK.read_text()) if PR_CHECK.exists() else {}
     apply_pr_check(threads, checked)
-    notes = sync_items(threads, items)
+    notes = sync_items(threads, items) + adopt_threads(threads, items)
     efforts = {p.parent.name for p in EFFORTS.glob("*/status.md")}
     old = json.loads(THREADS.read_text()) if THREADS.exists() else {}
     result = build(threads, items, efforts, old)

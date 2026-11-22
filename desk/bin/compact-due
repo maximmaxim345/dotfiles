@@ -9,6 +9,9 @@ import sqlite3
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import handed_over  # noqa: E402
+
 DESK = Path.home() / "desk"
 BACKLOG = DESK / "backlog"
 COMPACTED = DESK / "state" / "compacted.json"
@@ -49,7 +52,7 @@ def main() -> None:
     conn.close()
     seen = json.loads(COMPACTED.read_text()) if COMPACTED.exists() else []
     backlog = [json.loads(p.read_text()) for p in BACKLOG.glob("*.json")]
-    managed = {item.get("thread") for item in backlog}
+    managed = {item.get("thread") for item in backlog if handed_over(item)}
     needs_you = (json.loads(THREADS.read_text()) if THREADS.exists() else {}).get("needsYou") or []
     asking = {item.get("thread") for item in backlog if item.get("asks")} | {entry["thread"] for entry in needs_you}
     now = datetime.datetime.now(datetime.timezone.utc)

@@ -164,6 +164,11 @@ def log_event(event: dict) -> None:
         f.write(json.dumps(event) + "\n")
 
 
+def handed_over(item: dict) -> bool:
+    """Whether the desk may act on the item's thread, which it may not for a thread I started that it adopted on its own."""
+    return item.get("adopted") != "auto"
+
+
 def open_blockers(item: dict, items: dict[str, dict]) -> list[str]:
     return [b for b in item.get("blockedBy") or [] if b not in items or items[b]["status"] not in CLOSED_STATUSES]
 
@@ -304,6 +309,7 @@ def set_status(ids: list[str], status: str, note: dict | None = None) -> None:
         if old == status and not retry or old == "done" or status not in allowed:
             continue
         apply_status(item, status)
+        item.pop("adopted", None)
         if status == "requested" and old != "requested":
             item.pop("start_note", None)
             if saved_note:
@@ -475,7 +481,10 @@ class Handler(BaseHTTPRequestHandler):
                 write_json(path, item)
                 log_event({"type": "answer", "id": body["id"]})
             elif self.path == "/api/adopt":
-                item_path(body["id"])
+                path = item_path(body["id"])
+                item = json.loads(path.read_text())
+                if item.pop("adopted", None):
+                    write_json(path, item)
                 log_event({"type": "adopt", "id": body["id"]})
             elif self.path == "/api/archive":
                 archived = []

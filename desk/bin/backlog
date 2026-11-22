@@ -122,9 +122,20 @@ def adopt(args: argparse.Namespace) -> None:
     if new:
         args.source = args.thread
         item = create(args, brief, status="started", thread=args.thread, pr=args.pr)
+    elif item.get("adopted") == "auto":
+        fields = {
+            "title": args.title,
+            "repo": args.repo,
+            "summary": args.summary,
+            "brief": brief,
+            "kind": args.kind,
+            "pr": args.pr,
+        }
+        item.update({key: value for key, value in fields.items() if value})
+        write_json(BACKLOG / f"{item['id']}.json", item)
     status = "open" if args.blocked_by else args.status
     try:
-        if new:
+        if new or item.get("adopted"):
             post("adopt", {"id": item["id"]})
         if not new and args.effort:
             post("update", {"ids": [item["id"]], "fields": {"effort": args.effort}})

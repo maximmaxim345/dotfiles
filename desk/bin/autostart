@@ -14,6 +14,7 @@ from server import THREADS, all_items, autostart_setting, open_blockers, space_o
 
 WORK_SLOTS = 5
 REVIEW_SLOTS = 2
+MY_REVIEWS = 3
 ACTIVE = ("requested", "started")
 PAUSED = ("open", "next")
 
@@ -34,6 +35,7 @@ def main() -> None:
     threads = json.loads(THREADS.read_text()) if THREADS.exists() else {}
     managers = set((threads.get("managers") or {}).values())
     resting = {t["thread"] for key in ("waiting", "snoozed") for t in threads.get(key) or []}
+    needs_you = {t["thread"] for t in threads.get("needsYou") or []}
     allowed = (lambda item: True) if setting["mode"] == "all" else (lambda item: item.get("effort") in setting["efforts"])
     now = datetime.datetime.now()
     today = now.date().isoformat()
@@ -69,9 +71,13 @@ def main() -> None:
         return
     reviews_busy = sum(busy(i) for i in items.values() if i.get("kind") == "review")
     work_busy = sum(busy(i) for i in items.values() if i.get("kind") != "review")
+    mine = sum(
+        i["status"] == "started" and i.get("kind") != "review" and bool(i.get("asks") or i.get("thread") in needs_you)
+        for i in items.values()
+    )
     scope = "all efforts" if setting["mode"] == "all" else "focus on " + (", ".join(setting["efforts"]) or "no effort")
     print(
-        f"auto-start {scope}, work {work_busy} of {WORK_SLOTS}"
+        f"auto-start {scope}, work {work_busy} of {WORK_SLOTS}, {mine} of {MY_REVIEWS} wait on my review"
         + (f", reviews {reviews_busy} of {REVIEW_SLOTS}" if setting["reviews"] else ", reviews off")
     )
     if not in_window(now):
@@ -84,8 +90,11 @@ def main() -> None:
     reviews = sorted((i for i in candidates if i["status"] == "open" and i.get("kind") == "review"), key=lambda i: i["id"])
 
     chosen: list[str] = []
-    free = {"work": WORK_SLOTS - work_busy, "review": REVIEW_SLOTS - reviews_busy if setting["reviews"] else 0}
-    for item in [*resumes, *nexts, *picks, *paused, *reviews]:
+    free = {
+        "work": min(WORK_SLOTS - work_busy, MY_REVIEWS - mine),
+        "review": REVIEW_SLOTS - reviews_busy if setting["reviews"] else 0,
+    }
+    for item in [*reviews, *resumes, *nexts, *picks, *paused]:
         track = "review" if item.get("kind") == "review" else "work"
         if item["id"] in chosen or free[track] <= 0:
             continue

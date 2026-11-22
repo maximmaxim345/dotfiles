@@ -137,6 +137,21 @@ class ReviewKitTests(unittest.TestCase):
         page = self.build_page(narrative)
         self.assertEqual(re.findall(r'data-lines="([\d-]+)"', page), ["10-10", "155-155"])
 
+    def test_look_closely_paths_raise_the_tier_and_mark_the_hunk(self) -> None:
+        paths = self.root / "review-paths.json"
+        paths.write_text(json.dumps({"Acme/Widget": {"api/**": "the public API"}}), encoding="utf-8")
+        self.write("app.py", FUNCTIONS)
+        (self.repo / "api").mkdir()
+        self.write("api/client.py", "TIMEOUT = 5\n")
+        self.commit("initial")
+        self.git("remote", "add", "origin", "git@example.com:acme/widget.git")
+        self.write("api/client.py", "TIMEOUT = 10\n")
+        self.write("app.py", FUNCTIONS.replace("value + 2\n", "value * 2\n"))
+        with patch.object(build_review, "REVIEW_PATHS", paths):
+            change = build_review.collect(self.repo, "main", None, None, True, None)
+        self.assertEqual({h.path: h.look for h in change.hunks}, {"api/client.py": "the public API", "app.py": ""})
+        self.assertEqual(build_review.pick_tier({"tier": "small"}, change.hunks, False)[0], "normal")
+
     def test_round_two_after_rebase_and_amend_shows_only_the_fix(self) -> None:
         self.write("app.py", FUNCTIONS)
         self.commit("initial")

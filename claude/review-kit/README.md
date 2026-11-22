@@ -89,11 +89,21 @@ Every field is optional. An empty object `{}` gives a page with every hunk under
 }
 ```
 
-- `tier` is one of `fixup`, `small`, `normal`, `risky`. The script computes the lowest tier from the size of the diff (changed lines outside tests: over 400 is risky, 50 or more is normal, otherwise small, and fixup only in round two at 15 or fewer). The narrative may raise the tier, never lower it. Leave it out to take the computed one.
+- `tier` is one of `fixup`, `small`, `normal`, `risky`. The script computes the lowest tier from the size of the diff (changed lines outside tests: over 400 is risky, 50 or more is normal, otherwise small, and fixup only in round two at 15 or fewer). A hunk in a path marked for a close look (see below) makes it at least normal. The narrative may raise the tier, never lower it. Leave it out to take the computed one.
 - `repo` and `branch` name the page in the browser tab and the top bar. Without them the page takes the repository from the `upstream` or `origin` remote and the branch from `--head` or the end of `--range`, never from the checkout's folder or its current branch.
 - `worst_case` and `tested` sit next to the tier at the top, as do the `facts`.
 - `decide` cards come first on the page, in the order given. The heading shows their count, followed by `decide_order` when set (for example "riskiest first"). See "Decide cards" below.
 - `groups` set the reading order. A group is shown in full, or collapsed under its one-line `reason` when `unimportant` is true. A collapsed group takes no `note`: put it on one of its hunks. Every hunk the groups do not place appears in a last group, "Not mentioned by the author". Nothing is dropped.
+
+### Paths to look at closely
+
+`review-paths.json`, next to the script, lists per repository the paths that need a close look however small the change. It names the contracts of each project, such as stored data, settings, shared models and text users see, and the rule text agents read in this repository. A hunk whose file matches gets a "Look closely" tag with the reason, a collapsed group says how many of its hunks have one, and the tier is at least normal. It is a narrower, mechanical subset of the "Always look closely" list in a project's rules file, which an author still applies by hand.
+
+```json
+{"music-assistant/server": {"music_assistant/models/**": "the shared models", "**/strings.json": "text users see"}}
+```
+
+The key is the `owner/name` of the `upstream` or `origin` remote, in any case. A pattern matches the whole path: `*` and `?` stay within one folder, `**` crosses folders.
 
 ### Decide cards
 

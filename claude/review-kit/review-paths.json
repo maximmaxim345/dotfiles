@@ -1,0 +1,58 @@
+{
+  "Sendspin/aiosendspin": {
+    "aiosendspin/models/**": "the wire format",
+    "aiosendspin/noise/**": "pairing, trust stores and sessions",
+    "aiosendspin/clock.py": "time sync",
+    "aiosendspin/server/clock.py": "time sync",
+    "aiosendspin/client/time_sync.py": "time sync",
+    "aiosendspin/__init__.py": "the public API",
+    "aiosendspin/*/__init__.py": "the public API",
+    "aiosendspin/server/push_stream.py": "push_stream",
+    "aiosendspin/audio/**": "resampling and encoders",
+    "aiosendspin/**/audio_transformers.py": "resampling and encoders"
+  },
+  "Sendspin/sendspin-js": {
+    "src/types.ts": "the public API",
+    "src/index.ts": "the public API and its option allowlist",
+    "src/core/**": "the protocol and time sync",
+    "src/sync-delay.ts": "the sync delay",
+    "src/audio/**": "audio scheduling"
+  },
+  "Sendspin/spec": {
+    "README.md": "normative text",
+    "connection.md": "normative text",
+    "messaging.md": "message fields and enum values",
+    "pairing.md": "pairing and security",
+    "roles/**": "normative text of a role"
+  },
+  "music-assistant/server": {
+    "music_assistant/models/**": "the shared models",
+    "music_assistant/controllers/config/**": "stored settings and their migrations",
+    "music_assistant/controllers/storage/**": "stored data",
+    "music_assistant/controllers/**/migrations.py": "migrations of stored data",
+    "music_assistant/controllers/**/*database.py": "the database schema",
+    "music_assistant/controllers/webserver/auth.py": "authentication",
+    "music_assistant/strings.json": "text users see",
+    "music_assistant/controllers/*/strings.json": "text users see",
+    "music_assistant/providers/sendspin/security.py": "Sendspin pairing and security",
+    "music_assistant/providers/sendspin/*pair*": "Sendspin pairing"
+  },
+  "music-assistant/models": {
+    "music_assistant_models/**": "the shared models"
+  },
+  "music-assistant/frontend": {
+    "src/plugins/api/**": "fields, commands and events shared with the server",
+    "src/translations/en.json": "text users see",
+    "src/helpers/device_settings.ts": "settings stored in the browser"
+  },
+  "maximmaxim345/dotfiles": {
+    "claude/*.md": "rule text every thread reads",
+    "claude/skills/**/*.md": "skill text agents follow",
+    "claude/project-rules/**": "rule text for a repository",
+    "claude/output-styles/**": "the output style every reply follows",
+    "claude/hooks/**": "hooks that run in every thread",
+    "desk/AGENTS.md": "rule text desk threads read",
+    "desk/TASK.md": "rule text desk threads read",
+    "desk/rules/**": "rule text desk threads read"
+  }
+}

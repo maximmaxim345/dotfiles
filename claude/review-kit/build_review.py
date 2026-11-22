@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 ASSETS = Path(__file__).resolve().parent / "assets"
+REVIEW_PATHS = Path(__file__).resolve().parent / "review-paths.json"
 EXPAND_LINES = 100
 PROSE_SUFFIXES = {".md", ".markdown", ".mdx", ".txt", ".rst", ".adoc"}
 TIERS = ["fixup", "small", "normal", "risky"]
@@ -98,6 +99,7 @@ class Hunk:
     below: Optional[Dict[str, Any]] = None
     commits: List[str] = field(default_factory=list)
     skim: str = ""
+    look: str = ""
     no_newline: List[int] = field(default_factory=list)
 
     @property
@@ -406,6 +408,29 @@ def remote_names(repo: Path) -> List[str]:
     return names
 
 
+def glob_regex(pattern: str) -> "re.Pattern[str]":
+    out, i = "", 0
+    while i < len(pattern):
+        if pattern.startswith("**/", i):
+            out, i = out + "(?:.*/)?", i + 3
+        elif pattern.startswith("**", i):
+            out, i = out + ".*", i + 2
+        else:
+            out, i = out + {"*": "[^/]*", "?": "[^/]"}.get(pattern[i], re.escape(pattern[i])), i + 1
+    return re.compile(out)
+
+
+def mark_look_paths(hunks: List[Hunk], repos: List[str]) -> None:
+    try:
+        data = json.loads(REVIEW_PATHS.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise KitError(f"Cannot read {REVIEW_PATHS}: {error}") from error
+    wanted = {repo.lower() for repo in repos}
+    rules = [(glob_regex(p), why) for repo, paths in data.items() if repo.lower() in wanted for p, why in paths.items()]
+    for hunk in hunks:
+        hunk.look = next((why for rule, why in rules if rule.fullmatch(hunk.path) or rule.fullmatch(hunk.old_path)), "")
+
+
 def blame(repo: Path, path: str, ranges: List[str], *revs: str) -> Optional[Dict[int, str]]:
     args = ["blame", "--porcelain", *revs]
     for spec in ranges:
@@ -518,6 +543,7 @@ def collect(
         diff_hash="" if tree_head else hashlib.sha1(text.encode("utf-8")).hexdigest(),
     )
     attribute(repo, change, log_from)
+    mark_look_paths(hunks, change.remotes)
     return change
 
 
@@ -662,9 +688,14 @@ class Layout:
         hunk.skim = skim
         why = prose(meta.get("note", ""), self.linker)
         look = meta.get("look")
+        tags = ""
         if look:
             label = "Look closely" if look is True else f"Look closely: {look}"
-            why += f'<p><span class="tag accent">{inline(label)}</span></p>'
+            tags += f'<span class="tag accent">{inline(label)}</span>'
+        if hunk.look:
+            tags += f'<span class="tag accent">Look closely: {esc(hunk.look)}</span>'
+        if tags:
+            why += f"<p>{tags}</p>"
         panels = "".join(context_panel(ref, self.change.read) for ref in meta.get("context", []))
         return (
             f'<article class="hunk" data-hunk="{hunk.id}" id="hunk-{hunk.id}">'
@@ -684,9 +715,11 @@ class Layout:
             files = len({h.path for item in hunks for h in resolve(item, self.change.hunks)})
             label = group["reason"]
             body = self.entries(hunks, f'"{label}"', label)
+            looked = len({h.id for item in hunks for h in resolve(item, self.change.hunks) if h.look})
+            flag = f'<span class="tag accent">{looked} to look closely</span>' if looked else ""
             return (
                 f'<details class="group skim"><summary><b>{inline(label)}</b>'
-                f'<span class="count">{plural(count, "hunk")} in {plural(files, "file")}</span>'
+                f'<span class="count">{plural(count, "hunk")} in {plural(files, "file")}</span>{flag}'
                 f'<span class="go">Show</span></summary>{body}</details>'
             )
         title = group.get("title") or f"Group {number}"
@@ -810,6 +843,10 @@ def pick_tier(narrative: Dict[str, Any], hunks: List[Hunk], round_two: bool) -> 
     if wanted is not None and wanted not in TIERS:
         raise KitError(f"`tier` must be one of {TIERS}, got {wanted!r}")
     line = f"{changed} changed lines outside tests make {floor} the lowest tier."
+    looked = sum(1 for h in hunks if h.look)
+    if looked and TIERS.index(floor) < TIERS.index("normal"):
+        floor = "normal"
+        line += f" {plural(looked, 'hunk')} in paths marked for a close look make it at least normal."
     if wanted and TIERS.index(wanted) < TIERS.index(floor):
         line += f" The narrative asked for {wanted}, which is lower, so the page keeps {floor}."
     tier = max(floor, wanted or floor, key=TIERS.index)
@@ -969,6 +1006,7 @@ def list_hunks(change: Change, as_json: bool) -> str:
                 "added": hunk.added,
                 "removed": hunk.removed,
                 "commits": [c[:7] if c != UNCOMMITTED else c for c in hunk.commits],
+                "look": hunk.look,
                 "first_line": first[:120],
             }
         )

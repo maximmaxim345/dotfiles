@@ -59,8 +59,9 @@ drop an item from a plan I approved.
 When you ask me to choose, lead with your pick and one line why, then the
 alternatives. With more than one choice, number the choices and letter the
 alternatives, so I can answer "go" for every pick or "2B" to change one. When I float an alternative as a question, compare it with your
-pick, then say whether the pick stays or changes. In a `/grilling` interview,
-ask in themed batches of 3-4 questions, each with your pick.
+pick, then say whether the pick stays or changes. Run a `grilling` interview
+only where `implement` step 2 says or when I ask for one, and ask it in themed
+batches of 3-4 questions, each with your pick.
 
 A question asking for information or an opinion ("why does X happen?",
 "should we do Y?") is not a request to act. Answer it and stop. A question I ask while work is

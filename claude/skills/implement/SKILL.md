@@ -21,7 +21,7 @@ Nothing gets pushed during this skill. Shipping happens through `/open-pr` after
 
 Read the code the change touches and the closest sibling code it should match. If the requirements are unclear, interview me first, using the `grilling` skill when it's available.
 
-Then present a plan:
+Then present a plan. Open it with a numbered "Decide" list of the choices that are mine, most important first: your pick, one line why, and the alternatives as A, B, C. I answer "go" to accept every pick, or a number and a letter ("2B") to change one. With four or fewer choices and a popup tool in the session, ask them in one popup instead, with your pick first. Leave the list out when nothing is mine to decide. After it:
 - the files that change and where new state lives
 - which existing code it follows
 - the simplest other design, such as doing it automatically without a new setting, and why it loses, checked against the code

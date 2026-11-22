@@ -58,7 +58,8 @@ reworking anything or touching other backlog items or threads. Say so when you
 drop an item from a plan I approved.
 
 When you ask me to choose, lead with your pick and one line why, then the
-alternatives. When I float an alternative as a question, compare it with your
+alternatives. With more than one choice, number the choices and letter the
+alternatives, so I can answer "go" for every pick or "2B" to change one. When I float an alternative as a question, compare it with your
 pick, then say whether the pick stays or changes. In a `/grilling` interview,
 ask in themed batches of 3-4 questions, each with your pick.
 

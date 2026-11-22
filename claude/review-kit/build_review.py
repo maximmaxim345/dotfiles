@@ -1074,10 +1074,12 @@ def list_hunks(change: Change, as_json: bool) -> str:
                 "first_line": first[:120],
             }
         )
+    tier, tier_line = pick_tier({}, change.hunks, bool(change.reviewed))
     if as_json:
         commits = [{"sha": sha[:7], "subject": subject} for sha, subject in change.commits]
-        return json.dumps({"notice": change.notice, "commits": commits, "hunks": rows}, indent=2) + "\n"
-    out = [change.notice] if change.notice else []
+        listing = {"notice": change.notice, "tier": tier, "tier_line": tier_line, "commits": commits, "hunks": rows}
+        return json.dumps(listing, indent=2) + "\n"
+    out = ([change.notice] if change.notice else []) + [f"Lowest tier: {tier}. {tier_line}"]
     for row in rows:
         where = f"{row['path']}:{row['changed']}" if row["changed"] else f"{row['path']} (removed old {row['removed_old']})"
         hunk_range = f"(hunk {row['hunk']})" if row["hunk"] else ""

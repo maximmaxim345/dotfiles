@@ -131,6 +131,7 @@ class ReviewKitTests(unittest.TestCase):
         self.assertEqual(list(subjects.values()), ["first", "second"])
         rows = [(h["changed"], h["hunk"], [subjects[c] for c in h["commits"]]) for h in data["hunks"]]
         self.assertEqual(rows, [("10", "7-13", ["first"]), ("142", "139-145", ["second"])])
+        self.assertEqual(data["tier"], "small")
 
     def test_path_line_in_text_links_only_lines_the_page_shows(self) -> None:
         narrative = {"decide": [{"title": "Q", "evidence": "See `app.py:10` and app.py:155, not app.py:900 or lib.py:3."}]}

@@ -20,6 +20,16 @@ This repo holds the state of my work across repos: efforts, the backlog and the 
 
 An effort is a body of work with one goal, spread over several tasks and often several repos. Its name is a short lowercase slug (`player-sync`, `spec`, `api-v2`) that also starts the titles of its threads.
 
+## Rule files
+
+Some sections live in their own files under `~/desk/rules/`, which you don't edit either. Read a file before a turn that needs it, and whenever a rule names one of its sections:
+- `sweep.md`: Sweep, Refresh, PR check and Stale check. For the morning sweep and the events `refresh`, `prs`, `idle`, `capture` and `comment`.
+- `watching.md`: Watching and Blockers. For the sweep, a refresh, sorting Incoming entries and the events `hide` and `chat`.
+- `project-boards.md`: Project boards. For the sweep and the events `apply`, `dismiss` and `chat`.
+- `spaces.md`: Spaces. For the sweep, a refresh and the events `idle` and `space`.
+- `moving.md`: Moving desktop sessions. For an item with `move`.
+- `board.md`: Board. For writing `needsYou` whys and for questions about the board.
+
 ## Roles
 
 - Desk: one pinned thread. Sweeps, refreshes (see "Refresh"), triages the backlog, keeps the board current and reacts to the board (see "Listening"). It does little coding itself. Never settle it.
@@ -62,30 +72,6 @@ The desk and managers handle only the desk, managers and threads with a backlog 
 Only I snooze threads. Leave a snoozed thread alone until it wakes or I act on its item on the board: don't unsnooze, settle, compact or message it. You may still archive it when its item is done or dropped, or when its PR merged or closed. List it on the board with its wake time (see "Board"), and keep its task row and item as they are.
 
 Never delete threads, backlog items or task rows. Done and dropped work only leaves the default views: archived threads stay searchable until I delete them (see "Stale check"), and the board's Done view lists what finished in the last 7 days. Older work, and work I archived on the board, is one filter away.
-
-## Sweep
-
-1. List threads in all projects, settled and snoozed ones included, with their linked PRs.
-2. Leave threads without a backlog item alone (see "Thread lifecycle"). The board lists them, as unassigned when their title names no effort.
-3. Read every linked PR of a thread with a backlog item with `gh`: state, checks, mergeable, and reviews or comments by people other than me and bots.
-4. Do "PR check".
-5. Compact, then settle, each thread with a backlog item that isn't snoozed, has been idle for 50 minutes or more, and waits only on others: it has an open PR or its last reply says what it waits on, no reply since my last message asks me something or says the work is finished (step 7 handles those), its item has no `asks`, and no review round is running (see "Compacting"). The 50 minutes keep a thread I'm working with between messages. Settling ends a thread's T3 PR watch, so later news reaches it through step 4. A thread that watches with `bin/pr-check --wait` may hear the same news twice, which it handles once. When a thread with a backlog item that isn't running, snoozed or settled has linked PRs and a reply since my last message asks me something or its item has `asks`, however long it has been idle, call `unwatch_pull_request` with its thread id for each of them, since a watched thread stays in my Working list instead of my inbox. Settle a thread with a PR it doesn't watch only in a full sweep (not a refresh or `idle`), after reading the PR with `gh`. Managers settle themselves (see "Managers"). A manager whose item has no `asks` and that asked me nothing since my last message that only its thread can answer (see "Managers") counts as waiting on others: unpin it and settle it without compacting it, since pinning unsettles a thread.
-6. Archive settled and snoozed threads with a backlog item whose PR closed, or merged without step 8 marking the item done, more than a day ago. Mark their task row and backlog item done with the date, the PR and the thread id.
-7. Read the thread of every `started` item (`t3_thread_read`). When the thread is archived or gone, mark the item done with today's date and add a desk comment that it was closed outside the desk. When the thread isn't snoozed, is idle and has no PR, and its last reply says the work is finished, list it in `needsYou` with the why "finished? mark it done on the board". When the thread isn't snoozed, a reply since my last message asks me something (for a manager, something only its thread can answer, see "Managers"), and the item has no `asks`, set it with `bin/backlog ask --thread <id> "<the question in one line>"`. When the item has `asks` and I answered in the thread after `asks.at`, with no later reply asking me something, clear it with `bin/backlog ask --thread <id> --clear`. Unsettle a settled thread whose item has `asks`, since a settled thread leaves my inbox. When the thread isn't a manager, is settled, isn't in `state/parked.json`, has no open PR, its item has no blocker, and its last reply neither says it waits on someone else nor that the work is finished, I settled it by hand to put it aside: pause the item with `bin/backlog status <id> open --by desk`, which keeps its thread.
-8. Run `bin/board-threads`, which rebuilds `state/threads.json` from T3's database and the backlog and prints the entries that changed, then fix any new `needsYou` why that is wrong (see "Board"). It also copies the PRs a thread linked into its item (`+pr` lines), and marks a started item done once all its PRs merged (`done` lines), and adds items for threads of mine that started work outside the desk (`adopt` lines, see "Thread lifecycle"). For each `adopt` line, fill in the item's effort, kind and why from the thread, without messaging it. For each `done` line, archive the item's thread without compacting, after waiting for a running turn as for my `done` events, mark its task row done unless the effort has a manager, and tell that manager as for my own changes (see "Listening"). Read `threads.json` only when you need more than that. When it fails because T3's database changed, call `t3_thread_list` for every project, settled and snoozed included, and pipe the results into `bin/board-threads --stdin`. Then reply with what needs me, in priority order, one line each.
-9. Sort my captures (status `new`, my raw notes in `brief`): turn each into one or more proper items, one per idea, with title, kind, label, repo, effort, why, seen, size, minutes, fromMe, start and brief, status `open`, and the original note quoted in a desk comment. When a capture becomes one item, run `bin/backlog reslug <id>` after giving it its title, fix the effort files it lists, and tell a started thread its brief's new path. Keep a repo or effort I picked, unless my note says I'm unsure of it: then check where the code lives and pick that repo, saying why in the comment. When a note is too unclear to sort, leave it `new` and ask in a comment.
-10. Triage open backlog items: set the repo name and the effort, drop duplicates and items whose fix is already on the default branch (with a comment saying why), and fill in missing briefs. Set `blockedBy` when none of an item can move before another item or an outside event, and remove blockers that no longer hold, also on started items, as "Blockers" says. A blocker that names a date holds until that date: on it, remove the blocker, add a desk comment and list the item in your reply, and resume its thread as "Blockers" says when it was the last one. Mark up to five open items I should do soon with `suggested` (a one-line reason) and remove it from items that no longer fit. In efforts with a manager, leave `suggested` to the manager. Move items into Next only when my note or message asks for it, and put them last, since that column is my order.
-11. Answer new comments on backlog items (`"by": "me"`) with a comment of your own (`"by": "desk"`), and apply what they ask that needs no launch.
-12. Do "Watching", then "Project boards".
-13. In the first sweep of a month, summarize last month's lines from `findings.md` and every effort's `findings.md` for me in a few lines. File an item only for the ones I pick.
-
-At the end of a sweep, do "Spaces", then run `bin/desk-wait --refreshed`, since the sweep covers a refresh.
-
-Base every state on threads, git and `gh`, never on memory, and fix `status.md` where it differs. Take dates and times from `date`, never from memory.
-
-## Refresh
-
-On weekdays from 8:00 to 20:00, the listener queues `refresh` when the last refresh was 45 minutes ago or more. A refresh is a short sweep that keeps the board's thread lists and Incoming current: do sweep steps 1, 2, 4, 5, 7 and 8, read PRs only through `bin/pr-check`, and do "Watching" and "Spaces". Reply once, when it's done: one line for the threads, plus one line per entry you set to needs-you, and stay silent when nothing changed. Leave out questions other threads asked me, since their threads and the board show them.
 
 ## Starting threads
 
@@ -133,89 +119,6 @@ Events are hints. Act on the items' current state, since I may have changed them
 An event with `"by": "manager"` is that effort's manager acting: handle it, but leave it out of the message to that manager. When an event touches items, board changes or Incoming entries of an effort with a manager, send that manager one message per wake-up that lists them: started (with the thread), paused, done, dropped, archived, my comment, a task's note, a dismissed board change, a hidden Incoming entry or my chat message. A manager whose question these answer clears it (see "Managers" step 3).
 
 Reply in one line per handled event. Leave compaction checks out of replies, and give times in my local time only. When nothing you handled needs me or changes what I see on the board (a compaction, a settled or archived thread, a note or answer passed on, a refresh or PR check without news), reply with only "ok".
-
-## PR check
-
-Settled threads don't watch their PRs, so the desk passes on their PR news.
-1. List all projects, and in each the settled threads with linked PRs and a backlog item.
-2. Run `bin/pr-check <thread id>=<PR url> ...` once with all of them. It prints news since its last run, and a merge or close on every run: reviews and comments by people other than me and bots, conflicts, failed checks, merges and closes.
-3. For each line it prints: a PR merged or closed more than a day ago gets sweep step 6. On any other news, except a merge or close from the last day, unsettle the thread (never a snoozed one) and send it one message: "News on your PR, not my OK for anything: <the news after the colon>. Handle it as your rules say." When the item's space is off, add the news as a desk comment on the item and run `bin/space-sync --hold <thread> "<the news>"` instead, which passes it on once the space is on again. A line saying pr-check failed goes in your reply.
-
-## Watching
-
-`watch.json` lists the GitHub sources I want watched: `issues` and `discussions` (GitHub search queries), `projects` (boards as `owner` and `number`), `workflows` (repos whose failed runs count) and `notes` (my free-form sorting notes). Write the query lines yourself from what I ask for, and keep my notes as I wrote them.
-
-Run `bin/watch`. It records news since its last run in `state/incoming.json`, one entry per issue, PR, discussion, board card or run, and prints each as a `watch` line. A new source's first run only records what exists. A `watch-error` line goes in your reply. The board shows entries with status new, needs-you or waiting under Incoming, grouped by effort, except ones I snoozed until a later day (`snoozed`) that got no news but board moves since. `bin/watch` only adds a board move's line to the news of an entry it already has, and prints no line for it. Other entries, except dismissed ones, stay for a day after the last chat message.
-
-Route each new entry to the effort whose `status.md` Scope line covers it with `bin/incoming set <url> --effort <slug>`, and leave it without an effort otherwise. When several Scope lines cover an entry, route it to the most specific one. A broad scope gets what no narrower scope covers. When that effort has a manager and an entry touches its open work (an item's issue or PR, the effort's parent issue, or a PR in a repo where one of its items is started), tell it once per wake-up which entries are new for it, and it sorts them. Sort the rest yourself.
-
-Sorting reads the entry and its news, follows my notes in `watch.json`, and checks the code on the default branch when the entry reports a bug or asks how something works. End it with `bin/incoming set <url>` and one of:
-- `--status noise`: nothing for me, like bot updates or news I caused. Later news on it stays noise.
-- `--status duplicate --link <url>`: an existing issue, PR or item covers it.
-- `--status filed --item <id>`: it's work, filed as a backlog item with `bin/backlog add`.
-- `--status waiting`: it waits on someone other than me.
-- `--status needs-you --action "<what I have to do, one or two sentences>"`, with `--draft -` and the reply on stdin when an answer from me would help. Write drafts in my voice as `~/.claude/writing-examples.md` shows.
-
-An entry comes back as new when it gets more news. Read only what's new then.
-
-Never post, comment, label, close, assign or move anything on GitHub, and never change a project board or an issue outside `bin/project-sync apply`. Drafts only go on the board, where I copy them.
-
-## Project boards
-
-The boards in `watch.json` track issues, never PRs. Each board's `backlog` names the repo its issues live in. A large effort or topic is a parent issue there that gives the bigger picture: the goal, what's in and out, and the steps as its sub-issues. A backlog item is one of those sub-issues, or a standalone issue for small work, and its `issue` holds that URL (`bin/backlog issue <id> <url>`). Only parent and standalone issues go on a board. An effort's parent issue is the `Issue:` line under the `Scope:` line of its `status.md`, and stands for all of its items on the board.
-
-Run `bin/project-sync propose`. It refreshes the proposed card moves (closed issues to Done, cards of started work and of efforts with started items to In progress, my In progress cards with no activity for two weeks to Later), links a started item to the issue its PR closes when neither it nor its effort has one, and prints:
-- `candidate <board> <url>`: a started item's issue, or its parent, isn't on the board. Propose it with `bin/project-sync suggest --board <owner/number> --url <url> --status <status> [--field <Name>=<Value>] --why "<one line>"`, following the board's notes in `watch.json`.
-- `error <board, id or effort>: ...`: a board, an item's issue or an effort's issue couldn't be read. List it in your reply.
-- `noparent <effort> <board> [<url> ...]`: an effort with started items has Scope repos on that board's account but no parent issue. The URLs are the issues its items link, or their parents. When one of them or a card on the board already covers the effort, add its `Issue:` line yourself. Otherwise draft the parent issue with `bin/project-sync draft --repo <backlog repo> --title "<title>" --effort <effort> --board <owner/number> --status <status> --why "<one line>"` and the body on stdin, which adds the `Issue:` line once I approve it. The line stops after a draft for the effort, also a dismissed one. Once you've added `Issue:` lines, run `bin/project-sync propose` again, so they get their moves, candidates and `outdated` lines.
-- `outdated <effort> <url>: <reasons>`: the effort's parent issue has unchecked steps that closed or merged since the issue, its last proposed edit or its last check changed, or its repos merged PRs in that time and three days have passed. Propose its new body as the next paragraph says. When the merged PRs don't change its picture, run `bin/project-sync checked <url>` instead.
-- `noissue <id> <title>`: a started item outside the efforts on a board has no issue. When its work belongs on a board, link an issue that already covers it, or draft one with `bin/project-sync draft --repo <backlog repo> --title "<title>" [--parent <url>] --item <id> [--board <owner/number> --status <status>] --why "<one line>"` and the body on stdin, as a sub-issue under a parent issue that covers it, without a board, and as a standalone issue on the board otherwise.
-
-Write the titles and bodies you draft in my voice as `~/.claude/writing-examples.md` shows, following the parent's structure.
-
-When a parent issue's picture changed (a step finished, the plan changed, a step was added), propose its new body with `bin/project-sync edit --url <url> --why "<one line>"` and the body on stdin, changing only what changed. Drop open proposals my notes rule out, and any that add a PR, with `bin/project-sync dismiss <id> ...`. Change an open proposal with `bin/project-sync revise <id>` instead of proposing it again, which keeps my chat on it. `bin/project-sync propose` keeps revised proposals as they are, and open moves with a chat until I apply or dismiss them. Nothing reaches GitHub until I approve it on the board, which sends `apply`.
-
-## Blockers
-
-A blocker is an item id or a note on what an item waits for. `bin/watch` also watches the GitHub issues and PRs that blocker notes link to, and adds `blocks` with the waiting item ids to their `watch` lines. Read the news on such a line, and check each new Incoming entry against the open blockers too: a reply on the issue a blocker names, or a new issue on what it waits for, counts the same way. When news clears a blocker, remove it with `bin/backlog unblock <id> "<blocker>"` and add a desk comment saying what cleared it.
-
-When the last blocker of a paused item with a thread clears, whether GitHub news, a date or the blocking item finishing cleared it, remove it with `bin/backlog unblock` as above. `bin/autostart` then lists the thread to resume, right away with auto-start off and once a slot is free with it on, since blocking it was my Start for that moment. List it in your reply. A blocker I remove on the board waits for Start, and an item without a thread stays open for me to start.
-
-## Spaces
-
-On the board I group efforts into spaces, like work and personal, and turn each space on or off. Several can be on at once. `state/spaces.json` holds the spaces, the ones that are off, and each effort's space. Efforts without one, and items and threads without an effort, belong to `work`. The board hides what belongs to a space that is off.
-
-Run `bin/space-sync`. It prints one JSON line per thread to change and keeps the parked threads in `state/parked.json`:
-- `park`: an idle thread of a started item in a space that is off. Settle it as "Compacting" says, without the checks of sweep step 5, unless it started running since or a reply since my last message asks me something. Its item stays started.
-- `restore`: a parked thread whose space is on again, or a thread whose PR news was held. Unsettle it, and when `news` lists anything, send it that news as "PR check" step 3 says.
-
-Reply in one line with the threads you put away or brought back, and stay silent when it printed nothing.
-
-## Stale check
-
-In each morning sweep, list in the reply, one line each with its age, what has waited on me for more than three days:
-- questions (`asks`), by `asks.at`;
-- Incoming entries with status needs-you, by `updated`;
-- open project board proposals, by `at`.
-
-On Thursdays, also list:
-- started items whose open PR has no reviewer requested and no review after three days;
-- blockers older than a week, by the comment that added them or the item's date.
-
-On Thursdays, also run `bin/worktree-due`, which takes a few minutes. It prints archived threads with a backlog item that were archived 14 days ago or more: `due` when their worktree has no uncommitted changes and every commit is on a remote branch, `held` with the reason otherwise. List the `due` threads in one block for me to delete in T3, then each `held` one with its reason.
-
-The board shows old questions under "Getting old" and marks old proposals with their age itself.
-
-## Moving desktop sessions
-
-`/desk move` in the Claude Code desktop app adds an item with `move` (`session`, `checkout`, `branch`, `manager`) for each task it moves, and presses Start for it. A session becomes one item per branch. The session has committed its work, written the brief and freed its branches. `prs` lists every PR, the main one first. For each such `requested` item:
-1. Without `manager`: find the T3 project whose folder is `move.checkout`. When there is none, try `t3_project_create`. It needs full access, which you don't have, so when it fails, set `needs` ("Add <folder> as a T3 project, then press Start.") as in "Starting threads".
-2. With a `branch`: check that `git -C <checkout> worktree list` shows the branch nowhere, or only at `~/.t3/worktrees/<checkout folder name>/<branch with / as ->` from an earlier try. If one shows it elsewhere, set `needs` and add a desk comment as in "Starting threads", and leave the item `requested`. Otherwise run `git -C <checkout> worktree add <that path> <branch>` when it isn't there yet, and launch with `existing_worktree` on that path. Without a branch, launch as in "Starting threads".
-3. With `manager`: launch `manager - <effort>` in this project with `workspaceStrategy` `root` instead, since it becomes the effort's manager.
-4. Launch with the title format above and the model from "Starting threads". The message: "You continue Claude desktop session <session>. Read ~/desk/TASK.md, then the `brief` field of ~/desk/backlog/<id>.json in full. Link every PR it names with `link_pull_request` and watch each as ~/.claude/pr-followup.md says. Reply with your branch and last commit, then a short recap (goal, done, left) and the next step. Only take that step when the brief says it needs nothing from me."
-5. Wait for its first reply with `t3_thread_wait`. When it confirms its branch, set the item `started` with the thread id and add a desk comment "Moved from desktop session <session> to <thread>". `bin/backlog wait-moved` in the desktop session sees that and archives the session. Then park it, unless it's a manager (step 3), which stays active and pins itself when it asks me something. Parking keeps moved work on the board instead of my sidebar: once the thread's turn has ended, save the question it asks me, if any, in a desk comment, set the item `open` (which clears `asks`) and settle the thread. Pressing Start resumes it. When the reply shows a problem, record the thread id on the item, set `needs` and add a desk comment as in "Starting threads", and leave the item `requested`, so the next Start resumes that thread.
-
-A moved manager rewrites its effort's `status.md` in the format below on its first turn, with the new thread ids in the task table.
 
 ## Messages
 
@@ -276,26 +179,3 @@ A brief uses these `##` sections, in this order, and leaves out the ones that do
 ## Effort status files
 
 `efforts/<effort>/status.md` starts with a `Scope:` line naming the repos, labels or topics the effort covers, which "Watching" routes by, and an `Issue:` line with its parent issue when it has one (see "Project boards"). Its sections, in this order: Resume here, Tasks (table: thread, repo, branch, PR, state, blocked by), Defaults (model and repos), Open decisions, Log (dated, newest last).
-
-## Board
-
-`bin/board` serves the board at http://127.0.0.1:8765. It shows the backlog, a Done view, and the threads from `state/threads.json`, which `bin/board-threads` writes in each sweep and refresh. It leaves out threads whose item is done or dropped, and those whose item is paused unless they run or wait on me, since their cards show them. It keeps the desk's earlier `needsYou` whys while the thread waits, and adds `item` and `effort` to each entry:
-
-```json
-{
-  "updated": "2026-10-21 09:00",
-  "environment": "<environmentId from t3_environment_read>",
-  "managers": {"<effort>": "<manager thread id>"},
-  "needsYou": [{"thread": "<id>", "title": "...", "why": "push OK for #12", "pr": "<url or null>"}],
-  "waiting": [],
-  "snoozed": [{"thread": "<id>", "title": "...", "until": "2026-10-23 09:00", "pr": "<url or null>"}],
-  "working": [],
-  "unassigned": []
-}
-```
-
-A snoozed thread goes only in `snoozed`, with its wake time in local time. The board puts a started item without `asks` whose thread is in `waiting` in the In review column, and an open item with an open blocker in Blocked. The board adds items with `asks` to Needs you itself and drops a `needsYou` entry for the same thread in their favor.
-
-On the board I can capture notes (status `new`), comment on items, order my Next column, start, pause, finish (Done), drop or reopen items, archive a lane's Done cards, add spaces, turn them on or off and move efforts between them (see "Spaces"), set blockers, change their effort or repo, hide Incoming entries (status dismissed) or snooze them until tomorrow or next week, apply or dismiss proposed project board changes, write in the chat of an Incoming entry or a proposed change, and set auto-start (see "Auto-start"). The server logs each action to `state/events.jsonl` for `bin/desk-wait`. It never launches anything itself.
-
-The board listens only on 127.0.0.1 unless `board.json` names my Mac's Tailscale address (`{"tailnet": "100.x.y.z"}`). Then it also listens there after a restart (`launchctl kickstart -k gui/$(id -u)/local.desk-board`), and every request on that address needs the token in `state/board.token`. `bin/board --login-url` prints a link that sets the token as a cookie in the browser that opens it, once and within 10 minutes.

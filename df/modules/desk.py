@@ -22,6 +22,7 @@ ENTRIES: List[Tuple[str, str, str]] = [
     ("TASK.md", "TASK.md", "old_task_md"),
     ("bin", "bin", "old_bin"),
     ("board", "board", "old_board"),
+    ("rules", "rules", "old_rules"),
 ]
 
 

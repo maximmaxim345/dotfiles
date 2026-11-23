@@ -6,7 +6,6 @@
 {
   "updated": "2026-10-21 09:00",
   "environment": "<environmentId from t3_environment_read>",
-  "managers": {"<effort>": "<manager thread id>"},
   "needsYou": [{"thread": "<id>", "title": "...", "why": "push OK for #12", "pr": "<url or null>"}],
   "waiting": [],
   "snoozed": [{"thread": "<id>", "title": "...", "until": "2026-10-23 09:00", "pr": "<url or null>"}],

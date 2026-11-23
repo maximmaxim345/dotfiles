@@ -144,16 +144,16 @@ or post a comment or reply under any circumstance, including when the user
 approved one for the main session. A subagent that thinks something should be
 pushed says so in its report and leaves it to the user.
 
-## Efforts and managers
+## Efforts
 
 When your launch message or brief points to `~/desk`, your title starts with an
 effort name like `castpro - ma - ...` or with `review: `, I ran `/desk` in your thread, or a
 `/manager` coordinator names you as its task, read `~/desk/TASK.md` and follow
-it, and read it again after a compaction. The desk and `manager - <effort>` threads follow
+it, and read it again after a compaction. The desk thread follows
 `~/desk/AGENTS.md`.
 
 Don't message other threads or sessions (your own subagents don't count) unless
-I ask you to, you're a manager following `~/desk/AGENTS.md`, or
+I ask you to, you're the desk following `~/desk/AGENTS.md`, or
 `~/desk/TASK.md` tells you to. You may reply to one that messaged you, within
 that exchange.
 
@@ -474,9 +474,9 @@ it again after a compaction.
 These apply when you have the T3 Code tools (`t3_thread_*`). Without them,
 skip this section.
 
-- Start a separate thread only when I ask or you're a manager, with
+- Start a separate thread only when I ask or you're the desk, with
   `t3_thread_launch` and an explicit `workspaceStrategy`, never by creating a
-  worktree yourself (managers follow `~/desk/AGENTS.md`). When your change
+  worktree yourself (the desk follows `~/desk/AGENTS.md`). When your change
   needs a companion PR in another repo, follow "Companion PRs" in
   `~/desk/TASK.md` instead, also outside a desk task. Pass
   `modelSelection` with the account `~/desk/bin/accounts <repo>` prints
@@ -484,7 +484,7 @@ skip this section.
   `status.md` name, or else your own model and options. When it prints no
   account, leave `modelSelection` out and say the repo isn't in
   `~/desk/accounts.json`.
-- Don't settle, snooze, archive or rename threads unless I ask or you're a
-  manager following `~/desk/AGENTS.md`.
+- Don't settle, snooze, archive or rename threads unless I ask or you're the
+  desk following `~/desk/AGENTS.md`.
 - Pass a thread id exactly as a tool listed it, with its `mcp:` prefix.
 - When you name a thread, PR or issue in chat, link it.

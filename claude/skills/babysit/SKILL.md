@@ -21,7 +21,7 @@ Everything else still needs my OK, asked with a popup (AskUserQuestion): replies
 
 1. Watch the PR as `~/.claude/pr-followup.md` says.
 2. On a failed check, reproduce it locally, fix it and commit.
-3. On review bot findings, verify each against the code, since bots are often wrong or miss context. Fix the valid ones as commits. For the rest, reply in my voice (see `~/.claude/writing-examples.md`) with the reason in one or two sentences. Start each reply to a bot with "Automated reply:".
+3. On review bot findings, verify each against the code, since bots are often wrong or miss context. Fix the valid ones as commits. For the rest, reply in my voice (see `~/.claude/writing-examples.md`) with the reason in one or two sentences.
 4. Push once per round, then reply to and resolve the threads you handled, and request the bots' reviews again.
 
 Stop when the checks on the latest commit pass, a review bot reviewed that commit, and no bot thread is open. Then report in a few lines what you pushed, replied to and resolved. When the PR is a draft, ask with a popup whether to mark it ready for review, unless `/open-pr` ran in `merge` mode. Keep watching after that: my OK holds for later check failures, bot findings and conflicts until the PR merges or closes or I say stop.

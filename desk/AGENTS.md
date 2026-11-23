@@ -20,7 +20,7 @@ This repo holds the state of my work across repos: efforts, the backlog and the 
 
 `AGENTS.md`, `TASK.md`, `bin/` and `board/` are links into my dotfiles. Don't edit them: add a backlog item with repo `dotfiles` instead.
 
-An effort is a body of work with one goal, spread over several tasks and often several repos. Its name is a short lowercase slug (`player-sync`, `spec`, `api-v2`) that also starts the titles of its threads.
+An effort is a body of work with one goal, spread over several tasks and often several repos. Its name is a short lowercase slug (`player-sync`, `spec`, `api-v2`). An effort that covers one repo has the name of that repo's T3 project.
 
 ## Rule files
 
@@ -52,7 +52,7 @@ When I ask the desk for an effort's status, it answers for the whole effort: one
 
 ## Thread titles
 
-`<effort> - <repo> - <title>`, or `<repo> - <title>` without an effort. The title is fixed: no numbers and no state words. A companion thread uses its partner's effort and title, so only the repo differs. Priority is the order of the effort's task table, state is the thread's lifecycle state. A review thread puts `review: ` in front: `review: <effort> - <repo> - <PR title>`, or `review: <repo> - <PR title>` without an effort.
+`<effort> - <title>`, or the title alone when the thread has no effort or its effort has the name of its T3 project. The repo stays out, since T3 lists threads by project. The title is fixed: no numbers and no state words. A companion thread uses its partner's title. Priority is the order of the effort's task table, state is the thread's lifecycle state. A review thread puts `review: ` in front: `review: <effort> - <PR title>` or `review: <PR title>`, by the same rule.
 
 Repo names are the names of T3 projects that are git repos, plus the names in `repos.json`. `bin/backlog add --help` lists them. Backlog items use these names only, and `bin/backlog` rejects others.
 

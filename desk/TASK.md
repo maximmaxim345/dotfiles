@@ -1,6 +1,6 @@
 # Desk tasks
 
-Rules for a thread that works on a task from my desk (`~/desk`): one started by the desk, one whose title starts with an effort name (`player-sync - app - ...`), or one I handed over with `/desk`. The desk follows `AGENTS.md` instead.
+Rules for a thread that works on a task from my desk (`~/desk`): one started by the desk, one whose title starts with an effort name (`player-sync - ...`), or one I handed over with `/desk`. The desk follows `AGENTS.md` instead.
 
 Efforts are larger bodies of work, tracked in `~/desk`. The desk thread (titled `desk` in the `desk` T3 project) plans, starts and tracks every effort's tasks.
 

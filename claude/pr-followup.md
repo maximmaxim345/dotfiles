@@ -39,14 +39,15 @@ music-assistant/music-assistant.io: maintainers merge those, so keep watching.
 When you have the T3 Code tools (`t3_thread_*`):
 
 - Watch a published PR until it merges or closes. While nothing waits on me,
-  watch with `watch_pull_request`. While you wait for my answer to a question,
+  watch with `watch_pull_request` and `until: "merged"`, since the default
+  keeps the thread working only until the checks finish. While you wait for my answer to a question,
   a draft or a request for my OK, watch with `~/desk/bin/pr-check` instead
   when it exists, since a thread watching with T3 stays in my Working list
   instead of my inbox. Without `pr-check`, stop watching until I answer.
 - Switch at both points. Before a turn ends waiting on me, call
   `unwatch_pull_request` and start `pr-check`. Once I've answered, stop the
   `pr-check` command, read the PR's new comments and checks, then call
-  `watch_pull_request` again.
+  `watch_pull_request` again, the same way.
 - Run `~/desk/bin/pr-check --wait <your thread id>=<PR url>` as a background
   Bash command (`run_in_background`, timeout 7200000). It exits after printing
   news (reviews and comments by others and Copilot, conflicts, failed checks, a

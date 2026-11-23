@@ -17,7 +17,7 @@ Good:
 Bad:
 - "Add support for X" (just say "Add X")
 - Technical jargon users won't understand
-- Conventional commits (feat:, fix:)
+- Conventional commits (feat:, fix:), unless the repo's merged PR titles use them, as Sendspin/sendspin-rs does, with `!` for a breaking change
 - Vague ("Update code", "Fix bug")
 
 ## Body

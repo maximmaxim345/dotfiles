@@ -26,11 +26,10 @@ live on every device without re-running anything.
 | `skills/open-pr/`, `skills/review-changes/` | PR and review workflow skills, each linked into `~/.claude/skills/` |
 | `skills/babysit/` | Watches my PR until CI is green and the review bots have nothing open, fixing and replying within a fixed scope |
 | `skills/lab-gate/` | Runs a Music Assistant server PR through the end-to-end test lab, for the areas it touches |
-| `skills/manager/` | Runs a session as the coordinator of a group of task sessions |
 | `skills/second-opinion/` | Has reviewers from other models check a change, picked with their effort in a popup |
 | `skills/architecture/` | Draws how a change fits together, with new, changed and removed parts marked |
 | `skills/diagnose/` | Finds the cause of a bug by reproducing it first and testing one hypothesis at a time |
-| `skills/desk/` | Hands a T3 thread to the desk or pauses it there, and moves Claude desktop sessions to T3 Code threads, linked into `~/.claude/skills/` |
+| `skills/desk/` | Hands a T3 thread to the desk or pauses it there, linked into `~/.claude/skills/` |
 | `hooks/recap-after-break.py` | A `UserPromptSubmit` hook that asks for a two-line recap when a thread was quiet for an hour or more. The module links it into `~/.claude/hooks/` and registers it in `settings.json` |
 | `hooks/after-compact.py` | A `SessionStart` hook that points a thread back at its status files after a compaction. Linked and registered the same way |
 | `hooks/check-commands.py` | A `PreToolUse` hook that blocks dashes and AI attribution in GitHub posts and commit messages, `caffeinate`, and `echo ===` in zsh, linked and registered the same way |

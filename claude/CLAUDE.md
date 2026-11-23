@@ -147,8 +147,8 @@ pushed says so in its report and leaves it to the user.
 ## Efforts
 
 When your launch message or brief points to `~/desk`, your title starts with an
-effort name like `castpro - ma - ...` or with `review: `, I ran `/desk` in your thread, or a
-`/manager` coordinator names you as its task, read `~/desk/TASK.md` and follow
+effort name like `castpro - ma - ...` or with `review: `, or I ran `/desk` in your thread,
+read `~/desk/TASK.md` and follow
 it, and read it again after a compaction. The desk thread follows
 `~/desk/AGENTS.md`.
 

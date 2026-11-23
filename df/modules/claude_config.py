@@ -47,7 +47,6 @@ ENTRIES: List[Tuple[str, str, str]] = [
     ("skills/review-brief", "skills/review-brief", "old_skill_review_brief"),
     ("skills/blast-radius", "skills/blast-radius", "old_skill_blast_radius"),
     ("skills/ma-dev", "skills/ma-dev", "old_skill_ma_dev"),
-    ("skills/manager", "skills/manager", "old_skill_manager"),
     ("skills/ma-device-test", "skills/ma-device-test", "old_skill_ma_device_test"),
     ("skills/open-pr", "skills/open-pr", "old_skill_open_pr"),
     ("skills/review-changes", "skills/review-changes", "old_skill_review_changes"),
@@ -73,6 +72,7 @@ HOOKS: List[Tuple[str, str]] = [
 # Entries dropped from ENTRIES, whose links existing installs still have (target, config key for the backup)
 REMOVED: List[Tuple[str, str]] = [
     ("commit-subagent-prompt.md", "old_commit_subagent_prompt"),
+    ("skills/manager", "old_skill_manager"),
     ("commands", "old_commands"),
     ("skills/commit", "old_skill_commit"),
     ("skills/commit-split", "old_skill_commit_split"),

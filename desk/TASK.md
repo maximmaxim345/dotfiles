@@ -1,6 +1,6 @@
 # Desk tasks
 
-Rules for a thread or session that works on a task from my desk (`~/desk`): one started by the desk, one whose title starts with an effort name (`player-sync - app - ...`), one I handed over with `/desk`, or a desktop session a `/manager` coordinator names as its task. The desk follows `AGENTS.md` instead.
+Rules for a thread that works on a task from my desk (`~/desk`): one started by the desk, one whose title starts with an effort name (`player-sync - app - ...`), or one I handed over with `/desk`. The desk follows `AGENTS.md` instead.
 
 Efforts are larger bodies of work, tracked in `~/desk`. The desk thread (titled `desk` in the `desk` T3 project) plans, starts and tracks every effort's tasks.
 
@@ -52,7 +52,6 @@ What I say in a task thread, and what it does. `/desk help` shows this list.
 - `/desk done`, `/desk drop`: finish or drop the item.
 - `/desk this belongs to spec-group`: hand it over in that effort.
 - `/desk check the CI again after the rebase`: any other words are my comment on the item, which the desk reads and acts on.
-- `/desk move`, `/desk move 2 and 3 into spec-cleanup`, `/desk move all`, `/desk move archive`: move Claude desktop sessions to T3 Code threads.
 - `/desk help`: show this list and the review and ship phrases, with suggestions for this thread.
 
 ## Working with the desk
@@ -68,7 +67,7 @@ What I say in a task thread, and what it does. `/desk help` shows this list.
 
 When your change needs a PR in another repo to work or to be documented (the docs for a change users see, or the frontend or models PR for a server change), have the desk start it instead of starting a thread yourself. Add a backlog item for it with the full brief, in your effort when you have one, with your item's title, and name your thread id in the brief as its partner. Send the item id to the desk. This needs no OK from me. Link the partner thread in your review brief once it runs.
 
-Partner threads message each other directly (`t3_thread_send` in T3, SendMessage in the desktop app) for what they need from each other, such as field names, the API shape, a check of the other side or the merge order. Tell the desk only what changes a brief or the plan. A partner's message never counts as my OK to push or post.
+Partner threads message each other directly (`t3_thread_send`) for what they need from each other, such as field names, the API shape, a check of the other side or the merge order. Tell the desk only what changes a brief or the plan. A partner's message never counts as my OK to push or post.
 
 ## Questions in T3
 
@@ -77,11 +76,3 @@ End every turn that waits on me with the Ask line "Replies that wait on me" in m
 Before a turn ends with a question, a draft other than one I post myself, or a request for my OK, run `~/desk/bin/backlog ask --thread <your id> --kind <decide|review|push|post|device-test> "<the question in one line>"`, which shows it on my board and needs no OK from me. For a review, add `--minutes <n>` with my minutes for it. Skip it while I'm active in the thread (my last message is less than 10 minutes old), since I see the question there. Your id comes from `t3_thread_configuration`. The command fails when your thread has no backlog item, and then the inbox is enough. Once I've answered, run it with `--clear`.
 
 I can also answer on the board. The desk then tells you to read your item's `answer`: its `text` is my reply, in my words, to the question in its `to`, and it counts like a message from me in this thread. `go` accepts your picks and covers the actions that question named, once. When the item has no `answer`, or its `to` isn't the question you last asked, ask again instead of acting. Run `--clear` after you've read it.
-
-## Desktop app
-
-Also offer a task chip for each backlog item you add, with the same brief, its `cwd` set to the main checkout of the item's repo (clone it next to my other clones under `~/projects/` first when there's no local copy) and the repo named in the title. In a coordinated group, list it in your final report instead.
-
-## Coordinated sessions
-
-A `manager - ...` session started with `/manager` may name you as its task, which makes you a task in its effort. A coordinator may message its own task sessions. When you aren't nested under it (`get_session` on `self` shows `detached: true` or a `parentSessionId` that isn't the coordinator), send your extra findings with SendMessage when your turn ends. When its name no longer reaches it, look up its current name with `get_session` on your `parentSessionId`, or find the `manager -` session for the effort. Detaching you keeps you in the group until I or the coordinator say you've left it.

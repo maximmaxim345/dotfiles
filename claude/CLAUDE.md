@@ -481,7 +481,8 @@ skip this section.
   `~/desk/TASK.md` instead, also outside a desk task. Pass
   `modelSelection` with the account `~/desk/bin/accounts <repo>` prints
   first as `instanceId`, and the model and options I or the effort's
-  `status.md` name, or else your own model and options. When it prints no
+  `status.md` name, or else your own model and options, always with an
+  explicit `effort` option (`high` when nothing names one). When it prints no
   account, leave `modelSelection` out and say the repo isn't in
   `~/desk/accounts.json`.
 - Don't settle, snooze, archive or rename threads unless I ask or you're the

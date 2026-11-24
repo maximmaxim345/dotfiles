@@ -255,6 +255,15 @@ def edit(review_id: str, body: dict) -> dict:
     return shown(review)
 
 
+def to_thread(thread: str, message: str) -> None:
+    try:
+        result = subprocess.run([str(T3), "thread", "send", thread, message], capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.TimeoutExpired) as err:
+        raise RuntimeError(str(err)) from err
+    if result.returncode:
+        raise RuntimeError(result.stderr.strip() or f"t3 exited with {result.returncode}")
+
+
 def send(review_id: str, body: dict, deliver: bool = True) -> dict:
     text = body["text"]
     if not isinstance(text, str) or not text.strip() or len(text) > LONGEST_ANSWER:
@@ -263,15 +272,7 @@ def send(review_id: str, body: dict, deliver: bool = True) -> dict:
     with changing(review_id) as review:
         check_page(review, body)
         if deliver:
-            message = f"{header(review)}\n\n{text.strip()}"
-            try:
-                result = subprocess.run(
-                    [str(T3), "thread", "send", review["thread"], message], capture_output=True, text=True, timeout=60
-                )
-            except (OSError, subprocess.TimeoutExpired) as err:
-                raise RuntimeError(str(err)) from err
-            if result.returncode:
-                raise RuntimeError(result.stderr.strip() or f"t3 exited with {result.returncode}")
+            to_thread(review["thread"], f"{header(review)}\n\n{text.strip()}")
         sent = review["sent"]
         sent["comments"] = sorted(set(sent["comments"]) | comments)
         sent["picks"] = picks

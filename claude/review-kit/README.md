@@ -91,6 +91,7 @@ Every field is optional. An empty object `{}` gives a page with every hunk under
     {"name": "Copilot", "fixed": ["The retry loop never gave up."], "kept": [{"finding": "Retry forever.", "why": "The caller sets a deadline."}],
      "skipped": 2}
   ],
+  "pr": {"title": "Reconnect after the server restarts", "body": "The client now reconnects ...\n\nFixes #12"},
   "groups": [
     {
       "title": "Core",
@@ -113,6 +114,7 @@ Every field is optional. An empty object `{}` gives a page with every hunk under
 - `decide` cards come first on the page, in the order given. The heading shows their count, followed by `decide_order` when set (for example "riskiest first"). See "Decide cards" below.
 - `claims` lists each behavior the change claims, with its `proof`: `test`, `run` (a command and its result), `recording` or `none`. `name` is the test, the command or the recording, `detail` adds the result. For a test, `fails_without` says whether it fails without the change (`true`), passes without it (`false`) or was not tried (left out). Claims without proof are marked. `refs` link to hunks as on decide cards.
 - `reviewers` gives one line per reviewer: what it found that was fixed (a list, or a count), what was kept and why, and how many theoretical findings were skipped. Each of the three counts shows only when its field is given. `note` adds text to a reviewer, such as the findings of your own pass. `reviewers_note` shows even without reviewers.
+- `pr` is the PR draft: its `title` and its `body` as the Markdown that goes to GitHub. The page shows it as raw text before the diff, and each line takes comments like a line of code.
 - `groups` set the reading order. A group is shown in full, or collapsed under its one-line `reason` when `unimportant` is true. A collapsed group takes no `note`: put it on one of its hunks. Every hunk the groups do not place appears in a last group, "Not mentioned by the author". Nothing is dropped.
 
 ### Paths to look at closely

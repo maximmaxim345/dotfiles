@@ -325,7 +325,21 @@ function renderWords(id, h) {
   return html + '<p class="legend">Struck words are removed, marked words are added. Switch to Lines for line numbers.</p></div>';
 }
 
+function renderPr(el) {
+  let html = '<div class="hhead"><span class="fname">PR title and description</span><span class="acts"><button class="linkbtn" data-hc>Comment</button></span></div>';
+  html += rowComments('pr', 'H') + '<div class="words prd">';
+  html += `<div class="wb cl prt" data-key="T"><div class="wl">${esc(KIT.pr.title)}</div></div>` + rowComments('pr', 'T');
+  KIT.pr.body.split('\n').forEach((line, i) => {
+    html += `<div class="wb cl" data-key="B${i + 1}"><div class="wl" style="--i:${hang(line)}">${esc(line) || '&nbsp;'}</div></div>` + rowComments('pr', 'B' + (i + 1));
+  });
+  $('.hbody', el).innerHTML = html + '</div>';
+  el.dataset.rendered = '1';
+  const ta = $('.cbox textarea', el);
+  if (ta) ta.focus({ preventScroll: true });
+}
+
 function renderHunk(el) {
+  if (el.dataset.hunk === 'pr') { renderPr(el); return; }
   const id = el.dataset.hunk, h = KIT.hunks[id];
   const body = $('.hbody', el);
   const prose = h.prose && h.lines.length;
@@ -533,7 +547,8 @@ document.addEventListener('click', e => {
   if (d.hc !== undefined) {
     const h = KIT.hunks[host.dataset.hunk];
     const prev = ui.open && document.querySelector(`[data-hunk="${ui.open.hunk}"]`);
-    ui.open = { hunk: host.dataset.hunk, key: 'H', label: `${h.path}${rangeOf(h) ? ':' + rangeOf(h) : ''} (whole hunk)` };
+    const label = h ? `${h.path}${rangeOf(h) ? ':' + rangeOf(h) : ''} (whole hunk)` : 'PR draft';
+    ui.open = { hunk: host.dataset.hunk, key: 'H', label };
     if (prev && prev !== host) renderHunk(prev);
     renderHunk(host); return;
   }
@@ -559,7 +574,8 @@ document.addEventListener('click', e => {
     const h = KIT.hunks[host.dataset.hunk];
     const key = t.dataset.key;
     const span = t.dataset.span;
-    const label = span && span !== key ? `${h.path}:${span.slice(1)}` : labelOf(h, key);
+    const label = !h ? (key === 'T' ? 'PR title' : `PR description line ${key.slice(1)}`)
+      : span && span !== key ? `${h.path}:${span.slice(1)}` : labelOf(h, key);
     const prev = ui.open && ui.open.hunk && ui.open.hunk !== host.dataset.hunk && document.querySelector(`[data-hunk="${ui.open.hunk}"]`);
     ui.open = { hunk: host.dataset.hunk, key, label };
     if (prev) renderHunk(prev);

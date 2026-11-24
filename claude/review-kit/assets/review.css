@@ -195,6 +195,8 @@ body.nowrap table.d tr.crow td > div { position: sticky; left: 0; max-width: min
 .words .wb.ctx { color: var(--muted); }
 .words del { background: var(--del-word); color: inherit; text-decoration: line-through; border-radius: 2px; }
 .words ins { background: var(--add-word); text-decoration: none; border-radius: 2px; }
+.words.prd .wb { margin: 0; }
+.words.prd .prt { font-weight: 600; margin-bottom: 8px; }
 .words .legend { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
 
 /* Context panels */

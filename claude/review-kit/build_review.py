@@ -1115,6 +1115,14 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
     sections = decide_cards(narrative.get("decide", []), change, linker, narrative.get("decide_order", ""))
     sections += behavior_table(narrative.get("behavior"), linker)
     sections += claims_section(narrative, change, linker) + reviewers_section(narrative, linker)
+    pr = narrative.get("pr")
+    if pr is not None and not (isinstance(pr, dict) and isinstance(pr.get("title"), str)):
+        raise KitError("`pr` needs a `title` and an optional `body`, both text")
+    if pr:
+        sections += (
+            '<section id="pr"><h2>PR draft</h2><p class="sub">Tap a line to comment on its wording.</p>'
+            '<article class="hunk" data-hunk="pr" id="hunk-pr"><div class="hbody"></div></article></section>'
+        )
     if round_two:
         feedback_html = ""
         for index, item in enumerate(narrative["feedback"], 1):
@@ -1172,6 +1180,7 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
         "key": key,
         "hunks": {h.id: h.to_page() for h in change.hunks},
         "commits": [[sha[:7], subject] for sha, subject in change.commits],
+        "pr": {"title": pr["title"], "body": str(pr.get("body", ""))} if pr else None,
     }
     title = f"{kind}: {repo.split('/')[-1]} {branch}".strip() if repo or branch else f"{kind}: {span}"
     return page(title, body, ["base.css", "review.css"], "review.js", data), layout.unplaced

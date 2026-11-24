@@ -232,6 +232,7 @@ class ReviewKitTests(unittest.TestCase):
                 }
             ],
             "behavior": {"rows": [{"case": "x", "before": "x", "after": "x"}], "unchanged": "x"},
+            "pr": {"title": "x", "body": "x"},
             "claims": [{"claim": "x", "proof": "test", "name": "x", "fails_without": "x", "detail": "x", "refs": [ref]}],
             "reviewers": [{"name": "x", "fixed": ["x"], "kept": [{"finding": "x", "why": "x"}], "skipped": "x", "note": "x"}],
             "groups": [

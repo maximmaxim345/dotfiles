@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print the lines of a commit that git does not count as part of a moved block."""
+"""Print the lines of a commit, or of a range A..B, that git does not count as part of a moved block."""
 
 import re
 import subprocess
@@ -23,8 +23,7 @@ root = git("rev-parse", "--show-toplevel").strip()
 settings = [arg for name, color in COLORS.items() for arg in ("-c", f"color.diff.{name}={color}")]
 diff = git(
     *settings,
-    "show",
-    "--format=",
+    *(["diff"] if ".." in sys.argv[1] else ["show", "--format="]),
     "-U0",
     "--no-ext-diff",
     "--color=always",

@@ -915,12 +915,14 @@ def decide_cards(cards: List[Dict[str, Any]], change: Change, linker: Linker, or
             f'<article class="card call" data-call="{number}" data-pick="{esc(pick)}">'
             f'<div class="call-top"><span class="num">Decide {number}</span>{tags}</div>'
             f'<h3>{inline(card.get("title", ""), linker)}</h3><div class="prose">{body}</div>{panels}'
-            f'<div class="opts">{buttons}</div></article>'
+            f'<div class="opts">{buttons}</div><textarea class="note" aria-label="Note on decide {number}" '
+            'placeholder="Context or another suggestion (optional)"></textarea></article>'
         )
     count = f"{len(cards)}, {esc(order)}" if order else str(len(cards))
     return (
         f'<section id="decide"><h2>Decide <span class="count">{count}</span></h2>'
-        f'<p class="sub">Each card has a pick. Pick another option to change it, it goes out with Copy for chat.</p>'
+        '<p class="sub">Each card has a pick. Pick another option to change it, or add context or another suggestion in its box. '
+        "Both go out with Copy for chat.</p>"
         f'<div class="calls">{out}</div></section>'
     )
 

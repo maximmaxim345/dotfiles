@@ -76,6 +76,7 @@ code { overflow-wrap: anywhere; }
 .opt .sug { margin-left: auto; padding-left: 8px; font-size: 12px; color: var(--accent); flex: none; }
 .opt.suggest { border-color: var(--accent); }
 .opt[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.call textarea.note { width: 100%; min-height: 44px; margin-top: 8px; font: inherit; font-size: 14px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); resize: vertical; }
 
 /* Behavior table */
 table.beh { padding: 0; }

@@ -21,7 +21,7 @@ function save(key, value) {
 const PREFS = 'review-kit:prefs';
 const PAGE = 'review-kit:page:' + KIT.key;
 const prefs = Object.assign({ wrap: false, layout: 'auto', order: 'reading' }, load(PREFS, {}));
-const page = Object.assign({ comments: [], picks: {}, nextId: 1 }, load(PAGE, {}));
+const page = Object.assign({ comments: [], picks: {}, notes: {}, nextId: 1 }, load(PAGE, {}));
 const ui = { open: null, expand: {}, view: {}, tray: false, mark: null, slots: {} };
 const persist = () => save(PAGE, page);
 
@@ -432,28 +432,33 @@ function changedPicks() {
   return $$('.call[data-call]').filter(c => page.picks[c.dataset.call] && page.picks[c.dataset.call] !== c.dataset.pick);
 }
 
+const noted = () => $$('.call[data-call]').filter(c => (page.notes[c.dataset.call] || '').trim());
+
 function updateCards() {
   for (const card of $$('.call[data-call]')) {
     const chosen = page.picks[card.dataset.call] || card.dataset.pick;
     card.classList.toggle('changed', chosen !== card.dataset.pick);
     $$('.opt', card).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.opt === chosen)));
+    const note = $('textarea.note', card);
+    if (note && note !== document.activeElement) note.value = page.notes[card.dataset.call] || '';
   }
 }
 
 function copyText() {
   const picks = changedPicks().map(c => c.dataset.call + page.picks[c.dataset.call]);
-  if (!picks.length && !page.comments.length) return 'go\n';
-  const parts = picks.length ? [picks.join(', ')] : [];
+  const notes = noted().map(c => `Decide ${c.dataset.call}: ${page.notes[c.dataset.call].trim()}`);
+  if (!picks.length && !notes.length && !page.comments.length) return 'go\n';
+  const parts = picks.length ? [picks.join(', '), ...notes] : notes;
   for (const c of page.comments) parts.push(`${c.label}: ${c.text}`);
   return parts.join('\n\n') + '\n';
 }
 
 function updateBar() {
-  const n = page.comments.length, p = changedPicks().length;
+  const n = page.comments.length, p = changedPicks().length, m = noted().length;
   const st = $('#status');
   st.classList.remove('ok');
-  st.textContent = `${n} comment${n === 1 ? '' : 's'}` + ($('.call') ? `, ${p} changed pick${p === 1 ? '' : 's'}` : '');
-  $('#copy').textContent = n || p ? 'Copy for chat' : 'Copy go';
+  st.textContent = `${n} comment${n === 1 ? '' : 's'}` + ($('.call') ? `, ${p} changed pick${p === 1 ? '' : 's'}, ${m} note${m === 1 ? '' : 's'}` : '');
+  $('#copy').textContent = n || p || m ? 'Copy for chat' : 'Copy go';
   renderTray();
 }
 
@@ -464,11 +469,12 @@ function renderTray(fallbackText) {
   let html = '<h3>Your comments <button class="linkbtn" data-tray-close>Close</button></h3>';
   if (fallbackText) {
     html += '<p class="small">Copying was blocked. Select the text below and copy it.</p><textarea readonly></textarea>';
-  } else if (!page.comments.length && !changedPicks().length) {
+  } else if (!page.comments.length && !changedPicks().length && !noted().length) {
     html += '<p class="small muted">Nothing yet, so Copy go puts "go" on the clipboard. Tap a line in the diff to comment on it, or pick a different option on a card.</p>';
   } else {
     html += '<ul>';
     for (const card of changedPicks()) html += `<li><div class="cmeta">Decide ${card.dataset.call}</div>${esc(page.picks[card.dataset.call])} instead of the pick ${esc(card.dataset.pick)}</li>`;
+    for (const card of noted()) html += `<li><div class="cmeta">Note on decide ${card.dataset.call}</div>${esc(page.notes[card.dataset.call].trim())}</li>`;
     for (const c of page.comments) html += `<li><div class="cmeta">${esc(c.label)}</div>${esc(c.text)} <button class="linkbtn" data-del="${c.id}">Remove</button></li>`;
     html += '</ul><button class="btn" data-clear>Clear all</button>';
   }
@@ -543,7 +549,7 @@ document.addEventListener('click', e => {
   }
   if (d.cancel !== undefined) { ui.open = null; rerender(host); return; }
   if (d.del) { page.comments = page.comments.filter(c => c.id !== +d.del); persist(); renderAll(); return; }
-  if (d.clear !== undefined) { if (confirm('Remove all comments on this page?')) { page.comments = []; page.picks = {}; persist(); renderAll(); } return; }
+  if (d.clear !== undefined) { if (confirm('Remove all comments on this page?')) { page.comments = []; page.picks = {}; page.notes = {}; persist(); renderAll(); } return; }
   if (d.opt) { const card = t.closest('.call'); page.picks[card.dataset.call] = d.opt; persist(); updateCards(); updateBar(); return; }
   if (d.trayClose !== undefined) { ui.tray = false; $('#tray').hidden = true; return; }
   if (t.id === 'show') { ui.tray = !ui.tray; renderTray(); return; }
@@ -559,6 +565,12 @@ document.addEventListener('click', e => {
     if (prev) renderHunk(prev);
     renderHunk(host);
   }
+});
+
+document.addEventListener('input', e => {
+  if (!e.target.matches('.call textarea.note')) return;
+  page.notes[e.target.closest('.call').dataset.call] = e.target.value;
+  persist(); updateBar();
 });
 
 document.addEventListener('toggle', e => {

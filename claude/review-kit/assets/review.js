@@ -234,7 +234,7 @@ function sideRows(rows, side) {
   }).join('');
 }
 
-// With wrap off, each side of a split diff scrolls on its own. Comments sit between the scrolling parts.
+// With wrap off, each side of a split diff has its own scroller. Comments sit between the scrolling parts.
 function renderPairs(id, rows) {
   let out = '', part = [];
   const flush = () => {
@@ -353,6 +353,12 @@ function renderHunk(el) {
 }
 
 function edges(el) {
+  for (const pairs of $$('.pairs', el)) {
+    const tables = $$('.dscroll > table', pairs);
+    tables.forEach(t => { t.style.minWidth = ''; });
+    const width = Math.max(...tables.map(t => t.offsetWidth));
+    tables.forEach(t => { t.style.minWidth = width + 'px'; });
+  }
   let any = false;
   for (const s of $$('.dscroll', el)) {
     const more = s.scrollLeft + s.clientWidth < s.scrollWidth - 1;
@@ -606,8 +612,22 @@ const SUBJECTS = Object.fromEntries(KIT.commits);
 $('#wrap').addEventListener('change', e => { prefs.wrap = e.target.checked; save(PREFS, prefs); renderAll(); });
 document.addEventListener('scroll', e => {
   const s = e.target;
-  if (s.classList && s.classList.contains('dscroll')) s.parentElement.classList.toggle('more', s.scrollLeft + s.clientWidth < s.scrollWidth - 1);
+  if (!s.classList || !s.classList.contains('dscroll')) return;
+  s.parentElement.classList.toggle('more', s.scrollLeft + s.clientWidth < s.scrollWidth - 1);
+  const pairs = s.closest('.pairs');
+  if (pairs) for (const o of $$('.dscroll', pairs)) if (o !== s && o.scrollLeft !== s.scrollLeft) o.scrollLeft = s.scrollLeft;
 }, true);
+// A browser hands a whole touchpad gesture to one scroller, so a diagonal swipe over a diff would move only one axis.
+// A movement under a quarter of the other axis is drift and is dropped.
+document.addEventListener('wheel', e => {
+  if (e.ctrlKey || e.shiftKey || e.deltaMode || !e.deltaX || !e.cancelable) return;
+  const s = e.target.closest && e.target.closest('.dscroll');
+  if (!s || s.scrollWidth <= s.clientWidth) return;
+  const x = Math.abs(e.deltaX), y = Math.abs(e.deltaY);
+  e.preventDefault();
+  if (x * 4 >= y) s.scrollLeft += e.deltaX;
+  if (y * 4 >= x) window.scrollBy(0, e.deltaY);
+}, { passive: false });
 let wasSplit = isSplit();
 window.addEventListener('resize', () => {
   if (isSplit() !== wasSplit) { wasSplit = isSplit(); renderAll(); return; }

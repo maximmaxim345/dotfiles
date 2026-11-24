@@ -223,7 +223,7 @@ A `review` object turns the page into a review of someone else's PR. It never gr
 }
 ```
 
-- `url` is the PR, `head` the head commit the review is for. The script refuses to build when `head` is not the commit it builds from, since GitHub places comments by the diff of that commit. Leave it out to take the built head.
+- `url` is the PR, `head` the head commit the review is for. Each build stores the head under `refs/review/<PR number>/<round>`, a new round only when the head changed, and prints the ref. Pass it as `--since` for the next round, with a `feedback` list for the comments that went out, so the page shows only what the author changed since. The script refuses to build when `head` is not the commit it builds from, since GitHub places comments by the diff of that commit. Leave it out to take the built head.
 - `body` is the review body.
 - Each draft has a unique `id` of letters, digits, `_`, `.` and `-`, `where` as `path:line`, `side` (`RIGHT`, the default, for the new file, `LEFT` for a removed line), `text`, an optional `proof` that is never posted, and `status`: `post` (the default), `lower` or `dismissed`. A dismissed draft gives its `reason`. A `where` may name a path by its end, like `client.rs:1529`, when only one file ends that way, and may be left out for a draft that has no line.
 - A draft whose line is not in the PR's diff still builds. The page shows it apart with a warning, since GitHub rejects inline comments outside the diff.

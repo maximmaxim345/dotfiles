@@ -40,6 +40,7 @@ PROOF_TAGS = {"test": ("good", "Test"), "run": ("good", "Run"), "recording": ("g
 STATUS_TAGS = {"changed": ("good", "Changed"), "partly": ("warn", "Partly changed"), "declined": ("warn", "Not changed")}
 DRAFT_STATUSES = ("post", "lower", "dismissed")
 DRAFT_WHERE_RE = re.compile(r"(.+):(\d+)")
+PR_NUMBER_RE = re.compile(r"/pull/(\d+)")
 MOVED_COLORS = {
     "old": "red",
     "new": "green",
@@ -1144,6 +1145,24 @@ def review_data(review: Any, change: Change, linker: Linker) -> Dict[str, Any]:
     return data
 
 
+def store_round(repo: Path, url: str, head: str) -> str:
+    match = PR_NUMBER_RE.search(url)
+    if not match:
+        return ""
+    prefix = f"refs/review/{match[1]}/"
+    rounds = []
+    for line in git(repo, "for-each-ref", "--format=%(refname) %(objectname)", prefix).split("\n"):
+        name, _, sha = line.partition(" ")
+        if name[len(prefix) :].isdigit():
+            rounds.append((int(name[len(prefix) :]), sha))
+    rounds.sort()
+    if rounds and rounds[-1][1] == head:
+        return f"{prefix}{rounds[-1][0]}"
+    ref = f"{prefix}{rounds[-1][0] + 1 if rounds else 1}"
+    git(repo, "update-ref", ref, head)
+    return ref
+
+
 def is_test_path(path: str) -> bool:
     parts = path.lower().split("/")
     return any(p in ("test", "tests", "__tests__", "spec", "specs") for p in parts[:-1]) or bool(
@@ -1517,6 +1536,10 @@ def main(argv: Optional[List[str]] = None) -> int:
             add_colors(change)
             text, unplaced = build_review(change, narrative)
             write(args.output, text)
+            url = str((narrative.get("review") or {}).get("url", ""))
+            ref = store_round(repo, url, change.head) if change.head else ""
+            if ref:
+                print(f"The reviewed head is {ref}, pass it as --since for the next round")
             if not PYGMENTS:
                 print("Pygments is not installed, so the page has no syntax colors. Run the script with `uv run` for them.")
             if unplaced:

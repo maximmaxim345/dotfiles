@@ -323,6 +323,21 @@ class ReviewKitTests(unittest.TestCase):
         found = {h.path: (h.moved, h.authors) for h in change.hunks}
         self.assertEqual(found, {"a.py": (True, ["Test"]), "b.py": (True, ["Test"]), "c.py": (False, ["Other"])})
 
+    def test_each_new_reviewed_head_gets_the_next_round_ref(self) -> None:
+        narrative = {"review": {"url": "https://example.com/acme/widget/pull/7"}}
+        self.build_page(narrative)
+        first = self.git("rev-parse", "HEAD").strip()
+        path = self.root / "narrative.json"
+        argv = ["review", "--repo", str(self.repo), "--base", "main", "--narrative", str(path), "-o", str(self.root / "p.html")]
+        with contextlib.redirect_stdout(io.StringIO()):
+            build_review.main(argv)
+        self.write("app.py", "changed again\n")
+        second = self.commit("push")
+        with contextlib.redirect_stdout(io.StringIO()):
+            build_review.main(argv)
+        refs = self.git("for-each-ref", "--format=%(refname) %(objectname)", "refs/review/").split("\n")
+        self.assertEqual(refs[:-1], [f"refs/review/7/1 {first}", f"refs/review/7/2 {second}"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -126,7 +126,8 @@ may match nothing (`--include='*.py'`).
 
 Delegate only large, self-contained work (a wide multi-file investigation, an
 independent parallel track), since each subagent re-reads context and reports
-back. Give subagents the session's model and effort unless I name others. Run
+back. Give subagents the session's model, and pass their effort explicitly: `high`
+unless I name another. Run
 subagents in the background, or the way T3's own rules say when you have the T3
 tools. Report the conclusion, not the raw file dumps. For a follow-up on work a subagent already did, resume that
 subagent instead of spawning a new one, so it keeps what it found. Start a

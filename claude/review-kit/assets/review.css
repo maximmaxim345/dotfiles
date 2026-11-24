@@ -260,3 +260,29 @@ details.ctxp table.d td.c { color: var(--text); }
   .bar .btn { flex: 1; min-height: 48px; }
 }
 .hi { padding-left: calc(var(--i) * 1ch + 2ch); text-indent: -2ch; }
+
+/* PR review drafts */
+.draft { margin: 6px 10px 8px; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 6px; background: var(--surface); font: 14px/1.45 var(--font); white-space: normal; }
+.draft.s-lower, .draft.s-dismissed { border-color: var(--border); }
+.draft.fold { display: flex; align-items: center; gap: 0 10px; padding: 0 12px; border-style: dashed; }
+.draft.fold .one { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+.draft .dh { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 8px; font-size: 13px; }
+.draft .dh code { overflow-wrap: anywhere; }
+.draft .dh .seg { margin-left: auto; }
+.draft .dgrid { display: grid; gap: 8px 12px; }
+@media (min-width: 900px) { .draft .dgrid.two { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); } }
+.draft textarea.dtext, #rbody { width: 100%; font: inherit; font-size: 15px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); resize: vertical; }
+.draft .proof { font-size: 13px; padding: 8px 10px; border-radius: 6px; background: var(--surface-2); color: var(--muted); overflow-wrap: anywhere; }
+.draft .dreason { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+.draft .warnbox .linkbtn { font-weight: 600; }
+.cm .draft, .dlist .draft, #rv-lists > .draft { margin: 8px 0; }
+.rvbody { margin-bottom: 12px; }
+#rv-lists > h3 { margin-top: 16px; }
+ul.dsum { margin: 0; padding-left: 18px; font-size: 14px; }
+ul.dsum li { margin: 4px 0; overflow-wrap: anywhere; }
+ul.dsum a { font-family: var(--mono); font-size: 13px; }
+details.dlist > .draft, details.dlist > p { margin: 8px 0; }
+.tag.au { font-family: var(--font); }
+.tag.au1 { background: var(--good-soft); color: var(--good); }
+.tag.au2 { background: var(--warn-soft); color: var(--warn); }
+.tag.au3 { background: var(--bad-soft); color: var(--bad); }

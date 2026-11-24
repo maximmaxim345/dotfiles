@@ -267,6 +267,62 @@ class ReviewKitTests(unittest.TestCase):
             with self.subTest(unsafe=unsafe), self.assertRaises(build_review.KitError):
                 build_review.svg_block(unsafe)
 
+    def kit_data(self, page: str) -> dict:
+        match = re.search(r'<script id="kit-data" type="application/json">(.*?)</script>', page, re.S)
+        assert match
+        data: dict = json.loads(match[1])
+        return data
+
+    def test_pr_review_drafts_sit_on_diff_lines_and_keep_lines_outside_it(self) -> None:
+        drafts = [
+            {"id": "changed", "where": "app.py:10", "text": "Why times two?"},
+            {"id": "outside", "where": "app.py:60", "text": "Unrelated line.", "status": "lower"},
+            {"id": "removed", "where": "old.txt:1", "side": "LEFT", "text": "Still needed?"},
+        ]
+        page = self.build_page({"review": {"url": "https://example.com/acme/widget/pull/7", "drafts": drafts}})
+        placed = {d["id"]: (d["hunk"] is not None, d["inDiff"]) for d in self.kit_data(page)["review"]["drafts"]}
+        self.assertEqual(placed, {"changed": (True, True), "outside": (False, False), "removed": (True, True)})
+
+    def test_pr_review_refuses_a_head_other_than_the_built_one(self) -> None:
+        error = io.StringIO()
+        with self.assertRaises(AssertionError), contextlib.redirect_stderr(error):
+            self.build_page({"review": {"head": "0000000", "drafts": []}})
+        self.assertIn("`review.head` is 0000000, but the page is built from", error.getvalue())
+
+    def test_round_two_counts_a_line_of_the_whole_pr_as_in_the_diff(self) -> None:
+        self.write("app.py", FUNCTIONS)
+        self.commit("initial")
+        self.git("checkout", "-q", "-b", "feat/demo")
+        self.write("app.py", FUNCTIONS.replace("value + 2\n", "value * 2\n"))
+        reviewed = self.commit("first round")
+        self.write("app.py", FUNCTIONS.replace("value + 2\n", "value * 2\n").replace("value + 30\n", "value - 30\n"))
+        self.commit("fix")
+        change = build_review.collect(self.repo, "main", None, None, False, reviewed)
+        drafts = [
+            {"id": "old", "where": "app.py:10", "text": "a"},
+            {"id": "new", "where": "app.py:122", "text": "b"},
+            {"id": "base", "where": "app.py:122", "side": "LEFT", "text": "c"},
+        ]
+        data = build_review.review_data({"drafts": drafts}, change, build_review.Linker(change.hunks))
+        placed = [(d["hunk"] is not None, d["inDiff"]) for d in data["drafts"]]
+        self.assertEqual(placed, [(False, True), (True, True), (False, True)])
+
+    def test_hunks_name_their_authors_and_flag_moved_code(self) -> None:
+        block = "".join(f"    total += compute_value_number_{i}(argument)\n" for i in range(6))
+        self.write("a.py", "def first():\n" + block + "    return total\n")
+        self.write("b.py", "def second():\n    return 0\n")
+        self.commit("initial")
+        self.git("checkout", "-q", "-b", "feat/demo")
+        self.write("a.py", "def first():\n    return total\n")
+        self.write("b.py", "def second():\n" + block + "    return 0\n")
+        self.commit("move the block")
+        self.write("c.py", "NEW = 1\n")
+        self.git("add", "-A")
+        self.git("-c", "user.name=Other", "commit", "-q", "-m", "add c", "--author=Other <other@example.com>")
+        change = build_review.collect(self.repo, "main", None, None, False, None)
+        found = {h.path: (h.moved, h.authors) for h in change.hunks}
+        self.assertEqual(found, {"a.py": (True, ["Test"]), "b.py": (True, ["Test"]), "c.py": (False, ["Other"])})
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -21,29 +21,52 @@ function save(key, value) {
 const PREFS = 'review-kit:prefs';
 const PAGE = 'review-kit:page:' + KIT.key;
 const prefs = Object.assign({ wrap: false, layout: 'auto', order: 'reading' }, load(PREFS, {}));
-const blank = () => ({ comments: [], picks: {}, notes: {}, resolved: [], nextId: 1 });
+const blank = () => ({ comments: [], picks: {}, notes: {}, resolved: [], nextId: 1, drafts: {}, body: null });
 const page = Object.assign(blank(), load(PAGE, {}));
 const ui = { open: null, expand: {}, view: {}, tray: false, mark: null, slots: {}, unfold: {} };
 const API = location.protocol.startsWith('http') && /^\/review\/[\w-]+$/.test(location.pathname) ? '/api' + location.pathname : '';
 const board = { on: false, send: false, rev: 0, scroll: 0, replies: {}, sent: { comments: [], picks: {}, notes: {} }, header: '' };
 const queue = [];
 const noteTimers = {};
+const R = KIT.review || null;
+const DRAFTS = R ? R.drafts : [];
+const BASE = Object.fromEntries(DRAFTS.map(d => [d.id, d]));
+const STATUS = { post: 'To post', lower: 'Lower priority', dismissed: 'Dismissed' };
+const draftTimers = {};
+const draft = id => ({ ...BASE[id], ...(page.drafts[id] || {}) });
+const bodyText = () => page.body ?? R.body;
+const AUTHORS = [...new Set(Object.values(KIT.hunks).flatMap(h => h.authors || []))];
+// Browser storage keeps the narrative text each edit started from, so a rebuild that rewrote a draft or the body wins, as on the board.
+if (R) {
+  const bases = page.bases || {};
+  for (const id of Object.keys(page.drafts)) if (!BASE[id] || bases[id] !== BASE[id].text) delete page.drafts[id];
+  if (page.bodyBase !== R.body) page.body = null;
+  Object.assign(page, { bases: Object.fromEntries(DRAFTS.map(d => [d.id, d.text])), bodyBase: R.body });
+}
 let pumping = null;
 
 async function call(path, body) {
-  const init = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: KIT.key, ...body }) } : { cache: 'no-store' };
+  const ident = { page: KIT.key, ...(KIT.review ? { version: KIT.review.version } : {}) };
+  const init = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...ident, ...body }) } : { cache: 'no-store' };
   const r = await fetch(API + path, init);
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw Object.assign(new Error(data.error || `the board answered ${r.status}`), { status: r.status });
   return data;
 }
 
+// Text typed but not yet saved on the board wins over the state the board sends back.
 function adopt(data) {
-  const before = page.comments;
+  const before = { comments: page.comments, drafts: page.drafts };
+  const typed = Object.keys(draftTimers).filter(k => k !== 'body').map(id => [id, page.drafts[id].text]);
+  const body = 'body' in draftTimers ? page.body : undefined;
   Object.assign(page, blank(), data.state);
   Object.assign(board, { rev: data.rev, scroll: data.scroll, replies: data.replies, sent: data.sent, send: data.send, header: data.header });
   const typing = document.activeElement;
   if (typing && typing.matches('.call textarea.note')) page.notes[typing.closest('.call').dataset.call] = typing.value;
+  if (typing && typing.matches('textarea.dtext')) typed.push([typing.closest('[data-draft]').dataset.draft, typing.value]);
+  for (const [id, text] of typed) page.drafts[id] = { ...page.drafts[id], text };
+  if (typing && typing.id === 'rbody') page.body = typing.value;
+  else if (body !== undefined) page.body = body;
   return before;
 }
 
@@ -52,6 +75,8 @@ function apply(op) {
   if (op.op === 'remove') page.comments = page.comments.filter(c => c.id !== op.id);
   if (op.op === 'pick') page.picks[op.call] = op.value;
   if (op.op === 'note') page.notes[op.call] = op.value;
+  if (op.op === 'draft') page.drafts[op.id] = { ...page.drafts[op.id], ...Object.fromEntries(['text', 'status', 'reason'].filter(k => k in op).map(k => [k, op[k]])) };
+  if (op.op === 'body') page.body = op.value;
   if (op.op === 'resolve') page.resolved = [...page.resolved.filter(x => x !== op.id), ...(op.on ? [op.id] : [])];
   if (op.op === 'clear') { page.comments = page.comments.filter(isSent); page.picks = {}; page.notes = {}; }
 }
@@ -87,6 +112,8 @@ async function drain() {
   }
 }
 
+const current = data => data.key === KIT.key && (!R || data.version === R.version);
+
 function stale() {
   board.on = false;
   board.stale = true;
@@ -101,7 +128,14 @@ function saveNote(call) {
   edit({ op: 'note', call, value: $('textarea.note', card).value }).catch(() => {});
 }
 
-const saveNotes = () => Object.keys(noteTimers).forEach(saveNote);
+function saveDraftText(id) {
+  clearTimeout(draftTimers[id]);
+  delete draftTimers[id];
+  const op = id === 'body' ? { op: 'body', value: page.body } : { op: 'draft', id, text: page.drafts[id].text };
+  edit(op).catch(() => {});
+}
+
+const saveNotes = () => { Object.keys(noteTimers).forEach(saveNote); Object.keys(draftTimers).forEach(saveDraftText); };
 
 async function settle() {
   saveNotes();
@@ -114,16 +148,19 @@ async function poll() {
   if (queue.length || pumping) { pump(); return; }
   try {
     const data = await call('/state');
-    if (data.key !== KIT.key) stale();
+    if (!current(data)) stale();
     else if (data.rev > board.rev && !queue.length && !pumping) refresh(adopt(data));
   } catch (e) {}
 }
 
 // An open comment box keeps its hunk as it is, so typed text survives a reply landing nearby.
 function refresh(before) {
-  const hosts = new Set([...before, ...page.comments].map(c => c.hunk));
+  const hosts = new Set([...before.comments, ...page.comments].map(c => c.hunk));
+  for (const d of DRAFTS) if (JSON.stringify(before.drafts[d.id]) !== JSON.stringify(page.drafts[d.id])) hosts.add(d.hunk);
   const open = ui.open || {};
-  $$('.hunk[data-rendered]').forEach(el => { if (hosts.has(el.dataset.hunk) && el.dataset.hunk !== open.hunk) renderHunk(el); });
+  const typing = document.activeElement;
+  $$('.hunk[data-rendered]').forEach(el => { if (hosts.has(el.dataset.hunk) && el.dataset.hunk !== open.hunk && !el.contains(typing)) renderHunk(el); });
+  renderReview();
   $$('.cm[data-fb]').forEach(cm => { if (open.key !== 'F' + cm.dataset.fb) renderReplies(cm); });
   updateCards();
   updateBar();
@@ -329,9 +366,70 @@ function commentsHtml(match, open) {
   return out;
 }
 
-function rowComments(hid, key) {
+function rowComments(hid, key, at) {
   const open = ui.open && ui.open.hunk === hid && ui.open.key === key ? ui.open : null;
-  return commentsHtml(c => c.hunk === hid && c.key === key, open);
+  return (at ? draftsAt(hid, at) : '') + commentsHtml(c => c.hunk === hid && c.key === key, open);
+}
+
+// `at` holds the old and the new line numbers a row or a word block shows.
+function draftsAt(hid, at) {
+  return DRAFTS.filter(d => d.hunk === hid && at[d.side === 'LEFT' ? 0 : 1].includes(d.line)).map(d => draftBox(d.id, 'diff')).join('');
+}
+
+const rowsFor = text => Math.min(14, Math.max(2, text.split('\n').reduce((n, l) => n + 1 + Math.floor(l.length / 90), 0)));
+
+function draftBox(id, place) {
+  const d = draft(id), b = BASE[id];
+  const where = d.where ? `<code>${esc(d.where)}</code>` : '<span class="muted">no line</span>';
+  const tag = `<span class="tag ${d.status === 'post' ? 'accent' : ''}">${STATUS[d.status]}</span>`;
+  if (place === 'diff' && d.status !== 'post' && !ui.unfold['d:' + id]) {
+    return `<div class="draft fold" data-draft="${esc(id)}">${tag}<span class="one">${esc(d.text)}</span><button class="linkbtn" data-dfold>Show</button></div>`;
+  }
+  const seg = Object.keys(STATUS).map(s => `<button data-dstatus="${s}" aria-pressed="${d.status === s}">${s === 'lower' ? 'Lower' : STATUS[s]}</button>`).join('');
+  const edited = d.text !== b.text ? '<span class="tag">Edited</span>' : '';
+  const fold = place === 'diff' && d.status !== 'post' ? '<button class="linkbtn" data-dfold>Hide</button>' : '';
+  const jump = place === 'list' && d.hunk ? `<a class="golink" href="#hunk-${d.hunk}" data-lines="${d.line}-${d.line}">Show its line</a>` : '';
+  const reason = d.status === 'dismissed' && d.reason ? `<p class="dreason"><span class="lbl">Reason.</span> ${d.reason === b.reason ? b.reasonHtml : esc(d.reason)}</p>` : '';
+  const off = d.status === 'post' && !d.inDiff
+    ? '<div class="warnbox">GitHub takes inline comments only on lines of the PR\'s diff, and this one is not. <button class="linkbtn" data-dmove>Move into the review body</button></div>' : '';
+  const proof = b.proof ? `<div class="proof"><div class="cmeta">Proof, private, never posted</div>${b.proofHtml}</div>` : '';
+  return `<div class="draft s-${d.status}" data-draft="${esc(id)}"${place === 'list' ? ` id="draft-${esc(id)}"` : ''}><div class="dh">${tag}${where}${edited}`
+    + `<span class="seg" role="group" aria-label="Status">${seg}</span>${fold}</div>`
+    + `<div class="dgrid${proof ? ' two' : ''}"><textarea class="dtext" aria-label="Draft text" rows="${rowsFor(d.text)}">${esc(d.text)}</textarea>${proof}</div>${reason}${off}${jump}</div>`;
+}
+
+function renderReview() {
+  const host = $('#rv');
+  if (!host) return;
+  if (!$('#rbody')) host.innerHTML = '<div class="card rvbody"><div class="cmeta">Review body <span class="tag" id="rbody-edited" hidden>Edited</span></div><textarea id="rbody" aria-label="Review body"></textarea></div><div id="rv-lists"></div>';
+  const area = $('#rbody');
+  if (area !== document.activeElement) { area.value = bodyText(); area.rows = rowsFor(area.value) + 1; }
+  $('#rbody-edited').hidden = bodyText() === R.body;
+  const lists = $('#rv-lists');
+  if (lists.contains(document.activeElement) && document.activeElement.matches('textarea')) { ui.reviewStale = true; return; }
+  ui.reviewStale = false;
+  const by = s => DRAFTS.filter(d => draft(d.id).status === s);
+  const post = by('post');
+  const link = d => d.hunk ? `<a href="#hunk-${d.hunk}" data-lines="${d.line}-${d.line}">${esc(d.where)}</a>` : `<a href="#draft-${esc(d.id)}">${esc(d.where || 'no line')}</a>`;
+  let html = `<h3>To post <span class="count">${post.length}</span></h3>`;
+  html += post.length ? '<ul class="dsum">' + post.map(d => `<li>${link(d)} <span class="muted">${esc(draft(d.id).text.slice(0, 90))}</span></li>`).join('') + '</ul>' : '<p class="muted small">No draft is marked To post.</p>';
+  const loose = post.filter(d => !d.hunk);
+  if (loose.length) html += `<h3>Not at a line of this page <span class="count">${loose.length}</span></h3>` + loose.map(d => draftBox(d.id, 'list')).join('');
+  for (const s of ['lower', 'dismissed']) {
+    const list = by(s);
+    html += `<details class="group skim dlist" data-list="${s}"${ui.lists && ui.lists[s] ? ' open' : ''}><summary><b>${STATUS[s]}</b><span class="count">${list.length}</span><span class="go">Show</span></summary>`
+      + (list.map(d => draftBox(d.id, 'list')).join('') || '<p class="muted small">None.</p>') + '</details>';
+  }
+  lists.innerHTML = html;
+}
+
+function setDraft(id, change) {
+  saveNotes();
+  edit({ op: 'draft', id, ...change }).catch(() => {});
+  const el = BASE[id].hunk && document.getElementById('hunk-' + BASE[id].hunk);
+  if (el && el.dataset.rendered) renderHunk(el);
+  renderReview();
+  updateBar();
 }
 
 function cell(html) {
@@ -374,7 +472,7 @@ function renderPairs(id, rows) {
   };
   for (const r of rows) {
     part.push(r);
-    const cm = rowComments(id, keyOf(r));
+    const cm = rowComments(id, keyOf(r), [[r.o], [r.n]]);
     if (cm) { flush(); out += `<div class="pcm">${cm}</div>`; }
   }
   flush();
@@ -411,7 +509,7 @@ function renderTable(id, h) {
       const p = r.t === 'del' ? '-' : r.t === 'add' ? '+' : '';
       t += `<tr class="cl" data-key="${key}"><td class="ln ${c}">${r.o ?? ''}</td><td class="ln ${c}">${r.n ?? ''}</td><td class="p ${c}">${p}</td><td class="c ${c}">${cell(r.c)}</td></tr>`;
     }
-    const cm = rowComments(id, key);
+    const cm = rowComments(id, key, [[r.o], [r.n]]);
     if (cm) t += `<tr class="crow"><td colspan="4"><div>${cm}</div></td></tr>`;
   }
   if (h.below) t += expandRow(id, 'down', h.below, down);
@@ -443,7 +541,7 @@ function renderWords(id, h) {
   for (const b of blocks(h)) {
     if (b.ctx) {
       if (!b.s.trim()) continue;
-      html += `<div class="wb ctx cl" data-key="R${b.n}">${wordLines([[b.s, 'same']])}${b.e ? EOL : ''}</div>` + rowComments(id, 'R' + b.n);
+      html += `<div class="wb ctx cl" data-key="R${b.n}">${wordLines([[b.s, 'same']])}${b.e ? EOL : ''}</div>` + rowComments(id, 'R' + b.n, [[b.o], [b.n]]);
       continue;
     }
     let body = wordLines(mergedDiff(b.R.map(x => x.s).join('\n'), b.A.map(x => x.s).join('\n')));
@@ -451,7 +549,7 @@ function renderWords(id, h) {
     if (b.A.some(x => x.e)) body += `<div class="wl"><ins>${EOL}</ins></div>`;
     const key = b.A.length ? 'R' + b.A[0].n : 'L' + b.R[0].o;
     const span = b.A.length > 1 ? `${key}-${b.A[b.A.length - 1].n}` : key;
-    html += `<div class="wb cl" data-key="${key}" data-span="${span}">${body}</div>` + rowComments(id, key);
+    html += `<div class="wb cl" data-key="${key}" data-span="${span}">${body}</div>` + rowComments(id, key, [b.R.map(x => x.o), b.A.map(x => x.n)]);
   }
   return html + '<p class="legend">Struck words are removed, marked words are added. Switch to Lines for line numbers.</p></div>';
 }
@@ -483,6 +581,7 @@ function renderHunk(el) {
       html += subject ? `<span class="sha" title="${esc(subject)}">${sha}</span>` : `<span class="sha">${esc(sha)}</span>`;
     }
   }
+  if (R && KIT.multiAuthor) for (const a of h.authors) html += `<span class="tag au au${AUTHORS.indexOf(a) % 4}">${esc(a)}</span>`;
   html += '<span class="sxhint" hidden>Long lines, scroll sideways</span><span class="acts">';
   if (prose) html += `<span class="seg" role="group" aria-label="View"><button data-view="${id}:words" aria-pressed="${view === 'words'}">Words</button><button data-view="${id}:lines" aria-pressed="${view === 'lines'}">Lines</button></span>`;
   html += '<button class="linkbtn" data-hc>Comment</button></span></div>';
@@ -558,6 +657,7 @@ function renderAll() {
   document.body.classList.toggle('nowrap', !prefs.wrap);
   $$('.hunk[data-hunk]').forEach(el => { if (visible(el)) renderHunk(el); else delete el.dataset.rendered; });
   $$('.cm[data-fb]').forEach(renderReplies);
+  renderReview();
   $$('[data-layout]').forEach(b => b.setAttribute('aria-pressed', String(prefs.layout === b.dataset.layout)));
   $('#wrap').checked = prefs.wrap;
   updateCards();
@@ -605,19 +705,42 @@ function answer() {
     ...notes.map(c => `Decide ${c.dataset.call}: ${noteOf(c)}`),
     ...comments.map(line),
   ];
-  return { text: (parts.length ? parts.join('\n\n') : 'go') + '\n', picks, notes, comments };
+  const lead = R ? [reviewSummary(!fresh)] : [];
+  return { text: [...lead, ...(parts.length ? parts : ['go'])].join('\n\n') + '\n', picks, notes, comments };
+}
+
+function reviewCounts() {
+  const n = { post: 0, lower: 0, dismissed: 0, edited: 0 };
+  for (const b of DRAFTS) { const d = draft(b.id); n[d.status]++; if (d.text !== b.text || d.status !== b.status) n.edited++; }
+  n.body = bodyText() !== R.body;
+  return n;
+}
+
+// On the board the thread reads the drafts with `review-page export`, so the answer only counts them.
+function reviewSummary(full) {
+  const n = reviewCounts();
+  const changed = [n.edited ? `${n.edited} draft${n.edited === 1 ? '' : 's'}` : '', n.body ? 'the review body' : ''].filter(Boolean);
+  const line = `Drafts: ${n.post} to post, ${n.lower} lower priority, ${n.dismissed} dismissed.` + (changed.length ? ` Changed on the page: ${changed.join(' and ')}.` : '');
+  if (!full) return line;
+  const items = DRAFTS.map(b => {
+    const d = draft(b.id);
+    return `[${d.status}] ${d.where || 'no line'} (${b.id}): ${d.text}` + (d.status === 'dismissed' && d.reason ? `\nReason: ${d.reason}` : '');
+  });
+  return [line, `Review body:\n${bodyText()}`, ...items].join('\n\n');
 }
 
 function updateBar() {
   const a = answer(), n = a.comments.length, p = a.picks.length, m = a.notes.length;
+  const rc = R ? reviewCounts() : null;
+  const any = n || p || m || (rc && (rc.edited || rc.body));
   const st = $('#status');
   st.classList.remove('ok');
   st.textContent = board.stale ? 'This page was rebuilt. Reload it to see the new one.'
-    : `${n} ${board.on ? 'unsent ' : ''}comment${n === 1 ? '' : 's'}` + ($('.call') ? `, ${p} changed pick${p === 1 ? '' : 's'}, ${m} note${m === 1 ? '' : 's'}` : '');
-  $('#copy').textContent = n || p || m ? 'Copy for chat' : 'Copy go';
+    : (rc ? `${rc.post} to post, ` : '') + `${n} ${board.on ? 'unsent ' : ''}comment${n === 1 ? '' : 's'}` + ($('.call') ? `, ${p} changed pick${p === 1 ? '' : 's'}, ${m} note${m === 1 ? '' : 's'}` : '');
+  $('#copy').textContent = any ? 'Copy for chat' : 'Copy go';
   const send = $('#send');
   send.hidden = !(board.on && board.send);
-  send.textContent = n || p || m ? 'Send to thread' : 'Send go';
+  send.textContent = any ? 'Send to thread' : 'Send go';
   $('#copy').classList.toggle('primary', send.hidden);
   renderTray();
 }
@@ -778,6 +901,15 @@ document.addEventListener('click', e => {
     }
     return;
   }
+  if (d.dstatus) { setDraft(t.closest('[data-draft]').dataset.draft, { status: d.dstatus }); return; }
+  if (d.dfold !== undefined) { const id = t.closest('[data-draft]').dataset.draft; ui.unfold['d:' + id] = !ui.unfold['d:' + id]; renderHunk(host); return; }
+  if (d.dmove !== undefined) {
+    const id = t.closest('[data-draft]').dataset.draft, x = draft(id);
+    page.body = `${bodyText().trimEnd()}\n\n${x.where ? '`' + x.where + '`: ' : ''}${x.text}`.trimStart();
+    edit({ op: 'body', value: page.body }).catch(() => {});
+    setDraft(id, { status: 'dismissed', reason: 'Moved into the review body.' });
+    return;
+  }
   if (d.opt) { edit({ op: 'pick', call: t.closest('.call').dataset.call, value: d.opt }).catch(() => {}); updateCards(); updateBar(); return; }
   if (d.trayClose !== undefined) { ui.tray = false; $('#tray').hidden = true; return; }
   if (t.id === 'show') { ui.tray = !ui.tray; renderTray(); return; }
@@ -799,6 +931,18 @@ document.addEventListener('click', e => {
 
 document.addEventListener('input', e => {
   if (e.target.matches('.cbox textarea') && ui.open) ui.open.draft = e.target.value;
+  if (e.target.matches('textarea.dtext, #rbody')) {
+    const id = e.target.id === 'rbody' ? 'body' : e.target.closest('[data-draft]').dataset.draft;
+    if (id === 'body') page.body = e.target.value;
+    else {
+      page.drafts[id] = { ...page.drafts[id], text: e.target.value };
+      $$('[data-draft] textarea.dtext').forEach(x => { if (x !== e.target && x.closest('[data-draft]').dataset.draft === id) x.value = e.target.value; });
+    }
+    clearTimeout(draftTimers[id]);
+    draftTimers[id] = setTimeout(() => saveDraftText(id), 400);
+    updateBar();
+    return;
+  }
   if (!e.target.matches('.call textarea.note')) return;
   const call = e.target.closest('.call').dataset.call;
   page.notes[call] = e.target.value;
@@ -807,11 +951,19 @@ document.addEventListener('input', e => {
   updateBar();
 });
 
+document.addEventListener('focusout', e => {
+  if (!e.target.matches('textarea.dtext, #rbody')) return;
+  const id = e.target.id === 'rbody' ? 'body' : e.target.closest('[data-draft]').dataset.draft;
+  if (draftTimers[id]) saveDraftText(id);
+  if (ui.reviewStale) setTimeout(renderReview);
+});
+
 document.addEventListener('change', e => {
   if (e.target.matches('.call textarea.note') && noteTimers[e.target.closest('.call').dataset.call]) saveNote(e.target.closest('.call').dataset.call);
 });
 
 document.addEventListener('toggle', e => {
+  if (e.target.matches('details[data-list]')) ui.lists = { ...ui.lists, [e.target.dataset.list]: e.target.open };
   if (e.target.matches('details') && e.target.open) $$('.hunk[data-hunk]', e.target).forEach(h => { if (!h.dataset.rendered && visible(h)) renderHunk(h); });
 }, true);
 
@@ -893,7 +1045,7 @@ window.addEventListener('scroll', () => {
   if (API) {
     try {
       const data = await call('/state');
-      if (data.key === KIT.key) {
+      if (current(data)) {
         adopt(data);
         board.on = true;
       }

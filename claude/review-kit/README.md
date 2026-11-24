@@ -32,7 +32,7 @@ python3 $KIT architecture architecture.json -o architecture.html
 
 `--since` takes the head commit of the last reviewed round. Record its sha when Maxim reviews. The script compares the trees of the old and the new head, so it works whether the fixes are separate commits or the history was squashed, amended or rebased. When the branch moved to a new base, the script first replays the old head onto the new base, so changes that came with the new base stay out. If that replay conflicts, the page says so and compares the two heads directly. The old commit must still exist in the repository (rewritten commits stay until git prunes them).
 
-`--list-hunks` first prints the lowest tier the diff allows (see `tier` below), then one line per hunk: its id, the changed lines (`path:12-30`, counted in the new file), the whole hunk with its context lines (`hunk 9-33`), the added and removed counts, the commits that touched it, and its first changed line. `--json` prints the same as JSON, with `tier` and `tier_line` at the top and `changed` (new-side range of the added lines), `removed_old` (old-side range of the removed lines), `hunk` (the whole hunk) and `commits` per hunk. A `lines` reference matches any hunk it overlaps, so the changed range and the hunk range both work.
+`--list-hunks` first prints the lowest tier the diff allows (see `tier` below), then one line per hunk: its id, the changed lines (`path:12-30`, counted in the new file), the whole hunk with its context lines (`hunk 9-33`), the added and removed counts, the commits that touched it, and its first changed line. `--json` prints the same as JSON, with `tier` and `tier_line` at the top and `changed` (new-side range of the added lines), `removed_old` (old-side range of the removed lines), `hunk` (the whole hunk), `commits`, `authors` (the authors of those commits) and `moved` (`true` when every changed line is part of a block git sees as moved within the range) per hunk. A `lines` reference matches any hunk it overlaps, so the changed range and the hunk range both work.
 
 The commits of a hunk come from `git blame` over the reviewed range: the commits that added its lines, and for removed lines the commit after the last one that still had them.
 
@@ -53,6 +53,14 @@ It prints the page's address on the board, and a second address when the board a
 ```
 
 The review id and each comment's `[n]` come with the answer. The reply shows under the comment within a few seconds, without a reload.
+
+A PR review page (see below) keeps the drafts and the review body on the board too. Its answer only counts the drafts, and the thread reads their final state as JSON:
+
+```sh
+~/desk/bin/review-page export <review id>
+```
+
+It prints the PR's address and head, the review body, each draft with its final `text` and `status`, `path`, `line`, `side`, `in_diff`, `proof`, `reason` and `edited` (changed on the page), the final pick of each decide card, the notes and the comments.
 
 Opened from its absolute file path, or when the board is away, the page keeps everything in that browser's storage, and Copy for chat puts the answer on the clipboard for the chat.
 
@@ -193,6 +201,34 @@ A round two narrative has a `feedback` list and needs `--since`. Hunks here are 
 - `hunks` are the changes that answer the comment. `context` shows code that did not change.
 - `groups` and every hunk no feedback item claims appear on top, under "Changes no comment asked for".
 - `decide` and `behavior` work as in a first review.
+
+## The PR review narrative
+
+A `review` object turns the page into a review of someone else's PR. It never groups by commit, since other people's histories are often squashed or messy: `groups` set the reading order by topic and file, and the By commit switch is gone. When the range has more than one author, each hunk shows the authors of its lines, and a hunk that is only moved code gets a "Moved code only" tag.
+
+```json
+{
+  "title": "Approve after the two hunks below.",
+  "review": {
+    "url": "https://github.com/acme/widget/pull/42",
+    "head": "72a59f5",
+    "body": "Thanks! A few notes ...",
+    "drafts": [
+      {"id": "retry-loop", "where": "src/client.py:88", "text": "This retries forever when ...", "proof": "Ran `test_retry` with ..."},
+      {"id": "naming", "where": "src/client.py:12", "status": "lower", "text": "Nit: ..."},
+      {"id": "old-api", "where": "client.py:40", "side": "LEFT", "status": "dismissed", "text": "...", "reason": "Pre-existing."}
+    ]
+  },
+  "groups": [{"title": "The retry loop", "hunks": [{"file": "src/client.py", "note": "Read this one."}]}]
+}
+```
+
+- `url` is the PR, `head` the head commit the review is for. The script refuses to build when `head` is not the commit it builds from, since GitHub places comments by the diff of that commit. Leave it out to take the built head.
+- `body` is the review body.
+- Each draft has a unique `id` of letters, digits, `_`, `.` and `-`, `where` as `path:line`, `side` (`RIGHT`, the default, for the new file, `LEFT` for a removed line), `text`, an optional `proof` that is never posted, and `status`: `post` (the default), `lower` or `dismissed`. A dismissed draft gives its `reason`. A `where` may name a path by its end, like `client.rs:1529`, when only one file ends that way, and may be left out for a draft that has no line.
+- A draft whose line is not in the PR's diff still builds. The page shows it apart with a warning, since GitHub rejects inline comments outside the diff.
+
+On the page each draft sits under its line as an editable box with its status and the proof beside it. Lower priority and dismissed drafts fold to one line in the diff and are listed in full under "Your review", where one tap moves any draft between To post, Lower and Dismissed. A draft to post that is not on a line of the diff offers "Move into the review body", which appends it to the body and dismisses it. Edits stay on the board like comments. When the page is rebuilt, each draft keeps its edited text and status as long as its `id` still exists and the narrative's text for it is unchanged, and the body keeps its edits while the narrative's body is unchanged. A changed text in the narrative wins over the edits, and an open copy of the older page asks for a reload. Send and Copy carry one line with the counts of drafts to post, lower and dismissed, and what changed on the page. Without the board, Copy for chat carries every draft and the body in full.
 
 ## What the page does
 

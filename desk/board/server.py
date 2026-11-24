@@ -67,6 +67,9 @@ SIZE_MINUTES = {"S": 10, "M": 20, "L": 40}
 ASK_MINUTES = {"decide": 5, "review": 20, "push": 5, "post": 5, "device-test": 30, "question": 10}
 OTHER_MINUTES = {"start": 5, "reply": 10, "failed": 5, "worktree": 5, "desk": 10}
 KIND_MINUTES = {"bugfix": 15, "feature": 20, "review": 15, "design": 30, "test": 10, "docs": 10}
+NOW_GROUPS = ("act", "unblock", "land", "decide")
+UNBLOCK_KINDS = {"reply", "start", "failed"}
+LAND_KINDS = {"review", "push", "post", "device-test"}
 PLACES = ("today", "later")
 SAMPLES_NEEDED = 5
 LONGEST_SAMPLE = 120
@@ -414,8 +417,11 @@ def now_rows(
     snoozed = {t["thread"] for t in threads.get("snoozed") or []}
     rows = []
 
-    def add(tier: int, kind: str, minutes: int, title: str, text: str, at: str | None, **extra: object) -> None:
-        rows.append({"tier": tier, "kind": kind, "minutes": minutes, "title": title, "text": text, "at": at, **extra})
+    def add(
+        tier: int, kind: str, minutes: int, title: str, text: str, at: str | None, estimated: bool = True, **extra: object
+    ) -> None:
+        row = {"tier": tier, "kind": kind, "minutes": minutes, "title": title, "text": text, "at": at, **extra}
+        rows.append({**row, "estimated": estimated, "group": now_group(row, items)})
 
     if health and (health["failed"] or health["sweepStale"]):
         add(0, "desk", OTHER_MINUTES["desk"], "The desk is not running", "", None, thread=health.get("thread"))
@@ -434,7 +440,14 @@ def now_rows(
                 kind = item["asks"].get("kind") or "question"
                 minutes = item["asks"].get("minutes") or estimates.get(kind, estimates["question"])["minutes"]
                 add(
-                    1 if item.get("urgent") else 2, kind, minutes, item["title"], item["asks"]["text"], item["asks"]["at"], **base
+                    1 if item.get("urgent") else 2,
+                    kind,
+                    minutes,
+                    item["title"],
+                    item["asks"]["text"],
+                    item["asks"]["at"],
+                    estimated=not item["asks"].get("minutes"),
+                    **base,
                 )
     for entry in threads.get("needsYou") or []:
         if entry["thread"] not in covered:
@@ -458,6 +471,7 @@ def now_rows(
             entry["title"],
             entry.get("action") or "",
             entry.get("updated"),
+            estimated=False,
             url=entry["url"],
             pr=entry["url"],
             effort=entry.get("effort"),
@@ -479,8 +493,16 @@ def now_rows(
             thread=entry["thread"],
         )
     rows = [r for r in rows if r["kind"] == "reply" or space_of(r.get("effort"), spaces) not in off]
-    rows.sort(key=lambda r: (r["tier"], r["minutes"], r["at"] or ""))
+    rows.sort(key=lambda r: (NOW_GROUPS.index(r["group"]), r["tier"], r["minutes"], r["at"] or ""))
     return rows
+
+
+def now_group(row: dict, items: dict[str, dict]) -> str:
+    if row["kind"] == "desk" or items.get(row.get("item") or "", {}).get("urgent"):
+        return "act"
+    if row["kind"] in UNBLOCK_KINDS:
+        return "unblock"
+    return "land" if row["kind"] in LAND_KINDS else "decide"
 
 
 def last_touched(item: dict, items: dict[str, dict]) -> str:

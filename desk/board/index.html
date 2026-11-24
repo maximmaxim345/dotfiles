@@ -107,6 +107,20 @@
   .kind { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; line-height: 18px; border: 1px solid var(--border); background: var(--surface); color: var(--text); white-space: nowrap; font-weight: 600; }
   .kind.decide, .kind.push, .kind.post { border-color: var(--accent); color: var(--accent); }
   .kind.failed, .kind.desk { border-color: var(--bad); color: var(--bad); }
+  .r .num { min-width: 18px; text-align: right; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  @media (min-width: 641px) { .r.now { grid-template-columns: 136px minmax(0, 1fr) 88px auto; } }
+  .att { margin-bottom: 8px; }
+  .att-h { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+  .att-h .muted { font-variant-numeric: tabular-nums; }
+  .stack { display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; background: var(--surface-2); margin: 8px 0 6px; }
+  .gdot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; flex: none; }
+  .g-act { background: var(--bad); } .g-unblock { background: var(--warn); } .g-land { background: var(--good); } .g-decide { background: var(--muted); }
+  .att .legend b { color: var(--text); margin-right: 4px; }
+  .ag { margin-top: 22px; }
+  .ag-h { display: flex; align-items: center; flex-wrap: wrap; gap: 0 2px; margin-bottom: 8px; }
+  .ag-h h2 { margin: 0; font-size: 16px; }
+  .ag-h .n { margin-left: auto; color: var(--muted); font-size: 13px; }
+  .ag-h .sub { flex-basis: 100%; padding-left: 15px; font-size: 13px; color: var(--muted); }
   .size { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--surface-2); font-size: 12px; font-weight: 700; }
   @media (max-width: 640px) {
     .r { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "k mins" "main main"; gap: 4px 10px; padding: 12px 14px; }
@@ -266,6 +280,8 @@
 const TABS = [["now", "Now"], ["today", "Today"], ["backlog", "Backlog"], ["incoming", "Incoming"], ["done", "Done"]];
 const KIND_NAME = { decide: "Decide", review: "Review", push: "Push OK", post: "Post OK", "device-test": "Test on device", question: "Answer", reply: "Reply",
   start: "Start", failed: "Run failed", worktree: "Worktree", desk: "Desk" };
+const NOW_GROUPS = [["act", "Act", "Security steps, deadlines and regressions on stable"], ["unblock", "Unblock", "Someone waits on a short answer"],
+  ["land", "Land", "Ready for your approval or merge"], ["decide", "Decide", "Choices only you can make"]];
 const CLOSED = ["done", "dropped"];
 const FATE_NAMES = [["keep", "Keep"], ["start", "Start"], ["drop", "Drop"]];
 const OLD_MINUTES = 2 * 1440;
@@ -430,11 +446,11 @@ function context(item, withEffort) {
 }
 function briefLine(brief) { return (brief || "").split("\n").map(l => l.replace(/^#+\s*|^[-*]\s+/, "").trim()).find(l => l && !/^(goal|done when|plan)$/i.test(l)) || ""; }
 
-function row({ kinds, title, context: ctx, meta, minutes, at, warn, action, onclick, cls = "", attrs = {} }) {
+function row({ kinds, title, context: ctx, meta, minutes, estimated, at, warn, action, onclick, cls = "", attrs = {} }) {
   return el("div", { class: `r ${cls}`, tabindex: 0, role: "button", onclick, onkeydown: e => { if (e.key === "Enter" && e.target === e.currentTarget) onclick?.(e); }, ...attrs },
     el("div", { class: "k" }, kinds),
     el("div", { class: "main" }, el("div", { class: "t", title }, codeText(title)), ctx && el("div", { class: "c" }, ctx), meta?.length > 0 && el("div", { class: "m" }, meta)),
-    el("div", { class: "mins" }, minutes != null && el("b", {}, `${minutes} min`), at && el("span", { class: warn && isOld(at, OLD_MINUTES) ? "old" : "", title: warn ? "Waiting this long" : "Age" }, ago(at))),
+    el("div", { class: "mins" }, minutes != null && el("b", {}, `${minutes} min`, estimated && el("span", {}, " est.")), at && el("span", { class: warn && isOld(at, OLD_MINUTES) ? "old" : "", title: warn ? "Waiting this long" : "Age" }, ago(at))),
     el("div", { class: "act" }, action));
 }
 function stop(e) { e.stopPropagation(); }
@@ -518,6 +534,15 @@ function nowClick(r) {
   const url = threadUrl(r.thread);
   if (url) location.href = url;
 }
+function nowRow(r, n) {
+  const actionFirst = r.text && !["reply", "failed", "worktree"].includes(r.kind);
+  const effort = r.effort && !ui.effort && el("span", { class: "eff" }, effortTitle(r.effort));
+  return row({
+    kinds: [el("span", { class: "num" }, String(n)), el("span", { class: `kind ${r.kind}` }, KIND_NAME[r.kind] || r.kind), r.tier === 1 && tag(r.kind === "reply" || r.url ? "someone waiting" : "urgent", "warn")],
+    title: actionFirst ? r.text : r.title, context: [effort, effort && " · ", actionFirst ? r.title : r.text], minutes: r.minutes, estimated: r.estimated, at: r.at, warn: true,
+    action: nowAction(r), onclick: () => nowClick(r), cls: "now",
+  });
+}
 function renderNow() {
   const rows = nowRows();
   const minutes = rows.reduce((s, r) => s + r.minutes, 0);
@@ -527,16 +552,24 @@ function renderNow() {
   const railCard = (title, list, empty) => list.length || empty ? el("div", { class: "card" }, el("h3", {}, `${title} ${list.length ? list.length : ""}`), list.length ? list.map(mini) : el("div", { class: "muted", style: { fontSize: "13px" } }, empty)) : null;
   const week = Date.now() - 7 * 86400000, recent = d => d && new Date(d).getTime() >= week;
   const items = state.items.filter(i => inScope(i.effort)), open = items.filter(i => !CLOSED.includes(i.status));
+  const budget = state.today.budget, scale = Math.max(minutes, budget, 1);
+  const groups = NOW_GROUPS.map(([key, name, sub]) => {
+    const list = rows.filter(r => r.group === key);
+    return { key, name, sub, rows: list, minutes: list.reduce((s, r) => s + r.minutes, 0) };
+  }).filter(g => g.rows.length);
+  let n = 0;
   return el("div", { class: "cols" },
     el("div", {},
-      el("div", { class: "sh" }, el("h2", {}, "Waits on you"), el("span", { class: "n" }, rows.length ? `${rows.length}, about ${minutes} min` : "")),
-      el("p", { class: "hint" }, "Top row first: the desk itself, then people outside waiting, then threads blocked on you, quick ones before long ones."),
+      el("div", { class: "att" },
+        el("div", { class: "att-h" }, el("b", {}, `${rows.length} ${rows.length === 1 ? "row" : "rows"} today`), el("span", { class: "muted" }, `${minutes} of ${budget} min`)),
+        el("div", { class: "stack", "aria-hidden": "true" }, groups.map(g => el("div", { class: `g-${g.key}`, style: { width: `${g.minutes / scale * 100}%` } }))),
+        el("div", { class: "legend" }, groups.map(g => el("span", {}, el("span", { class: `gdot g-${g.key}` }), el("b", {}, g.name), ` ${g.rows.length} · ${g.minutes} min`)))),
       autostartHeld() && el("p", { class: "hint" }, `Auto-start held ${autostartHeld()}.`),
-      el("div", { class: "list" }, rows.length ? rows.map(r => row({
-        kinds: [el("span", { class: `kind ${r.kind}` }, KIND_NAME[r.kind] || r.kind), r.tier === 1 && tag(r.kind === "reply" || r.url ? "someone waiting" : "urgent", "warn")],
-        title: r.title, context: [r.effort && !ui.effort && el("span", { class: "eff" }, effortTitle(r.effort)), r.effort && !ui.effort && " · ", r.text], minutes: r.minutes, at: r.at, warn: true,
-        action: nowAction(r), onclick: () => nowClick(r),
-      })) : el("div", { class: "empty" }, t ? "Nothing waits on you." : "No sweep yet. Ask the desk to sweep."))),
+      rows.length ? groups.map(g => el("section", { class: "ag" },
+        el("div", { class: "ag-h" }, el("span", { class: `gdot g-${g.key}` }), el("h2", {}, g.name), el("span", { class: "n" }, `${g.rows.length} ${g.rows.length === 1 ? "row" : "rows"} · ${g.minutes} min`),
+          el("div", { class: "sub" }, g.sub)),
+        el("div", { class: "list" }, g.rows.map(r => nowRow(r, ++n)))))
+        : el("div", { class: "list" }, el("div", { class: "empty" }, t ? "Nothing waits on you." : "No sweep yet. Ask the desk to sweep."))),
     el("aside", { class: "rail", "aria-label": "Threads" },
       railCard("Running", shown("working"), "Nothing runs."), railCard("Waiting on others", shown("waiting")), railCard("Snoozed", shown("snoozed")), railCard("Not in an effort", shown("unassigned")),
       el("div", { class: "card" }, el("h3", {}, "This week"),

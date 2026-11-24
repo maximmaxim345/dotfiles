@@ -146,6 +146,20 @@ class NowRowsTests(unittest.TestCase):
         rows = server.now_rows(items, {}, incoming, None, {}, SPACES)
         self.assertEqual([row["kind"] for row in rows], ["reply", "push", "review"])
 
+    def test_rows_go_to_the_first_group_that_fits_before_quicker_rows_of_later_groups(self) -> None:
+        asks = {"kind": "review", "text": "Review?", "at": "2026-11-20T10:00:00+00:00"}
+        items = {
+            "urgent": item("urgent", status="started", thread="t1", urgent=True, asks=asks),
+            "push": item("push", status="started", thread="t2", asks={**asks, "kind": "push"}),
+            "question": item("question", status="started", thread="t3", asks={**asks, "kind": "question", "minutes": 1}),
+        }
+        incoming = [{"url": "u", "title": "issue", "status": "needs-you", "updated": "2026-11-21T10:00:00Z"}]
+        rows = server.now_rows(items, {}, incoming, None, {}, SPACES)
+        self.assertEqual(
+            [(row["kind"], row["group"]) for row in rows],
+            [("review", "act"), ("reply", "unblock"), ("push", "land"), ("question", "decide")],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

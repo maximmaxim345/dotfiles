@@ -212,7 +212,8 @@ End every turn that waits on me (a question, a draft, a request for my OK)
 with an **Ask:** line: the one thing you need from me, with your pick. Repeat
 an earlier Ask only while it still blocks your next step, restated in full as if
 I hadn't read the earlier message, never as a bare label. An Ask to post, push
-or open a PR shows the full draft in the same message. When I answer with a
+or open a PR shows the full draft in the same message or on the review page it
+links. When I answer with a
 question about something else, answer it and name the open Ask in one sentence,
 without showing an unchanged draft or list again. After I correct a draft, show
 only the draft that changed. A draft I post myself,
@@ -452,7 +453,8 @@ Follow `~/.claude/pr-guidelines.md` for PR titles and bodies.
 Create PRs only through `/open-pr`, also when I ask directly, and read "open"
 on its own as `/open-pr`.
 
-For a PR that changes docs or spec text, show me the diff in the thread and let
+For a PR that changes docs or spec text, show me the diff in the thread or on
+the review page and let
 me review the wording before pushing, then open the PR once, after the last
 wording change.
 

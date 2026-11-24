@@ -152,6 +152,18 @@ class ReviewPageTests(unittest.TestCase):
         reviews.send(self.review, body)
         self.assertIn(f"~/desk/bin/review-page export {self.review}", self.log.read_text())
 
+    def test_create_pending_review_asks_the_thread_only_from_the_current_page(self) -> None:
+        self.page.write_text(self.review_html("2222"))
+        reviews.register(self.page, "thread-one")
+        base = self.serve(server.Handler)
+        url = f"{base}/api/review/{self.review}/pending"
+        self.assertEqual(self.request(url, {"page": "2222", "version": "older"})[0], 409)
+        self.assertFalse(self.log.exists())
+        self.assertEqual(self.request(url, {"page": "2222", "version": "Why?Thanks!"})[0], 200)
+        self.assertIn(
+            f"Create pending review, pressed on the review page review-abc1234.html (review {self.review})", self.log.read_text()
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

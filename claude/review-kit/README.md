@@ -230,6 +230,8 @@ A `review` object turns the page into a review of someone else's PR. It never gr
 
 On the page each draft sits under its line as an editable box with its status and the proof beside it. Lower priority and dismissed drafts fold to one line in the diff and are listed in full under "Your review", where one tap moves any draft between To post, Lower and Dismissed. A draft to post that is not on a line of the diff offers "Move into the review body", which appends it to the body and dismisses it. Edits stay on the board like comments. When the page is rebuilt, each draft keeps its edited text and status as long as its `id` still exists and the narrative's text for it is unchanged, and the body keeps its edits while the narrative's body is unchanged. A changed text in the narrative wins over the edits, and an open copy of the older page asks for a reload. Send and Copy carry one line with the counts of drafts to post, lower and dismissed, and what changed on the page. Without the board, Copy for chat carries every draft and the body in full.
 
+From the board, the Create pending review button asks once for confirmation, then sends the thread a message that names the review id and asks it to create the pending review from `review-page export`. The board itself never talks to GitHub. The button refuses while comments or notes are unsent, or while a draft to post is not on a line of the diff.
+
 ## What the page does
 
 - Decide cards first, then the before and after table, the claims and what the reviewers found, then the diff in reading order with each note above its hunk. When the range has more than one commit, a By commit switch regroups the same hunks under the commit that touched them, oldest first, and each hunk shows its commits.

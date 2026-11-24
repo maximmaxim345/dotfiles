@@ -60,7 +60,7 @@ function adopt(data) {
   const typed = Object.keys(draftTimers).filter(k => k !== 'body').map(id => [id, page.drafts[id].text]);
   const body = 'body' in draftTimers ? page.body : undefined;
   Object.assign(page, blank(), data.state);
-  Object.assign(board, { rev: data.rev, scroll: data.scroll, replies: data.replies, sent: data.sent, send: data.send, header: data.header });
+  Object.assign(board, { rev: data.rev, scroll: data.scroll, replies: data.replies, sent: data.sent, send: data.send, header: data.header, pending: data.pending });
   const typing = document.activeElement;
   if (typing && typing.matches('.call textarea.note')) page.notes[typing.closest('.call').dataset.call] = typing.value;
   if (typing && typing.matches('textarea.dtext')) typed.push([typing.closest('[data-draft]').dataset.draft, typing.value]);
@@ -741,6 +741,11 @@ function updateBar() {
   const send = $('#send');
   send.hidden = !(board.on && board.send);
   send.textContent = any ? 'Send to thread' : 'Send go';
+  const pending = $('#pending');
+  if (pending) {
+    pending.hidden = send.hidden;
+    pending.title = board.pending ? `Asked the thread at ${board.pending}` : '';
+  }
   $('#copy').classList.toggle('primary', send.hidden);
   renderTray();
 }
@@ -767,6 +772,30 @@ async function sendAnswer() {
     st.classList.add('ok');
   } catch (e) {
     st.textContent = `Not sent: ${e.message}. Copy for chat still works.`;
+  }
+  btn.disabled = false;
+}
+
+// The thread creates the review on GitHub, the board only passes the request on.
+async function requestPending() {
+  const st = $('#status'), btn = $('#pending');
+  st.classList.remove('ok');
+  const a = answer();
+  if (a.comments.length || a.notes.length) { st.textContent = 'Send your comments and notes first, so the thread answers them before it posts.'; return; }
+  const posts = DRAFTS.filter(d => draft(d.id).status === 'post');
+  const off = posts.filter(d => !d.inDiff).length;
+  if (off) { st.textContent = `${off} draft${off === 1 ? ' is' : 's are'} to post but not on a line of the diff. Move ${off === 1 ? 'it' : 'them'} into the review body or change the status first.`; return; }
+  const n = posts.length;
+  if (!confirm(`Ask the thread to create a pending review on GitHub with ${n} inline comment${n === 1 ? '' : 's'} and the review body? It stays pending until you submit it on GitHub.`)) return;
+  btn.disabled = true;
+  st.textContent = 'Asking the thread...';
+  try {
+    await settle();
+    refresh(adopt(await call('/pending', {})));
+    st.textContent = 'Asked the thread to create the pending review.';
+    st.classList.add('ok');
+  } catch (e) {
+    st.textContent = `Not asked: ${e.message}`;
   }
   btn.disabled = false;
 }
@@ -915,6 +944,7 @@ document.addEventListener('click', e => {
   if (t.id === 'show') { ui.tray = !ui.tray; renderTray(); return; }
   if (t.id === 'copy') { copy(); return; }
   if (t.id === 'send') { sendAnswer(); return; }
+  if (t.id === 'pending') { requestPending(); return; }
   if (t.matches('tr.cl, .wb.cl')) {
     if (String(window.getSelection())) return;
     const h = KIT.hunks[host.dataset.hunk];

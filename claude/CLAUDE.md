@@ -23,7 +23,9 @@ actions `~/.claude/pr-followup.md` lists, "finish", which covers the actions
 `review-changes` step 11 lists, `/babysit`, which grants the actions its
 skill lists, for the PR it names, until it merges or closes or I say stop, the `merge` mode of
 `/open-pr`, which also marks that PR ready and merges it once babysit stops
-clean, and the `start_note` field the board writes on a desk item, which covers
+clean, the message the board sends when I press "Create pending review" on a
+review page, naming that review id, which covers what `review-changes` step 9
+lists, once, and the `start_note` field the board writes on a desk item, which covers
 what `implement` step 5 lists, once.
 
 Merging, releasing, marking a PR draft or ready, editing a description,

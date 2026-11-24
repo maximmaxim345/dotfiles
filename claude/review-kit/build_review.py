@@ -58,7 +58,7 @@ TOP_BAR_CONTROLS = (
 )
 BOTTOM_BAR = (
     '<div class="bar" id="bar"><div class="tray" id="tray" hidden></div><div class="bar-in">'
-    '<span class="status" id="status"></span><button class="btn" id="show">Show</button>'
+    '<span class="status" id="status"></span><button class="btn" id="show">Show</button>{pending}'
     '<button class="btn primary" id="copy">Copy for chat</button>'
     '<button class="btn primary" id="send" hidden>Send to thread</button></div></div>'
 )
@@ -1325,7 +1325,8 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
     brand = f"{kind} <span>{esc(' '.join(x for x in (repo, branch) if x))}</span>"
     body = (
         f'<header class="top"><div class="top-in"><div class="brand">{brand}</div>{TOP_BAR_CONTROLS}</div></header>'
-        f'<main class="wrap page">{head}{sections}</main>{BOTTOM_BAR}'
+        f'<main class="wrap page">{head}{sections}</main>'
+        + BOTTOM_BAR.format(pending='<button class="btn" id="pending" hidden>Create pending review</button>' if review else "")
     )
     tree = change.head or f"worktree:{change.diff_hash}"
     key = hashlib.sha1(f"{change.base}:{change.start}:{tree}".encode("utf-8")).hexdigest()[:16]

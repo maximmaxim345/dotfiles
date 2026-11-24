@@ -193,7 +193,8 @@ def header(review: dict) -> str:
 def shown(review: dict) -> dict:
     keys = ("key", "rev", "state", "scroll", "replies", "sent")
     version = (review.get("narrative") or {}).get("version")
-    return {**{key: review[key] for key in keys}, "version": version, "send": bool(review["thread"]), "header": header(review)}
+    extra = {"version": version, "pending": review.get("pending"), "send": bool(review["thread"]), "header": header(review)}
+    return {**{key: review[key] for key in keys}, **extra}
 
 
 def text_of(body: dict, name: str) -> str:
@@ -282,6 +283,22 @@ def send(review_id: str, body: dict, deliver: bool = True) -> dict:
     return shown(review)
 
 
+def pending(review_id: str, body: dict) -> dict:
+    with changing(review_id) as review:
+        check_page(review, body)
+        if not review.get("narrative"):
+            raise ValueError("this page is not a PR review page")
+        to_thread(
+            review["thread"],
+            f"Create pending review, pressed on the review page {Path(review['page']).name} (review {review['id']}). It is"
+            " my go-ahead for that one action, as `review-changes` step 9 says. Read the drafts with"
+            f" `~/desk/bin/review-page export {review['id']}`.",
+        )
+        review["pending"] = now()
+        review["rev"] += 1
+    return shown(review)
+
+
 def export(review_id: str) -> dict:
     with changing(review_id) as review:
         page = page_file(review).read_bytes()
@@ -350,11 +367,16 @@ def get(handler: BaseHTTPRequestHandler, path: str) -> None:
 
 
 def post(handler: BaseHTTPRequestHandler, path: str, body: dict) -> None:
-    match = re.fullmatch(r"/api/review/([^/]+)/(edit|send|sent)", path)
+    match = re.fullmatch(r"/api/review/([^/]+)/(edit|send|sent|pending)", path)
     try:
         if not match:
             raise FileNotFoundError(path)
-        data = edit(match[1], body) if match[2] == "edit" else send(match[1], body, deliver=match[2] == "send")
+        if match[2] == "edit":
+            data = edit(match[1], body)
+        elif match[2] == "pending":
+            data = pending(match[1], body)
+        else:
+            data = send(match[1], body, deliver=match[2] == "send")
         answer(handler, 200, data)
     except FileNotFoundError as err:
         answer(handler, 404, {"error": str(err)})

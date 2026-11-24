@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Register a review page with the desk board, and reply to the comments on it."""
+"""Register a review page with the desk board, reply to the comments on it, and print its final state."""
 
 from __future__ import annotations
 
@@ -28,6 +28,8 @@ def main() -> None:
     text = reply.add_mutually_exclusive_group(required=True)
     text.add_argument("--text")
     text.add_argument("--text-file")
+    export = sub.add_parser("export", help="print a PR review page's drafts, review body and picks as JSON")
+    export.add_argument("review", help="the review id")
     args = parser.parse_args()
     try:
         if args.command == "register":
@@ -37,6 +39,8 @@ def main() -> None:
             tailnet = json.loads(BOARD_CONFIG.read_text()).get("tailnet") if BOARD_CONFIG.exists() else None
             for host in ["127.0.0.1", *([tailnet] if tailnet else [])]:
                 print(f"http://{host}:{args.port}/review/{review_id}")
+        elif args.command == "export":
+            print(json.dumps(reviews.export(args.review), indent=2, ensure_ascii=False))
         else:
             body = Path(args.text_file).read_text() if args.text_file else args.text
             reviews.reply(args.review, args.comment, body)

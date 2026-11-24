@@ -108,6 +108,50 @@ class ReviewPageTests(unittest.TestCase):
         state = reviews.edit(self.review, self.comment(page="2222"))["state"]
         self.assertEqual([c["id"] for c in state["comments"]], [2])
 
+    def review_html(self, key: str, text: str = "Why?", body: str = "Thanks!") -> str:
+        drafts = [
+            {
+                "id": "d1",
+                "text": text,
+                "status": "post",
+                "inDiff": True,
+                "where": "a.py:3",
+                "path": "a.py",
+                "line": 3,
+                "side": "RIGHT",
+                "proof": "ran it",
+                "reason": "",
+            }
+        ]
+        review = {"url": "u", "head": "abc", "body": body, "drafts": drafts, "version": text + body}
+        data = {"key": key, "review": review, "picks": {"1": "A"}}
+        return f'<script id="kit-data" type="application/json">{json.dumps(data)}</script>'
+
+    def test_draft_edits_survive_a_rebuild_unless_the_narrative_text_changed(self) -> None:
+        self.page.write_text(self.review_html("2222"))
+        reviews.register(self.page, "thread-one")
+        page = {"page": "2222", "version": "Why?Thanks!"}
+        reviews.edit(self.review, {**page, "op": "draft", "id": "d1", "text": "Why not?", "status": "lower"})
+        reviews.edit(self.review, {**page, "op": "body", "value": "Thanks a lot!"})
+        self.page.write_text(self.review_html("3333"))
+        reviews.register(self.page, "thread-one")
+
+        def final() -> tuple:
+            data = reviews.export(self.review)
+            return data["drafts"][0]["text"], data["drafts"][0]["status"], data["body"]
+
+        self.assertEqual(final(), ("Why not?", "lower", "Thanks a lot!"))
+        self.page.write_text(self.review_html("3333", text="Rewritten?", body="Thanks again!"))
+        reviews.register(self.page, "thread-one")
+        self.assertEqual(final(), ("Rewritten?", "post", "Thanks again!"))
+
+    def test_send_from_a_pr_review_page_names_the_export_command(self) -> None:
+        self.page.write_text(self.review_html("2222"))
+        reviews.register(self.page, "thread-one")
+        body = {"page": "2222", "version": "Why?Thanks!", "text": "Drafts: 1 to post.", "comments": [], "picks": {}, "notes": {}}
+        reviews.send(self.review, body)
+        self.assertIn(f"~/desk/bin/review-page export {self.review}", self.log.read_text())
+
 
 if __name__ == "__main__":
     unittest.main()

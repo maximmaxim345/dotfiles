@@ -280,7 +280,7 @@
 const TABS = [["now", "Now"], ["today", "Today"], ["backlog", "Backlog"], ["incoming", "Incoming"], ["done", "Done"]];
 const KIND_NAME = { decide: "Decide", review: "Review", push: "Push OK", post: "Post OK", "device-test": "Test on device", question: "Answer", reply: "Reply",
   start: "Start", failed: "Run failed", worktree: "Worktree", desk: "Desk" };
-const NOW_GROUPS = [["act", "Act", "Security steps, deadlines and regressions on stable"], ["unblock", "Unblock", "Someone waits on a short answer"],
+const NOW_GROUPS = [["act", "Act", "Urgent items and a desk that stopped"], ["unblock", "Unblock", "A person, a thread or the desk waits on one short step"],
   ["land", "Land", "Ready for your approval or merge"], ["decide", "Decide", "Choices only you can make"]];
 const CLOSED = ["done", "dropped"];
 const FATE_NAMES = [["keep", "Keep"], ["start", "Start"], ["drop", "Drop"]];
@@ -518,10 +518,9 @@ function autostartHeld() { return state.autostartLast?.line.split("Held: ")[1] |
 function nowRows() { return (state.now || []).filter(r => inScope(r.effort)); }
 function nowAction(r) {
   const item = r.item && byId(r.item);
-  const pr = r.pr && el("a", { class: "btn", href: r.pr, target: "_blank", onclick: stop }, "PR");
+  const pr = r.pr && el("a", { class: "btn", href: r.pr, target: "_blank", onclick: stop }, r.kind === "reply" ? "Open" : "PR");
   if (item?.asks && !item.answer) return [pr, button("Go", async () => { if (confirm(`Answer "go" to:\n\n${item.asks.text}`)) { await api("/api/ask/open", { id: item.id }); await answer(item.id, "go", item.asks.text); } }, "", { title: "Accept the thread's pick" })];
   if (r.kind === "start") return button("Start again", () => post("/api/status", { ids: [r.item], status: "requested" }, startMsg()));
-  if (r.kind === "reply") return button("Incoming", () => go("incoming"));
   if (r.url) return pr;
   if (r.kind === "worktree") return button("Copy path", async () => { await navigator.clipboard.writeText(r.path); toast("Path copied"); });
   const url = threadUrl(r.thread);
@@ -529,13 +528,12 @@ function nowAction(r) {
 }
 function nowClick(r) {
   if (r.item && byId(r.item)) return openItem(r.item);
-  if (r.kind === "reply") return go("incoming");
   if (r.url) { ui.highlight = r.url; ui.folds.add(`${r.url} preread`); return go("incoming"); }
   const url = threadUrl(r.thread);
   if (url) location.href = url;
 }
 function nowRow(r, n) {
-  const actionFirst = r.text && !["reply", "failed", "worktree"].includes(r.kind);
+  const actionFirst = r.text && !["failed", "worktree"].includes(r.kind);
   const effort = r.effort && !ui.effort && el("span", { class: "eff" }, effortTitle(r.effort));
   return row({
     kinds: [el("span", { class: "num" }, String(n)), el("span", { class: `kind ${r.kind}` }, KIND_NAME[r.kind] || r.kind), r.tier === 1 && tag(r.kind === "reply" || r.url ? "someone waiting" : "urgent", "warn")],
@@ -561,7 +559,7 @@ function renderNow() {
   return el("div", { class: "cols" },
     el("div", {},
       el("div", { class: "att" },
-        el("div", { class: "att-h" }, el("b", {}, `${rows.length} ${rows.length === 1 ? "row" : "rows"} today`), el("span", { class: "muted" }, `${minutes} of ${budget} min`)),
+        el("div", { class: "att-h" }, el("b", {}, `${rows.length} ${rows.length === 1 ? "row waits" : "rows wait"} on you`), el("span", { class: "muted" }, `${minutes} of ${budget} min`)),
         el("div", { class: "stack", "aria-hidden": "true" }, groups.map(g => el("div", { class: `g-${g.key}`, style: { width: `${g.minutes / scale * 100}%` } }))),
         el("div", { class: "legend" }, groups.map(g => el("span", {}, el("span", { class: `gdot g-${g.key}` }), el("b", {}, g.name), ` ${g.rows.length} · ${g.minutes} min`)))),
       autostartHeld() && el("p", { class: "hint" }, `Auto-start held ${autostartHeld()}.`),

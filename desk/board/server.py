@@ -476,11 +476,18 @@ def now_rows(
             pr=entry["url"],
             effort=entry.get("effort"),
         )
-    replies = [e for e in waiting if not e.get("preread")]
-    if replies:
-        title = f"{len(replies)} GitHub {'entry waits' if len(replies) == 1 else 'entries wait'} for my reply"
-        oldest = min((e.get("updated") or "" for e in replies), default="") or None
-        add(1, "reply", OTHER_MINUTES["reply"], title, ", ".join(e["title"] for e in replies[:3]), oldest)
+    for entry in (e for e in waiting if not e.get("preread")):
+        add(
+            1,
+            "reply",
+            OTHER_MINUTES["reply"],
+            entry["title"],
+            entry.get("action") or "",
+            entry.get("updated"),
+            url=entry["url"],
+            pr=entry["url"],
+            effort=entry.get("effort"),
+        )
     for entry in worktrees.get("held") or []:
         add(
             3,

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.9"
+# dependencies = ["pygments"]
+# ///
 """Build self-contained HTML review pages from a git diff and a narrative JSON file."""
 
 from __future__ import annotations
@@ -15,6 +19,15 @@ import xml.etree.ElementTree as ElementTree
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
+try:
+    from pygments.lexers import get_lexer_for_filename, guess_lexer
+    from pygments.token import Token
+    from pygments.util import ClassNotFound
+
+    PYGMENTS = True
+except ImportError:
+    PYGMENTS = False
 
 ASSETS = Path(__file__).resolve().parent / "assets"
 REVIEW_PATHS = Path(__file__).resolve().parent / "review-paths.json"
@@ -102,6 +115,7 @@ class Hunk:
     skim: str = ""
     look: str = ""
     no_newline: List[int] = field(default_factory=list)
+    colors: Optional[List[List[Any]]] = None
 
     @property
     def first_new(self) -> int:
@@ -177,6 +191,7 @@ class Hunk:
             "commits": [c[:7] if c != UNCOMMITTED else c for c in self.commits],
             "skim": self.skim,
             "noNewline": self.no_newline,
+            "hl": self.colors,
         }
 
 
@@ -193,6 +208,14 @@ class Change:
     branch: str = ""
     remotes: List[str] = field(default_factory=list)
     diff_hash: str = ""
+    read_old: Optional[ReadLines] = None
+    painted: Dict[Tuple[str, bool], Optional[List[List[Any]]]] = field(default_factory=dict)
+
+    def colors(self, path: str, old: bool = False) -> Optional[List[List[Any]]]:
+        if (path, old) not in self.painted:
+            read = self.read_old if old else self.read
+            self.painted[path, old] = paint(path, read(path)) if read else None
+        return self.painted[path, old]
 
 
 def run_git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -542,10 +565,105 @@ def collect(
         branch=branch_of(repo, head_ref or "HEAD"),
         remotes=remote_names(repo),
         diff_hash="" if tree_head else hashlib.sha1(text.encode("utf-8")).hexdigest(),
+        read_old=file_reader(repo, start),
     )
     attribute(repo, change, log_from)
     mark_look_paths(hunks, change.remotes)
     return change
+
+
+def units(text: str) -> int:
+    return len(text.encode("utf-16-le")) // 2
+
+
+def token_class(kind: Any) -> str:
+    for parent, name in (
+        (Token.Comment, "c"),
+        (Token.Literal.String, "s"),
+        (Token.Literal.Number, "m"),
+        (Token.Keyword, "k"),
+        (Token.Operator.Word, "k"),
+        (Token.Name.Function, "f"),
+        (Token.Name.Class, "t"),
+        (Token.Name.Builtin, "b"),
+        (Token.Name.Decorator, "d"),
+        (Token.Name.Tag, "g"),
+        (Token.Name.Attribute, "a"),
+        (Token.Name.Constant, "m"),
+        (Token.Literal, "m"),
+        (Token.Generic.Heading, "h"),
+        (Token.Generic.Subheading, "h"),
+    ):
+        if kind in parent:
+            return name
+    return ""
+
+
+def paint(path: str, lines: Optional[List[str]]) -> Optional[List[List[Any]]]:
+    """Return per line a flat list of lengths in UTF-16 units and color classes, or None."""
+    if not PYGMENTS or not lines:
+        return None
+    try:
+        lexer = get_lexer_for_filename(path, stripnl=False, ensurenl=False)
+    except ClassNotFound:
+        if not lines[0].startswith("#!"):
+            return None
+        try:
+            lexer = guess_lexer(lines[0], stripnl=False, ensurenl=False)
+        except ClassNotFound:
+            return None
+    rows: List[List[Any]] = [[]]
+    text = "\n".join(line.replace("\r", " ").replace("﻿", " ") for line in lines) + "\n"
+    for kind, value in lexer.get_tokens(text):
+        name = token_class(kind)
+        for index, piece in enumerate(value.split("\n")):
+            if index:
+                rows.append([])
+            row = rows[-1]
+            if not piece:
+                continue
+            if row and row[-1] == name:
+                row[-2] += units(piece)
+            else:
+                row += [units(piece), name]
+    if len(rows) <= len(lines) or any(sum(rows[i][0::2]) != units(line) for i, line in enumerate(lines)):
+        return None
+    return rows[: len(lines)]
+
+
+def add_colors(change: Change) -> None:
+    def pick(colors: Optional[List[List[Any]]], number: int) -> List[Any]:
+        return colors[number - 1] if colors and 0 < number <= len(colors) else []
+
+    for hunk in change.hunks:
+        if not hunk.lines:
+            continue
+        new = change.colors(hunk.path)
+        old = change.colors(hunk.old_path, old=True) if hunk.removed else None
+        if new is None and old is None:
+            continue
+        rows, o, n = [], hunk.old_start, hunk.new_start
+        for kind, text in hunk.lines:
+            row = pick(old, o) if kind == "-" else pick(new, n)
+            rows.append(row if sum(row[0::2]) == units(text) else [])
+            o += kind != "+"
+            n += kind != "-"
+        hunk.colors = rows
+        for window in (hunk.above, hunk.below):
+            if window and new:
+                window["hl"] = [pick(new, window["new"] + i) for i in range(len(window["lines"]))]
+
+
+def colored(text: str, row: List[Any]) -> str:
+    if not row:
+        return esc_line(text)
+    data, out, at = text.encode("utf-16-le"), "", 0
+    for i in range(0, len(row), 2):
+        length, name = row[i], row[i + 1]
+        piece = esc_line(data[2 * at : 2 * (at + length)].decode("utf-16-le"))
+        out += f'<span class="t-{name}">{piece}</span>' if name else piece
+        at += length
+    return out
 
 
 def plural(count: int, word: str) -> str:
@@ -640,18 +758,20 @@ def resolve(ref: Any, hunks: List[Hunk]) -> List[Hunk]:
     return found
 
 
-def context_panel(ref: Dict[str, Any], read: ReadLines) -> str:
+def context_panel(ref: Dict[str, Any], change: Change) -> str:
     if "file" not in ref or "lines" not in ref:
         raise KitError(f"A context reference needs `file` and `lines`: {json.dumps(ref)}")
-    content = read(ref["file"])
+    content = change.read(ref["file"])
     if content is None:
         raise KitError(f"Cannot read {ref['file']} for a context panel")
     first, last = parse_lines(ref["lines"])
     if first > len(content):
         raise KitError(f"{ref['file']} has {len(content)} lines, the context starts at {first}")
     last = min(last, len(content))
+    colors = change.colors(ref["file"]) or []
     rows = "".join(
-        f'<tr><td class="ln">{n}</td><td class="c">{esc_line(content[n - 1])}</td></tr>' for n in range(first, last + 1)
+        f'<tr><td class="ln">{n}</td><td class="c">{colored(content[n - 1], colors[n - 1] if colors else [])}</td></tr>'
+        for n in range(first, last + 1)
     )
     note = f' <span class="muted">{inline(ref["note"])}</span>' if ref.get("note") else ""
     return (
@@ -697,7 +817,7 @@ class Layout:
             tags += f'<span class="tag accent">Look closely: {esc(hunk.look)}</span>'
         if tags:
             why += f"<p>{tags}</p>"
-        panels = "".join(context_panel(ref, self.change.read) for ref in meta.get("context", []))
+        panels = "".join(context_panel(ref, self.change) for ref in meta.get("context", []))
         return (
             f'<article class="hunk" data-hunk="{hunk.id}" id="hunk-{hunk.id}">'
             + (f'<div class="why">{why}</div>' if why else "")
@@ -790,7 +910,7 @@ def decide_cards(cards: List[Dict[str, Any]], change: Change, linker: Linker, or
             body += f"<p>{links}</p>"
         if card.get("why"):
             body += f'<p><span class="lbl">Pick {esc(pick)}.</span> {inline(card["why"], linker)}</p>'
-        panels = "".join(context_panel(ref, change.read) for ref in card.get("context", []))
+        panels = "".join(context_panel(ref, change) for ref in card.get("context", []))
         out += (
             f'<article class="card call" data-call="{number}" data-pick="{esc(pick)}">'
             f'<div class="call-top"><span class="num">Decide {number}</span>{tags}</div>'
@@ -1000,7 +1120,7 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
             where = item.get("where", "")
             tag, label = STATUS_TAGS.get(item.get("status", "changed"), ("", str(item.get("status"))))
             body = layout.entries(item.get("hunks", []), f"your comment {index}")
-            panels = "".join(context_panel(ref, change.read) for ref in item.get("context", []))
+            panels = "".join(context_panel(ref, change) for ref in item.get("context", []))
             on = f", on <code>{esc(where)}</code>" if where else ""
             feedback_html += (
                 f'<div class="cm" data-fb="{esc(fid)}" data-where="{esc(where)}" id="fb-{esc(fid)}"><div class="cm-top">'
@@ -1221,8 +1341,11 @@ def main(argv: Optional[List[str]] = None) -> int:
             if not args.output:
                 raise KitError("Pass -o FILE, or --list-hunks")
             narrative = read_json(args.narrative) if args.narrative else {}
+            add_colors(change)
             text, unplaced = build_review(change, narrative)
             write(args.output, text)
+            if not PYGMENTS:
+                print("Pygments is not installed, so the page has no syntax colors. Run the script with `uv run` for them.")
             if unplaced:
                 print(f"{unplaced} of {len(change.hunks)} hunks are not mentioned by the narrative")
     except KitError as error:

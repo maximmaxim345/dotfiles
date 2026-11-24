@@ -1,6 +1,22 @@
 .wrap.page { max-width: 1240px; }
-:root { --edge: rgba(0, 0, 0, 0.16); --mark: rgba(47, 95, 208, 0.14); }
-@media (prefers-color-scheme: dark) { :root { --edge: rgba(0, 0, 0, 0.55); --mark: rgba(143, 176, 255, 0.16); } }
+:root {
+  --edge: rgba(0, 0, 0, 0.16); --mark: rgba(47, 95, 208, 0.14);
+  --t-k: #cf222e; --t-s: #0a3069; --t-c: #6e7781; --t-m: #0550ae; --t-f: #8250df; --t-t: #953800; --t-g: #116329;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --edge: rgba(0, 0, 0, 0.55); --mark: rgba(143, 176, 255, 0.16);
+    --t-k: #ff7b72; --t-s: #a5d6ff; --t-c: #8b949e; --t-m: #79c0ff; --t-f: #d2a8ff; --t-t: #ffa657; --t-g: #7ee787;
+  }
+}
+.t-k { color: var(--t-k); }
+.t-s { color: var(--t-s); }
+.t-c { color: var(--t-c); font-style: italic; }
+.t-m, .t-b, .t-a { color: var(--t-m); }
+.t-f, .t-d { color: var(--t-f); }
+.t-t { color: var(--t-t); }
+.t-g { color: var(--t-g); }
+.t-h { color: var(--t-m); font-weight: 600; }
 .dhead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin-bottom: 8px; }
 .dhead h2 { margin: 0; }
 body { padding-bottom: 96px; }

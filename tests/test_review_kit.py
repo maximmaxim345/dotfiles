@@ -196,6 +196,20 @@ class ReviewKitTests(unittest.TestCase):
         lines = diff.stdout.decode().split("\n")
         self.assertEqual(shown, [line for line in lines if line and line[0] in " +-\\" and not line.startswith(("--- ", "+++ "))])
 
+    @unittest.skipUnless(build_review.PYGMENTS, "needs Pygments")
+    def test_colors_cover_each_line_and_removed_lines_take_the_old_file(self) -> None:
+        self.write("doc.py", 'x = "\U0001f600"\r\n"""\ntext\n"""\n')
+        self.commit("initial")
+        self.write("doc.py", 'x = "\U0001f600"\r\n')
+        change = build_review.collect(self.repo, None, None, "HEAD..", True, None)
+        build_review.add_colors(change)
+        [hunk] = change.hunks
+        colors = hunk.colors or []
+        self.assertEqual(len(colors), len(hunk.lines))
+        for index, (_, text) in enumerate(hunk.lines):
+            self.assertEqual(sum(colors[index][0::2]), len(text.encode("utf-16-le")) // 2, text)
+        self.assertEqual([colors[i][-1] for i, (kind, _) in enumerate(hunk.lines) if kind == "-"], ["s"] * 3)
+
     def test_narrative_text_never_reaches_the_page_as_markup(self) -> None:
         ref = {
             "file": "app.py",

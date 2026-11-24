@@ -37,6 +37,10 @@ show_column_numbers = true
 module = "winreg"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "pygments.*"
+ignore_missing_imports = true
+
 # Windows-specific dotfiles modules with registry access
 [[tool.mypy.overrides]]
 module = [

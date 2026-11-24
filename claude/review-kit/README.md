@@ -1,6 +1,6 @@
 # Review kit
 
-`build_review.py` turns a git diff and a small narrative JSON file into one self-contained HTML page. The page inlines its CSS and JavaScript, makes no network requests and works opened straight from disk. It needs Python 3.9 or newer and git 2.40 or newer, nothing else.
+`build_review.py` turns a git diff and a small narrative JSON file into one self-contained HTML page. The page inlines its CSS and JavaScript, makes no network requests and works opened straight from disk. It needs Python 3.9 or newer and git 2.40 or newer. With Pygments installed it also colors the code. Run it with `uv run`, which reads the script's header and brings Pygments along. Plain `python3` works too, and the page then has no colors, which the script says in one line.
 
 The script always takes the diff from `git diff`. You never type code into the narrative: it only points at hunks and adds the text around them.
 
@@ -13,15 +13,15 @@ KIT=~/.claude/review-kit/build_review.py
 python3 $KIT review --repo . --base main --list-hunks
 
 # First review: the branch against its merge base with main
-python3 $KIT review --repo . --base main --narrative review.json -o review.html
+uv run $KIT review --repo . --base main --narrative review.json -o review.html
 
 # An exact range, or the working tree (staged, unstaged and untracked files) on top of HEAD
-python3 $KIT review --range A..B --narrative review.json -o review.html
-python3 $KIT review --base main --uncommitted --narrative review.json -o review.html
+uv run $KIT review --range A..B --narrative review.json -o review.html
+uv run $KIT review --base main --uncommitted --narrative review.json -o review.html
 
 # Round two: only what changed since the head Maxim reviewed last
 python3 $KIT review --base main --since <reviewed head sha> --list-hunks
-python3 $KIT review --base main --since <reviewed head sha> --narrative round2.json -o round2.html
+uv run $KIT review --base main --since <reviewed head sha> --narrative round2.json -o round2.html
 
 # The two smaller pages
 python3 $KIT decisions decisions.json -o decisions.html
@@ -180,7 +180,7 @@ A round two narrative has a `feedback` list and needs `--since`. Hunks here are 
 
 - Decide cards first, then the before and after table, the claims and what the reviewers found, then the diff in reading order with each note above its hunk. When the range has more than one commit, a By commit switch regroups the same hunks under the commit that touched them, oldest first, and each hunk shows its commits.
 - A `path:line` or `path:10-20` in any text of the narrative links to that line when the page shows it, inside a hunk or in its unchanged lines. A path may be shortened to its end, like `worktree-due:40`, as long as only one changed file ends that way. Following such a link or a card ref opens the hunk, reveals the lines and marks them.
-- Side by side diff on screens 900 pixels and wider, stacked below that, with word-level highlights inside changed lines. The top bar switches between Auto, Side by side and Stacked.
+- Side by side diff on screens 900 pixels and wider, stacked below that, with syntax colors and word-level highlights inside changed lines. The colors come from Pygments at build time, from the whole old and new file, so a line inside a multi-line string is colored as a string. The top bar switches between Auto, Side by side and Stacked.
 - A carriage return shows as a small ␍, and a line without a final newline carries a "No newline at end of file" note, so a change of line endings is visible.
 - Markdown and text files open in a Words view that shows the changed paragraphs with struck and marked words. The source text stays raw. Long lines wrap with a hanging indent under list markers. A Lines switch shows the usual diff. These files show no function line in the hunk header.
 - Wrap lines is off by default, so long lines scroll inside the diff. Side by side, each side scrolls on its own. A shadow on the right edge and a "scroll sideways" note in the hunk header show when lines continue. The choice is remembered in the browser.

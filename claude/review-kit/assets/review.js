@@ -88,16 +88,34 @@ function mergedDiff(a, b) {
   return out;
 }
 
-const renderSegs = (sg, cls) => sg.map(([t, c]) => c ? `<span class="${cls}">${escLine(t)}</span>` : escLine(t)).join('');
+function colored(s, toks, from = 0, to = s.length) {
+  if (!toks || !toks.length) return escLine(s.slice(from, to));
+  let out = '', at = 0;
+  for (let i = 0; i < toks.length && at < to; i += 2) {
+    const a = Math.max(at, from), b = Math.min(at + toks[i], to);
+    if (a < b) { const t = escLine(s.slice(a, b)); out += toks[i + 1] ? `<span class="t-${toks[i + 1]}">${t}</span>` : t; }
+    at += toks[i];
+  }
+  return out;
+}
+
+function renderSegs(sg, cls, s, toks) {
+  let at = 0;
+  return sg.map(([t, c]) => {
+    const html = colored(s, toks, at, at + t.length);
+    at += t.length;
+    return c ? `<span class="${cls}">${html}</span>` : html;
+  }).join('');
+}
 
 function blocks(h) {
   let o = h.oldStart, n = h.newStart, cur = null;
   const out = [], eol = new Set(h.noNewline);
   h.lines.forEach(([t, s], i) => {
-    const e = eol.has(i);
-    if (t === ' ') { cur = null; out.push({ ctx: true, o: o++, n: n++, s, e }); return; }
+    const e = eol.has(i), k = h.hl && h.hl[i];
+    if (t === ' ') { cur = null; out.push({ ctx: true, o: o++, n: n++, s, e, k }); return; }
     if (!cur) { cur = { ctx: false, R: [], A: [] }; out.push(cur); }
-    if (t === '-') cur.R.push({ o: o++, s, e }); else cur.A.push({ n: n++, s, e });
+    if (t === '-') cur.R.push({ o: o++, s, e, k }); else cur.A.push({ n: n++, s, e, k });
   });
   return out;
 }
@@ -121,10 +139,10 @@ function changeRows(b) {
     const k = Math.max(op.R.length, op.A.length);
     for (let i = 0; i < k; i++) {
       const r = op.R[i], a = op.A[i];
-      let l = r ? escLine(r.s) : null, rr = a ? escLine(a.s) : null;
+      let l = r ? colored(r.s, r.k) : null, rr = a ? colored(a.s, a.k) : null;
       if (r && a) {
         const w = wordDiff(r.s, a.s);
-        if (w.sim >= 0.4) { l = renderSegs(w.a, 'dw'); rr = renderSegs(w.b, 'aw'); }
+        if (w.sim >= 0.4) { l = renderSegs(w.a, 'dw', r.s, r.k); rr = renderSegs(w.b, 'aw', a.s, a.k); }
       }
       if (r && r.e) l += EOL;
       if (a && a.e) rr += EOL;
@@ -150,7 +168,7 @@ function toUnified(rows) {
 function windowRows(w, from, to) {
   const rows = [];
   for (let i = from; i < to; i++) {
-    const s = escLine(w.lines[i]);
+    const s = colored(w.lines[i], w.hl && w.hl[i]);
     rows.push({ t: 'ctx', o: w.old + i, n: w.new + i, l: s, r: s });
   }
   return rows;
@@ -188,9 +206,9 @@ function rowComments(hid, key) {
 function cell(html) {
   if (html == null) return '';
   if (!prefs.wrap) return html;
-  const m = html.match(/^[ \t]+/);
-  const n = m ? m[0].replace(/\t/g, '    ').length : 0;
-  return `<div class="hi" style="--i:${n}">${html.slice(m ? m[0].length : 0)}</div>`;
+  const lead = html.match(/^(?:<[^>]*>|[ \t])*/)[0];
+  const n = lead.replace(/<[^>]*>/g, '').replace(/\t/g, '    ').length;
+  return `<div class="hi" style="--i:${n}">${lead.replace(/(<[^>]*>)|[ \t]/g, (_, tag) => tag || '')}${html.slice(lead.length)}</div>`;
 }
 
 function expandRow(id, dir, w, shown, bare) {
@@ -240,7 +258,7 @@ function renderTable(id, h) {
   const down = h.below ? Math.min(ex.down, h.below.lines.length) : 0;
   if (h.above) rows.push(...windowRows(h.above, h.above.lines.length - up, h.above.lines.length));
   for (const b of blocks(h)) {
-    if (b.ctx) { const s = escLine(b.s) + (b.e ? EOL : ''); rows.push({ t: 'ctx', o: b.o, n: b.n, l: s, r: s }); }
+    if (b.ctx) { const s = colored(b.s, b.k) + (b.e ? EOL : ''); rows.push({ t: 'ctx', o: b.o, n: b.n, l: s, r: s }); }
     else rows.push(...changeRows(b));
   }
   if (h.below) rows.push(...windowRows(h.below, 0, down));

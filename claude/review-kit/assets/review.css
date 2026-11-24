@@ -212,6 +212,13 @@ details.ctxp table.d td.c { color: var(--text); }
 .cmt { background: var(--accent-soft); border-color: var(--accent-soft); }
 .cmt .txt { white-space: pre-wrap; overflow-wrap: anywhere; }
 .cmeta { font-size: 12px; color: var(--muted); margin-bottom: 4px; overflow-wrap: anywhere; }
+.thread .cmt + .cmt { margin-top: -2px; }
+.cmt.reply { background: var(--surface-2); border-color: var(--border); }
+.cmt.done { background: var(--surface); border-color: var(--border); display: flex; flex-wrap: wrap; align-items: center; gap: 0 10px; }
+.cmt.done .cmeta { margin: 0; }
+.cmt .txt.one { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+.cmt .tag { margin-left: 4px; }
+.tacts { display: flex; gap: 14px; margin: 0 10px 8px; }
 .cbox textarea { width: 100%; min-height: 76px; font: inherit; font-size: 15px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); resize: vertical; }
 .cbox .row { margin-top: 8px; }
 

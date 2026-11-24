@@ -24,6 +24,8 @@ from pathlib import Path
 from typing import Iterator
 from urllib.parse import parse_qs, urlsplit
 
+import reviews
+
 DESK = Path.home() / "desk"
 BACKLOG = DESK / "backlog"
 EFFORTS = DESK / "efforts"
@@ -787,6 +789,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send(200, PAGE.read_bytes(), "text/html; charset=utf-8")
         elif self.path == "/api/state":
             self.send_json(200, load_state())
+        elif url.path.startswith(("/review/", "/api/review/")):
+            reviews.get(self, url.path)
         else:
             self.send_json(404, {"error": "not found"})
 
@@ -796,6 +800,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         length = int(self.headers.get("Content-Length", 0))
         body = json.loads(self.rfile.read(length) or b"{}")
+        if self.path.startswith("/api/review/"):
+            reviews.post(self, self.path, body)
+            return
         now = datetime.datetime.now().isoformat(timespec="seconds")
         try:
             if self.path == "/api/capture":

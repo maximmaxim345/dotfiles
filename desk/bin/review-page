@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""Register a review page with the desk board, and reply to the comments on it."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+import reviews  # noqa: E402
+
+BOARD_CONFIG = Path.home() / "desk" / "board.json"
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+    register = sub.add_parser("register", help="record a page and print its addresses on the board")
+    register.add_argument("--page", required=True, help="the review page HTML file")
+    register.add_argument("--thread", default=os.environ.get("T3CODE_THREAD_ID"), help="the thread that gets my answer")
+    register.add_argument("--port", type=int, default=8765, help="the port the board runs on")
+    reply = sub.add_parser("reply", help="reply to one comment thread on a page")
+    reply.add_argument("review", help="the review id from the answer")
+    reply.add_argument("--comment", type=int, required=True, help="the [n] of the comment")
+    text = reply.add_mutually_exclusive_group(required=True)
+    text.add_argument("--text")
+    text.add_argument("--text-file")
+    args = parser.parse_args()
+    try:
+        if args.command == "register":
+            if not args.thread:
+                sys.exit("error: pass --thread, T3CODE_THREAD_ID is not set")
+            review_id = reviews.register(Path(args.page), args.thread)
+            tailnet = json.loads(BOARD_CONFIG.read_text()).get("tailnet") if BOARD_CONFIG.exists() else None
+            for host in ["127.0.0.1", *([tailnet] if tailnet else [])]:
+                print(f"http://{host}:{args.port}/review/{review_id}")
+        else:
+            body = Path(args.text_file).read_text() if args.text_file else args.text
+            reviews.reply(args.review, args.comment, body)
+    except (OSError, ValueError) as err:
+        sys.exit(f"error: {err}")
+
+
+if __name__ == "__main__":
+    main()

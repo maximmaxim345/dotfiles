@@ -40,9 +40,23 @@ The script exits with an error and a message when a reference in the narrative m
 
 ## Showing a page
 
-A review page opens from its absolute file path in a browser. Comments and changed picks stay in that browser's storage, and Copy for chat puts the answer on the clipboard for the chat.
+On a machine with the desk (`~/desk/bin/review-page` exists), register the page with the desk board and give its address:
 
-In T3 Code, a page that is only looked at, the decision sheet and the architecture page, can also show inline in the thread: check it with `html_preview` on the file path, then pass the path and the `contentHeight` it reports to `html_render`. An inline render has no URL and sends nothing back to the thread, so the answer comes in chat. A review page always goes out as its path, since its comments need a browser.
+```sh
+~/desk/bin/review-page register --page <absolute path of the html>
+```
+
+It prints the page's address on the board, and a second address when the board also listens on the tailnet. The thread that gets the answer is `$T3CODE_THREAD_ID`, or `--thread <id>`. Registering the same file again keeps its address and what was marked on it. When the file was rebuilt with other changes, the board starts it fresh, and an open copy of the old page asks for a reload. From the board, the page keeps picks, notes, comments and the scroll position on the board, so they survive a reload, another tab or another browser. Its Send button sends the answer to the registered thread, and the thread replies under each comment:
+
+```sh
+~/desk/bin/review-page reply <review id> --comment <n> --text-file <file>
+```
+
+The review id and each comment's `[n]` come with the answer. The reply shows under the comment within a few seconds, without a reload.
+
+Opened from its absolute file path, or when the board is away, the page keeps everything in that browser's storage, and Copy for chat puts the answer on the clipboard for the chat.
+
+In T3 Code, a page that is only looked at, the decision sheet and the architecture page, can also show inline in the thread: check it with `html_preview` on the file path, then pass the path and the `contentHeight` it reports to `html_render`. An inline render has no URL and sends nothing back to the thread, so the answer comes in chat. A review page always goes out as its address and its path, since its comments need a browser.
 
 ## The review narrative
 
@@ -189,7 +203,8 @@ A round two narrative has a `feedback` list and needs `--since`. Hunks here are 
 - Markdown and text files open in a Words view that shows the changed paragraphs with struck and marked words. The source text stays raw. Long lines wrap with a hanging indent under list markers. A Lines switch shows the usual diff. These files show no function line in the hunk header.
 - Wrap lines is off by default, so long lines scroll inside the diff. Side by side, both sides scroll sideways together. A touchpad swipe moves the page and the diff at the same time, in any direction, while a mouse wheel and shift with the wheel work as usual. A shadow on the right edge and a "scroll sideways" note in the hunk header show when lines continue. The choice is remembered in the browser.
 - Each hunk can show up to 100 unchanged lines above and below it, 20 per click, like GitHub.
-- Tapping a line, a word block or the Comment button on a hunk opens a comment box. Round two pages add a Reply button per feedback item. Comments and changed picks stay in the browser's local storage for that diff. Copy for chat puts the answer on the clipboard for pasting into the chat: `go` when no pick changed and there are no notes or comments, otherwise the changed picks like `2B, 4C`, then each decide card note as `Decide 2: text`, then each comment as `path:line: text`.
+- Tapping a line, a word block or the Comment button on a hunk opens a comment box. Round two pages add a Reply button per feedback item. Copy for chat puts the answer on the clipboard for pasting into the chat: `go` when no pick changed and there are no notes or comments, otherwise the changed picks like `2B, 4C`, then each decide card note as `Decide 2: text`, then each comment as `path:line: text`.
+- From the board, Send and Copy carry only what the thread has not had yet, and each comment starts with its id: `[3] path:line: text`, or `[3] Reply on path:line: text` for a follow-up in thread 3. Copy starts with the same line naming the review id as Send, and marks what it copied as sent. Comments already sent show a Sent tag and can no longer be removed. Under a sent comment, the thread's replies appear in order with my follow-ups, with Reply and Resolve buttons. A resolved thread shrinks to one line.
 - Light and dark follow the system setting. At phone width only the diff scrolls sideways.
 
 ## Decision sheet

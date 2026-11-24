@@ -21,9 +21,113 @@ function save(key, value) {
 const PREFS = 'review-kit:prefs';
 const PAGE = 'review-kit:page:' + KIT.key;
 const prefs = Object.assign({ wrap: false, layout: 'auto', order: 'reading' }, load(PREFS, {}));
-const page = Object.assign({ comments: [], picks: {}, notes: {}, nextId: 1 }, load(PAGE, {}));
-const ui = { open: null, expand: {}, view: {}, tray: false, mark: null, slots: {} };
-const persist = () => save(PAGE, page);
+const blank = () => ({ comments: [], picks: {}, notes: {}, resolved: [], nextId: 1 });
+const page = Object.assign(blank(), load(PAGE, {}));
+const ui = { open: null, expand: {}, view: {}, tray: false, mark: null, slots: {}, unfold: {} };
+const API = location.protocol.startsWith('http') && /^\/review\/[\w-]+$/.test(location.pathname) ? '/api' + location.pathname : '';
+const board = { on: false, send: false, rev: 0, scroll: 0, replies: {}, sent: { comments: [], picks: {}, notes: {} }, header: '' };
+const queue = [];
+const noteTimers = {};
+let pumping = null;
+
+async function call(path, body) {
+  const init = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: KIT.key, ...body }) } : { cache: 'no-store' };
+  const r = await fetch(API + path, init);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(data.error || `the board answered ${r.status}`), { status: r.status });
+  return data;
+}
+
+function adopt(data) {
+  const before = page.comments;
+  Object.assign(page, blank(), data.state);
+  Object.assign(board, { rev: data.rev, scroll: data.scroll, replies: data.replies, sent: data.sent, send: data.send, header: data.header });
+  const typing = document.activeElement;
+  if (typing && typing.matches('.call textarea.note')) page.notes[typing.closest('.call').dataset.call] = typing.value;
+  return before;
+}
+
+function apply(op) {
+  if (op.op === 'add') page.comments.push({ id: page.nextId++, hunk: op.hunk, key: op.key, label: op.label, text: op.text, at: new Date().toISOString(), ...(op.parent ? { parent: op.parent } : {}) });
+  if (op.op === 'remove') page.comments = page.comments.filter(c => c.id !== op.id);
+  if (op.op === 'pick') page.picks[op.call] = op.value;
+  if (op.op === 'note') page.notes[op.call] = op.value;
+  if (op.op === 'resolve') page.resolved = [...page.resolved.filter(x => x !== op.id), ...(op.on ? [op.id] : [])];
+  if (op.op === 'clear') { page.comments = page.comments.filter(isSent); page.picks = {}; page.notes = {}; }
+}
+
+// On the board each change goes to the server in order, and a comment shows once the server gave it its id.
+function edit(op) {
+  if (!board.on || op.op !== 'add') apply(op);
+  if (!board.on) { save(PAGE, page); return Promise.resolve(); }
+  return new Promise((resolve, reject) => { queue.push({ op, resolve, reject }); pump(); });
+}
+
+function pump() {
+  if (!pumping) pumping = drain().finally(() => { pumping = null; });
+  return pumping;
+}
+
+async function drain() {
+  while (queue.length && board.on) {
+    const item = queue[0];
+    try {
+      const data = await call('/edit', item.op);
+      queue.shift();
+      item.resolve();
+      if (!queue.length) refresh(adopt(data));
+    } catch (e) {
+      if (e.status === 409) { stale(); return; }
+      if (e.status >= 400 && e.status < 500) { queue.shift(); item.reject(e); board.rev = -1; continue; }
+      $('#status').textContent = `Not saved on the board yet, trying again: ${e.message}`;
+      queue.filter(x => x.op.op === 'add').forEach(x => x.reject(e));
+      queue.splice(0, queue.length, ...queue.filter(x => x.op.op !== 'add'));
+      return;
+    }
+  }
+}
+
+function stale() {
+  board.on = false;
+  board.stale = true;
+  queue.splice(0).forEach(x => x.reject(new Error('this page was rebuilt')));
+  updateBar();
+}
+
+function saveNote(call) {
+  clearTimeout(noteTimers[call]);
+  delete noteTimers[call];
+  const card = $$('.call[data-call]').find(c => c.dataset.call === call);
+  edit({ op: 'note', call, value: $('textarea.note', card).value }).catch(() => {});
+}
+
+const saveNotes = () => Object.keys(noteTimers).forEach(saveNote);
+
+async function settle() {
+  saveNotes();
+  await pump();
+  if (queue.length) throw new Error('the board has not saved the last change yet');
+}
+
+async function poll() {
+  if (!board.on || document.hidden) return;
+  if (queue.length || pumping) { pump(); return; }
+  try {
+    const data = await call('/state');
+    if (data.key !== KIT.key) stale();
+    else if (data.rev > board.rev && !queue.length && !pumping) refresh(adopt(data));
+  } catch (e) {}
+}
+
+// An open comment box keeps its hunk as it is, so typed text survives a reply landing nearby.
+function refresh(before) {
+  const hosts = new Set([...before, ...page.comments].map(c => c.hunk));
+  const open = ui.open || {};
+  $$('.hunk[data-rendered]').forEach(el => { if (hosts.has(el.dataset.hunk) && el.dataset.hunk !== open.hunk) renderHunk(el); });
+  $$('.cm[data-fb]').forEach(cm => { if (open.key !== 'F' + cm.dataset.fb) renderReplies(cm); });
+  updateCards();
+  updateBar();
+}
 
 function lcsPairs(a, b, eq) {
   let p = 0;
@@ -187,14 +291,41 @@ function rangeOf(h) {
   return `removed at old ${h.oldStart}-${h.oldStart + h.oldCount - 1}`;
 }
 
+const isSent = c => board.sent.comments.includes(c.id);
+const sentTag = c => isSent(c) ? ' <span class="tag">Sent</span>' : '';
+
+function box(open) {
+  const title = open.parent ? 'Reply' : open.key[0] === 'F' ? 'Reply to the author' : 'Comment on ' + esc(open.label);
+  return `<div class="cbox"><div class="cmeta">${title}</div><textarea aria-label="Comment">${esc(open.draft || '')}</textarea><div class="row"><button class="btn primary" data-save>Save comment</button><button class="btn" data-cancel>Cancel</button></div></div>`;
+}
+
+function mine(c) {
+  const who = c.parent || c.key[0] === 'F' ? 'Your reply' : 'Your comment on ' + esc(c.label);
+  const remove = isSent(c) ? '' : `<button class="linkbtn" data-del="${c.id}">Remove</button>`;
+  return `<div class="cmt"><div class="cmeta">${who}${sentTag(c)}</div><div class="txt">${esc(c.text)}</div>${remove}</div>`;
+}
+
+function thread(c, open) {
+  const resolved = page.resolved.includes(c.id);
+  if (resolved && !ui.unfold[c.id]) {
+    return `<div class="cmt done"><div class="cmeta">Resolved, ${esc(c.label)}</div><div class="txt one">${esc(c.text)}</div><button class="linkbtn" data-unfold="${c.id}">Show</button></div>`;
+  }
+  const items = [
+    ...page.comments.filter(x => x.parent === c.id).map(x => [Date.parse(x.at) || 0, mine(x)]),
+    ...(board.replies[c.id] || []).map(r => [Date.parse(r.at) || 0, `<div class="cmt reply"><div class="cmeta">Author</div><div class="txt">${esc(r.text)}</div></div>`]),
+  ].sort((a, b) => a[0] - b[0]);
+  let out = `<div class="thread">${mine(c)}${items.map(i => i[1]).join('')}`;
+  if (open && open.parent === c.id) out += box(open);
+  else if (board.on && isSent(c)) {
+    out += `<div class="tacts"><button class="linkbtn" data-follow="${c.id}">Reply</button><button class="linkbtn" data-resolve="${c.id}">${resolved ? 'Unresolve' : 'Resolve'}</button>`
+      + (resolved ? `<button class="linkbtn" data-unfold="${c.id}">Hide</button>` : '') + '</div>';
+  }
+  return out + '</div>';
+}
+
 function commentsHtml(match, open) {
-  let out = '';
-  for (const c of page.comments.filter(match)) {
-    out += `<div class="cmt"><div class="cmeta">${c.key[0] === 'F' ? 'Your reply' : 'Your comment on ' + esc(c.label)}</div><div class="txt">${esc(c.text)}</div><button class="linkbtn" data-del="${c.id}">Remove</button></div>`;
-  }
-  if (open) {
-    out += `<div class="cbox"><div class="cmeta">${open.key[0] === 'F' ? 'Reply to the author' : 'Comment on ' + esc(open.label)}</div><textarea aria-label="Comment"></textarea><div class="row"><button class="btn primary" data-save>Save comment</button><button class="btn" data-cancel>Cancel</button></div></div>`;
-  }
+  let out = page.comments.filter(c => !c.parent && match(c)).map(c => thread(c, open)).join('');
+  if (open && !open.parent) out += box(open);
   return out;
 }
 
@@ -458,22 +589,63 @@ function updateCards() {
   }
 }
 
-function copyText() {
-  const picks = changedPicks().map(c => c.dataset.call + page.picks[c.dataset.call]);
-  const notes = noted().map(c => `Decide ${c.dataset.call}: ${page.notes[c.dataset.call].trim()}`);
-  if (!picks.length && !notes.length && !page.comments.length) return 'go\n';
-  const parts = picks.length ? [picks.join(', '), ...notes] : notes;
-  for (const c of page.comments) parts.push(`${c.label}: ${c.text}`);
-  return parts.join('\n\n') + '\n';
+const chosen = card => page.picks[card.dataset.call] || card.dataset.pick;
+const noteOf = card => (page.notes[card.dataset.call] || '').trim();
+
+// On the board the answer holds only what the thread has not had yet, and each comment carries its [id] for the reply.
+function answer() {
+  const cards = $$('.call[data-call]');
+  const fresh = board.on;
+  const picks = cards.filter(c => chosen(c) !== ((fresh && board.sent.picks[c.dataset.call]) || c.dataset.pick));
+  const notes = cards.filter(c => noteOf(c) && noteOf(c) !== (fresh ? board.sent.notes[c.dataset.call] || '' : ''));
+  const comments = page.comments.filter(c => !(fresh && isSent(c)));
+  const line = c => !fresh ? `${c.label}: ${c.text}` : c.parent ? `[${c.parent}] Reply on ${c.label}: ${c.text}` : `[${c.id}] ${c.label}: ${c.text}`;
+  const parts = [
+    ...(picks.length ? [picks.map(c => c.dataset.call + chosen(c)).join(', ')] : []),
+    ...notes.map(c => `Decide ${c.dataset.call}: ${noteOf(c)}`),
+    ...comments.map(line),
+  ];
+  return { text: (parts.length ? parts.join('\n\n') : 'go') + '\n', picks, notes, comments };
 }
 
 function updateBar() {
-  const n = page.comments.length, p = changedPicks().length, m = noted().length;
+  const a = answer(), n = a.comments.length, p = a.picks.length, m = a.notes.length;
   const st = $('#status');
   st.classList.remove('ok');
-  st.textContent = `${n} comment${n === 1 ? '' : 's'}` + ($('.call') ? `, ${p} changed pick${p === 1 ? '' : 's'}, ${m} note${m === 1 ? '' : 's'}` : '');
+  st.textContent = board.stale ? 'This page was rebuilt. Reload it to see the new one.'
+    : `${n} ${board.on ? 'unsent ' : ''}comment${n === 1 ? '' : 's'}` + ($('.call') ? `, ${p} changed pick${p === 1 ? '' : 's'}, ${m} note${m === 1 ? '' : 's'}` : '');
   $('#copy').textContent = n || p || m ? 'Copy for chat' : 'Copy go';
+  const send = $('#send');
+  send.hidden = !(board.on && board.send);
+  send.textContent = n || p || m ? 'Send to thread' : 'Send go';
+  $('#copy').classList.toggle('primary', send.hidden);
   renderTray();
+}
+
+function sentBody(a) {
+  const cards = $$('.call[data-call]');
+  return {
+    text: a.text,
+    comments: a.comments.map(c => c.id),
+    picks: Object.fromEntries(cards.map(c => [c.dataset.call, chosen(c)])),
+    notes: Object.fromEntries(cards.map(c => [c.dataset.call, noteOf(c)])),
+  };
+}
+
+async function sendAnswer() {
+  const btn = $('#send'), st = $('#status');
+  btn.disabled = true;
+  st.classList.remove('ok');
+  st.textContent = 'Sending...';
+  try {
+    await settle();
+    refresh(adopt(await call('/send', sentBody(answer()))));
+    st.textContent = 'Sent to the thread.';
+    st.classList.add('ok');
+  } catch (e) {
+    st.textContent = `Not sent: ${e.message}. Copy for chat still works.`;
+  }
+  btn.disabled = false;
 }
 
 function renderTray(fallbackText) {
@@ -489,7 +661,10 @@ function renderTray(fallbackText) {
     html += '<ul>';
     for (const card of changedPicks()) html += `<li><div class="cmeta">Decide ${card.dataset.call}</div>${esc(page.picks[card.dataset.call])} instead of the pick ${esc(card.dataset.pick)}</li>`;
     for (const card of noted()) html += `<li><div class="cmeta">Note on decide ${card.dataset.call}</div>${esc(page.notes[card.dataset.call].trim())}</li>`;
-    for (const c of page.comments) html += `<li><div class="cmeta">${esc(c.label)}</div>${esc(c.text)} <button class="linkbtn" data-del="${c.id}">Remove</button></li>`;
+    for (const c of page.comments) {
+      const remove = isSent(c) ? '' : ` <button class="linkbtn" data-del="${c.id}">Remove</button>`;
+      html += `<li><div class="cmeta">${esc(c.label)}${c.parent ? ', reply' : ''}${sentTag(c)}</div>${esc(c.text)}${remove}</li>`;
+    }
     html += '</ul><button class="btn" data-clear>Clear all</button>';
   }
   tray.innerHTML = html;
@@ -497,7 +672,9 @@ function renderTray(fallbackText) {
 }
 
 async function copy() {
-  const text = copyText();
+  saveNotes();
+  const a = answer();
+  const text = board.on ? `${board.header}\n\n${a.text}` : a.text;
   let ok = false;
   try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {}
   if (!ok) {
@@ -511,6 +688,16 @@ async function copy() {
   const st = $('#status');
   st.textContent = 'Copied. Paste it into the chat.';
   st.classList.add('ok');
+  if (!board.on) return;
+  try {
+    await settle();
+    refresh(adopt(await call('/sent', sentBody(a))));
+    st.textContent = 'Copied. Paste it into the chat.';
+    st.classList.add('ok');
+  } catch (e) {
+    st.classList.remove('ok');
+    st.textContent = `Copied, but the board did not mark it as sent: ${e.message}`;
+  }
 }
 
 function rerender(el) {
@@ -559,16 +746,43 @@ document.addEventListener('click', e => {
   }
   if (d.save !== undefined) {
     const text = $('.cbox textarea', host).value.trim();
-    if (text && ui.open) { page.comments.push({ id: page.nextId++, hunk: ui.open.hunk, key: ui.open.key, label: ui.open.label, text }); persist(); }
-    ui.open = null; rerender(host); updateBar(); return;
+    const open = ui.open;
+    const close = () => { if (ui.open === open) ui.open = null; rerender(host); updateBar(); };
+    if (!text || !open) { close(); return; }
+    t.disabled = true;
+    edit({ op: 'add', hunk: open.hunk, key: open.key, label: open.label, text, ...(open.parent ? { parent: open.parent } : {}) }).then(close, err => {
+      t.disabled = false;
+      $('#status').textContent = `Comment not saved: ${err.message}`;
+    });
+    return;
   }
   if (d.cancel !== undefined) { ui.open = null; rerender(host); return; }
-  if (d.del) { page.comments = page.comments.filter(c => c.id !== +d.del); persist(); renderAll(); return; }
-  if (d.clear !== undefined) { if (confirm('Remove all comments on this page?')) { page.comments = []; page.picks = {}; page.notes = {}; persist(); renderAll(); } return; }
-  if (d.opt) { const card = t.closest('.call'); page.picks[card.dataset.call] = d.opt; persist(); updateCards(); updateBar(); return; }
+  if (d.follow) {
+    const c = page.comments.find(x => x.id === +d.follow);
+    const prev = ui.open && ui.open.hunk && ui.open.hunk !== c.hunk && document.querySelector(`.hunk[data-hunk="${ui.open.hunk}"]`);
+    ui.open = { hunk: c.hunk, key: c.key, label: c.label, parent: c.id };
+    if (prev) renderHunk(prev);
+    rerender(host); return;
+  }
+  if (d.resolve) {
+    const id = +d.resolve;
+    ui.unfold[id] = false;
+    edit({ op: 'resolve', id, on: !page.resolved.includes(id) }).catch(() => {});
+    rerender(host); return;
+  }
+  if (d.unfold) { ui.unfold[d.unfold] = !ui.unfold[d.unfold]; rerender(host); return; }
+  if (d.del) { edit({ op: 'remove', id: +d.del }).catch(() => {}); renderAll(); return; }
+  if (d.clear !== undefined) {
+    if (confirm('Remove all unsent comments, changed picks and notes on this page?')) {
+      edit({ op: 'clear' }).catch(() => {}); renderAll();
+    }
+    return;
+  }
+  if (d.opt) { edit({ op: 'pick', call: t.closest('.call').dataset.call, value: d.opt }).catch(() => {}); updateCards(); updateBar(); return; }
   if (d.trayClose !== undefined) { ui.tray = false; $('#tray').hidden = true; return; }
   if (t.id === 'show') { ui.tray = !ui.tray; renderTray(); return; }
   if (t.id === 'copy') { copy(); return; }
+  if (t.id === 'send') { sendAnswer(); return; }
   if (t.matches('tr.cl, .wb.cl')) {
     if (String(window.getSelection())) return;
     const h = KIT.hunks[host.dataset.hunk];
@@ -584,9 +798,17 @@ document.addEventListener('click', e => {
 });
 
 document.addEventListener('input', e => {
+  if (e.target.matches('.cbox textarea') && ui.open) ui.open.draft = e.target.value;
   if (!e.target.matches('.call textarea.note')) return;
-  page.notes[e.target.closest('.call').dataset.call] = e.target.value;
-  persist(); updateBar();
+  const call = e.target.closest('.call').dataset.call;
+  page.notes[call] = e.target.value;
+  clearTimeout(noteTimers[call]);
+  noteTimers[call] = setTimeout(() => saveNote(call), 400);
+  updateBar();
+});
+
+document.addEventListener('change', e => {
+  if (e.target.matches('.call textarea.note') && noteTimers[e.target.closest('.call').dataset.call]) saveNote(e.target.closest('.call').dataset.call);
 });
 
 document.addEventListener('toggle', e => {
@@ -661,7 +883,30 @@ window.addEventListener('resize', () => {
   if (isSplit() !== wasSplit) { wasSplit = isSplit(); renderAll(); return; }
   $$('.hunk[data-rendered]').forEach(edges);
 });
-applyOrder();
-renderAll();
-if (location.hash.length > 1) reveal(location.hash.slice(1));
+window.addEventListener('scroll', () => {
+  if (!board.on) return;
+  clearTimeout(board.scrollTimer);
+  board.scrollTimer = setTimeout(() => call('/edit', { op: 'scroll', y: Math.round(window.scrollY) }).catch(() => {}), 800);
+}, { passive: true });
+
+(async () => {
+  if (API) {
+    try {
+      const data = await call('/state');
+      if (data.key === KIT.key) {
+        adopt(data);
+        board.on = true;
+      }
+      history.scrollRestoration = 'manual';
+    } catch (e) {}
+  }
+  applyOrder();
+  renderAll();
+  if (location.hash.length > 1) reveal(location.hash.slice(1));
+  else if (board.scroll) window.scrollTo(0, board.scroll);
+  if (board.on) {
+    setInterval(poll, 4000);
+    document.addEventListener('visibilitychange', poll);
+  }
+})();
 })();

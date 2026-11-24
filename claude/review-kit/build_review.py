@@ -49,7 +49,8 @@ TOP_BAR_CONTROLS = (
 BOTTOM_BAR = (
     '<div class="bar" id="bar"><div class="tray" id="tray" hidden></div><div class="bar-in">'
     '<span class="status" id="status"></span><button class="btn" id="show">Show</button>'
-    '<button class="btn primary" id="copy">Copy for chat</button></div></div>'
+    '<button class="btn primary" id="copy">Copy for chat</button>'
+    '<button class="btn primary" id="send" hidden>Send to thread</button></div></div>'
 )
 UNCOMMITTED = "uncommitted"
 BLAME_RE = re.compile(r"^([0-9a-f]{40}) \d+ (\d+)(?: \d+)?$")
@@ -1161,7 +1162,8 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
         sections += (
             f'<section id="diff"><div class="dhead"><h2>The diff <span class="count">{plural(len(change.hunks), "hunk")} '
             f'in {plural(files, "file")}</span></h2>{order}</div>'
-            '<p class="sub">Tap a line to comment on it. Comments stay in this browser until you copy them.</p>'
+            '<p class="sub">Tap a line to comment on it. Comments stay on the desk board when the page comes from it, '
+            "otherwise in this browser.</p>"
             f'<div id="reading">{diff or "<p class=muted>No changes.</p>"}</div><div id="bycommit" hidden></div></section>'
         )
 

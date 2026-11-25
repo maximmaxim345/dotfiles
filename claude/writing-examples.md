@@ -243,6 +243,16 @@ Idea: Does it make sense to check `data.len()` with what is expected by the `Vis
 This should belong in a PR description and/or issue instead of the spec IMO.
 ```
 
+```
+Hmm, this makes me think that to be consistent, `set_output_delay` could also need a paired session.
+On the other side that would probably make it more confusing to use, and a wrong delay only puts a player out of sync, while this sets free-form text.
+```
+
+```
+I think it would be even better if we put both fields in a client-level object in `client/state`, like `client: {name, supported_commands}`, to match the `client` object in `server/command`.
+Then the existing rule for omitted objects covers it and the rule about repeating both fields in every message can go.
+```
+
 ## PR descriptions
 
 Title: Use fixed 1.5s scheduling horizon on Cast

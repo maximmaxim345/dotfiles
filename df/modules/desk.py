@@ -1,4 +1,5 @@
 import io
+import os
 from pathlib import Path
 from typing import List, Tuple, Union
 
@@ -30,9 +31,14 @@ def is_compatible() -> Union[bool, str]:
     return system() in ["Linux", "Darwin"]
 
 
+# The links are relative, since ~/desk is synced to machines with another home folder.
+def link_text(source_name: str) -> str:
+    return os.path.relpath(df.DOTFILES_PATH / "desk" / source_name, desk_path)
+
+
 def is_linked(source_name: str, target_name: str) -> bool:
     target_path = desk_path / target_name
-    return target_path.is_symlink() and target_path.resolve() == (df.DOTFILES_PATH / "desk" / source_name).resolve()
+    return target_path.is_symlink() and os.readlink(target_path) == link_text(source_name)
 
 
 def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
@@ -42,8 +48,12 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
         if is_linked(source_name, target_name):
             continue
         target_path = desk_path / target_name
-        df.create_backup(target_path, config, key)
-        df.symlink_path(df.DOTFILES_PATH / "desk" / source_name, target_path)
+        source_path = df.DOTFILES_PATH / "desk" / source_name
+        if target_path.is_symlink() and target_path.resolve() == source_path.resolve():
+            target_path.unlink()
+        else:
+            df.create_backup(target_path, config, key)
+        target_path.symlink_to(link_text(source_name))
         print(f"Linked {target_path}", file=stdout)
 
 
@@ -54,7 +64,7 @@ def uninstall(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
 
 def has_update(config: ModuleConfig) -> Union[bool, str]:
     missing = [target for source, target, _ in ENTRIES if not is_linked(source, target)]
-    return f"Missing links: {', '.join(missing)}" if missing else False
+    return f"Links to update: {', '.join(missing)}" if missing else False
 
 
 def update(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:

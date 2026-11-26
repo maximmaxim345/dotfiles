@@ -135,8 +135,10 @@ back. Pass a subagent's model and effort explicitly. When I name a model or an
 effort, use it. Otherwise, in a session on a Claude model, pick by the work:
 - Claude Opus at `high` for ordinary work: implementing, reviewing, auditing,
   investigating.
-- Claude Sonnet at `medium` for a chore that needs no judgment: running commands
-  and reporting, an update, a scan, a lookup.
+- Claude Opus at `medium` for a chore that changes something but needs little
+  judgment: an update, running commands and reporting.
+- Claude Haiku for collecting and condensing that changes nothing: a scan, a
+  lookup, reading many files or logs and summarizing them.
 - The session's own model at `high` when the session runs a model above Opus
   (Fable or Mythos) and a wrong result would be expensive and hard to notice: a
   design choice, a bug that resisted a first attempt, a security review.

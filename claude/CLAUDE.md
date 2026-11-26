@@ -131,10 +131,20 @@ may match nothing (`--include='*.py'`).
 
 Delegate only large, self-contained work (a wide multi-file investigation, an
 independent parallel track), since each subagent re-reads context and reports
-back. Give subagents the session's model, and pass their effort explicitly: `high`
-unless I name another. For a chore that needs no judgment (running commands and
-reporting, an update, a scan, a lookup), use Sonnet at `medium` effort. Run
-subagents in the background, or the way T3's own rules say when you have the T3
+back. Pass a subagent's model and effort explicitly. When I name a model or an
+effort, use it. Otherwise, in a session on a Claude model, pick by the work:
+- Claude Opus at `high` for ordinary work: implementing, reviewing, auditing,
+  investigating.
+- Claude Sonnet at `medium` for a chore that needs no judgment: running commands
+  and reporting, an update, a scan, a lookup.
+- The session's own model at `high` when the session runs a model above Opus
+  (Fable or Mythos) and a wrong result would be expensive and hard to notice: a
+  design choice, a bug that resisted a first attempt, a security review.
+
+In a session on another provider, use the session's own model and effort for
+all of them.
+
+Run subagents in the background, or the way T3's own rules say when you have the T3
 tools. Report the conclusion, not the raw file dumps. For a follow-up on work a subagent already did, resume that
 subagent instead of spawning a new one, so it keeps what it found. Start a
 fresh one when the task is different, and for each review round, with the
@@ -490,10 +500,8 @@ skip this section.
   `~/desk/TASK.md` instead, also outside a desk task. Pass
   `modelSelection` with the account `~/desk/bin/accounts <repo>` prints
   first as `instanceId`, and the model and options I or the effort's
-  `status.md` name, or else your own model and options, always with an
-  explicit `effort` option (`high` when nothing names one). A thread for a
-  chore, as "Delegating to subagents" defines it, gets Sonnet at `medium`
-  effort. When it prints no
+  `status.md` name, or else the model and effort "Delegating to subagents"
+  picks for the work, always with an explicit `effort` option. When it prints no
   account, leave `modelSelection` out and say the repo isn't in
   `~/desk/accounts.json`.
 - Don't settle, snooze, archive or rename threads unless I ask or you're the

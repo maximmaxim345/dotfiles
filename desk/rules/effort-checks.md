@@ -10,7 +10,7 @@ Run one for an effort when a wake-up, a sweep or a message of mine brings one of
 
 Handle everything else yourself without one: a start, a pause, PR news, a task row. Run at most one check per effort in a turn, with all its events together.
 
-Start one subagent on your own model and effort, wait for it, and give it this prompt: "Effort check for <effort>: read ~/desk/rules/effort-checks.md and do "In the check". Events: <one line each, with the item ids, and the path of the repo's main checkout or the task's worktree>." Then do what its reply asks of the desk, as these rules say for the desk, and pass on to me only what needs me.
+Start one subagent on the model and effort that "Delegating to subagents" in `~/.claude/CLAUDE.md` picks for ordinary work, wait for it, and give it this prompt: "Effort check for <effort>: read ~/desk/rules/effort-checks.md and do "In the check". Events: <one line each, with the item ids, and the path of the repo's main checkout or the task's worktree>." Then do what its reply asks of the desk, as these rules say for the desk, and pass on to me only what needs me.
 
 ### In the check
 

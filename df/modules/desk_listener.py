@@ -27,6 +27,12 @@ def domain() -> str:
     return f"gui/{os.getuid()}"
 
 
+def service_path() -> str:
+    """The default service PATH plus the folder of gh, which the pre-read check calls."""
+    gh = shutil.which("gh")
+    return ":".join([*([str(Path(gh).parent)] if gh else []), "/usr/bin", "/bin", "/usr/sbin", "/sbin"])
+
+
 def is_compatible() -> Union[bool, str]:
     if system() == "Linux":
         if running_in_termux() or not shutil.which("systemctl"):
@@ -47,6 +53,7 @@ def install(config: ModuleConfig, stdout: io.TextIOWrapper) -> None:
                     "ProgramArguments": ["/usr/bin/python3", str(LISTENER), "--serve"],
                     "RunAtLoad": True,
                     "KeepAlive": True,
+                    "EnvironmentVariables": {"PATH": service_path()},
                     "StandardOutPath": str(LOG),
                     "StandardErrorPath": str(LOG),
                 },

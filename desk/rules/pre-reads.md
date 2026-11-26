@@ -1,6 +1,6 @@
 ## Pre-reads
 
-A pre-read tells me in a minute what a PR that waits on my review needs from me. The `routine - pre-reads` thread in this project writes them on a schedule and does nothing else. The prompt of its scheduled task points here.
+A pre-read tells me in a minute what a PR that waits on my review needs from me. The listener (`bin/desk-wait --serve`) runs `bin/pre-read due` every 15 minutes. When that prints a PR it started no thread for in the last 2 hours, and the last thread started an hour ago or more, it starts a new `routine - pre-reads` thread in this project, which writes the pre-reads and does nothing else. Its first message points here.
 
 1. Run `bin/pre-read due`. It first closes the Incoming entries of pre-read PRs that merged or closed, and moves those that no longer wait on my review to waiting. Then it prints one JSON line per PR to read: open PRs the `prereads` queries in `watch.json` find, by someone other than me or a bot, not drafts, without an open review item, whose head changed since their last pre-read and that got none today, the longest waiting first and no more than 5 pre-reads a day. It prints nothing on weekends and outside 8:00 to 20:00. When it prints nothing, end the turn without a reply. When it fails, it prints one `pre-read failed:` line, which the board shows. Reply with that line and stop.
 2. For each line, gather the PR's context as `/review-changes` steps 1 and 2 say, without checking it out and without starting reviewers. Then read the diff and all reviews, comments and inline threads, also those of review bots. When a bot reviewed this head, check its findings against the code instead of reviewing the PR again.
@@ -16,8 +16,6 @@ Never post, comment, approve, request reviews, label, push or merge anything, an
 
 End with one line per pre-read: the PR, the verdict and my minutes. Before the turn ends, settle this thread with `t3_thread_organize`, also when step 1 printed nothing, but not after a `pre-read failed:` line.
 
-### Setting it up
+### Model
 
-The desk sets this up once when I say go, and again only when I ask. When `list_scheduled_tasks` already lists a task whose prompt names this file, it stops there.
-1. Launch `routine - pre-reads` in this project with `t3_thread_launch`, `workspaceStrategy` `root`, your own model and runtime mode at medium effort, and the message: "Call `schedule_task` with `bindToCurrentThread: true`, `freshSession: true`, the title `Pre-reads`, the schedule `{type: "interval", everyMs: 3600000}` and the prompt `Pre-reads: read ~/desk/rules/pre-reads.md and follow it.` Then reply with the task's id and next run time, and nothing else."
-2. Wait for its reply with `t3_thread_wait` and pass the next run time on to me.
+The thread runs on the project's default model, or on the one `prereadModel` in `watch.json` names: `provider` (the account's instance id), `model`, and `options` such as `{"effort": "medium"}`.

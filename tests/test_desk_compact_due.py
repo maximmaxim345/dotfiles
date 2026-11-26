@@ -70,6 +70,16 @@ class CompactDueTests(unittest.TestCase):
         self.assertEqual([entry["thread"] for entry in due["compact"]], ["asking"])
         self.assertEqual(due["settle"], [])
 
+    def test_settled_routine_thread_is_archived_after_a_week(self) -> None:
+        settled = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=8)).isoformat()
+        payload = {"lineage": {}, "settledOverride": "settled", "settledAt": settled}
+        self.conn.execute(
+            "INSERT INTO orchestration_v2_projection_threads VALUES ('old', 'routine - pre-reads', ?, NULL, NULL)",
+            (json.dumps(payload),),
+        )
+        self.conn.commit()
+        self.assertEqual([entry["thread"] for entry in self.due()["archive"]], ["old"])
+
 
 if __name__ == "__main__":
     unittest.main()

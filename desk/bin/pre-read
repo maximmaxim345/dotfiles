@@ -124,7 +124,6 @@ def due(args: argparse.Namespace) -> None:
     if not in_window(datetime.datetime.now()):
         return
     queries = (json.loads(WATCH.read_text()) if WATCH.exists() else {}).get("prereads") or []
-    state = load_log()
     try:
         found: dict[str, dict] = {}
         for query in queries:
@@ -136,8 +135,11 @@ def due(args: argparse.Namespace) -> None:
         me = gh("api", "user")["login"]
     except RuntimeError as err:
         error = (str(err).splitlines() or ["gh failed"])[-1]
-        write_json(PREREADS, {**state, "error": {"at": datetime.datetime.now().isoformat(timespec="seconds"), "text": error}})
+        write_json(
+            PREREADS, {**load_log(), "error": {"at": datetime.datetime.now().isoformat(timespec="seconds"), "text": error}}
+        )
         sys.exit(f"pre-read failed: {error}")
+    state = load_log()
     write_json(PREREADS, {**state, "error": None})
     for pr in due_prs(list(found.values()), state["log"], all_items(), me, datetime.date.today().isoformat()):
         print(json.dumps(pr))

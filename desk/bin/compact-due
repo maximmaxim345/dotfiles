@@ -63,7 +63,7 @@ def main() -> None:
         completed = parse_time(completed_at)
         if (
             title == "desk"
-            or title.startswith(("manager - ", "routine - "))
+            or title.startswith("manager - ")
             or payload.get("lineage", {}).get("relationshipToParent")
             or snoozed
             and snoozed > now

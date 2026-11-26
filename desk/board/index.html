@@ -83,6 +83,7 @@
   .r { display: grid; grid-template-columns: 112px minmax(0, 1fr) 64px auto; grid-template-areas: "k main mins act"; gap: 12px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--border); cursor: pointer; min-height: 58px; }
   .r:first-child { border-top: 0; }
   .r:hover { background: var(--surface-2); }
+  .r.from { background: var(--accent-soft); box-shadow: inset 3px 0 var(--accent); }
   .r:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   .r .k { grid-area: k; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; min-width: 0; }
   .r .main { grid-area: main; min-width: 0; }
@@ -292,7 +293,7 @@ const ui = {
   goal: location.hash.startsWith("#goal/") ? decodeURIComponent(location.hash.slice(6)) : null,
   q: "", effort: params.get("effort") || "", space: "", repo: "", label: "", thread: "", groupBy: store.groupBy || "effort",
   ready: false, seen: false, active: false, openGroups: new Set(store.openGroups || []), doneDays: store.doneDays || 7, showLater: false,
-  selecting: false, selected: new Set(), openId: null, capture: false, settings: false, highlight: null, drag: null,
+  selecting: false, selected: new Set(), openId: null, capture: false, settings: false, highlight: null, from: null, drag: null,
   folds: new Set(), chatDrafts: {}, startNotes: {}, picked: new Set(), proposalsOpen: null, blockerEdit: null,
 };
 let state = { items: [], threads: null, efforts: [], repos: [], now: [], today: { rows: [], budget: 240, waiting: 0 }, incoming: [], proposals: [], goals: [], parked: [] };
@@ -423,7 +424,7 @@ function goalOf(parent) {
 }
 function goalItems(goal) { return state.items.filter(i => goalOf(i.parent)?.goal === goal); }
 function waitsOnMe(i) { return i.status === "started" && i.asks && !i.answer; }
-function openGoal(slug) { location.hash = `goal/${encodeURIComponent(slug)}`; }
+function openGoal(slug) { history.replaceState({ ...history.state, y: scrollY }, ""); location.hash = `goal/${encodeURIComponent(slug)}`; }
 function itemState(i) {
   if (i.status === "new") return ["Unsorted", "accent"];
   if (i.status === "requested") return i.needs ? ["Needs you", "bad"] : ["Starting", "warn"];
@@ -512,7 +513,20 @@ function renderTop() {
   $("banner").replaceChildren(...(lines.length ? [el("div", { class: "banner" }, el("div", { class: "bt" }, el("b", {}, head), lines.join(" ")),
     h?.thread && threadUrl(h.thread) && el("a", { class: "btn", href: threadUrl(h.thread) }, "Open the desk thread"))] : []));
 }
-function go(tab) { ui.tab = tab; history.replaceState(null, "", location.pathname + location.search + "#" + tab); scrollTo(0, 0); render(); }
+// Each tab change is a history entry that keeps where I scrolled to and which row I left through, so Back returns there.
+function go(tab, from = null) {
+  if (tab === ui.tab) return scrollTo(0, 0);
+  history.replaceState({ ...history.state, y: scrollY, from }, "");
+  history.pushState({ highlight: ui.highlight }, "", location.pathname + location.search + "#" + tab);
+  ui.tab = tab; ui.from = null;
+  scrollTo(0, 0); render();
+}
+function askDesk(url, review) {
+  const text = review ? "Start a review of this PR in its own thread, the way I usually review. Post nothing."
+    : "Start a thread that works out how I should best reply here and drafts the reply. It only reads and posts nothing.";
+  return button(review ? "Start review" : "Draft reply", () => post("/api/incoming/chat", { url, text }, listening() ? "Asked the desk. It starts the thread in a minute." : "Asked the desk. It starts the thread on its next sweep."),
+    "", { title: review ? "The desk starts a review thread for this PR" : "The desk starts a thread that drafts a reply, without posting" });
+}
 
 function autostartHeld() { return state.autostartLast?.line.split("Held: ")[1] || null; }
 function nowRows() { return (state.now || []).filter(r => inScope(r.effort)); }
@@ -521,14 +535,14 @@ function nowAction(r) {
   const pr = r.pr && el("a", { class: "btn", href: r.pr, target: "_blank", onclick: stop }, r.kind === "reply" ? "Open" : "PR");
   if (item?.asks && !item.answer) return [pr, button("Go", async () => { if (confirm(`Answer "go" to:\n\n${item.asks.text}`)) { await api("/api/ask/open", { id: item.id }); await answer(item.id, "go", item.asks.text); } }, "", { title: "Accept the thread's pick" })];
   if (r.kind === "start") return button("Start again", () => post("/api/status", { ids: [r.item], status: "requested" }, startMsg()));
-  if (r.url) return pr;
+  if (r.url) return [pr, askDesk(r.url, r.kind === "review")];
   if (r.kind === "worktree") return button("Copy path", async () => { await navigator.clipboard.writeText(r.path); toast("Path copied"); });
   const url = threadUrl(r.thread);
   return [pr, url && el("a", { class: "btn", href: url, onclick: e => { e.stopPropagation(); if (item?.asks && !item.asks.opened) api("/api/ask/open", { id: item.id }).catch(() => {}); } }, r.kind === "desk" ? "Open desk" : "Open thread")];
 }
 function nowClick(r) {
   if (r.item && byId(r.item)) return openItem(r.item);
-  if (r.url) { ui.highlight = r.url; ui.folds.add(`${r.url} preread`); return go("incoming"); }
+  if (r.url) { ui.highlight = r.url; ui.folds.add(`${r.url} preread`); return go("incoming", r.url); }
   const url = threadUrl(r.thread);
   if (url) location.href = url;
 }
@@ -538,7 +552,7 @@ function nowRow(r, n) {
   return row({
     kinds: [el("span", { class: "num" }, String(n)), el("span", { class: `kind ${r.kind}` }, KIND_NAME[r.kind] || r.kind), r.tier === 1 && tag(r.kind === "reply" || r.url ? "someone waiting" : "urgent", "warn")],
     title: actionFirst ? r.text : r.title, context: [effort, effort && " · ", actionFirst ? r.title : r.text], minutes: r.minutes, estimated: r.estimated, at: r.at, warn: true,
-    action: nowAction(r), onclick: () => nowClick(r), cls: "now",
+    action: nowAction(r), onclick: () => nowClick(r), cls: r.url && r.url === ui.from ? "now from" : "now",
   });
 }
 function renderNow() {
@@ -808,7 +822,7 @@ function incomingRow(e) {
     e.preread && fold(`${e.url} preread`, `Pre-read: ${PREREAD_VERDICT[e.preread.verdict] || e.preread.verdict}, about ${e.preread.minutes} min`, md(e.preread.text)),
     e.draft && fold(`${e.url} draft`, "Draft reply", el("pre", {}, e.draft), copy),
     chatFold(`${e.url} chat`, e.chat, '"start a review"', text => post("/api/incoming/chat", { url: e.url, text })),
-    el("div", { class: "links" }, el("a", { href: e.url, target: "_blank" }, `Open ${e.kind}`), e.link && el("a", { href: e.link, target: "_blank" }, "related"),
+    el("div", { class: "links" }, ["needs-you", "new"].includes(shownStatus(e)) && askDesk(e.url, !!e.preread), el("a", { href: e.url, target: "_blank" }, `Open ${e.kind}`), e.link && el("a", { href: e.link, target: "_blank" }, "related"),
       e.item && byId(e.item) && el("button", { class: "quiet", onclick: () => openItem(e.item) }, "item"),
       snoozeLink(e, "tomorrow", () => 1), snoozeLink(e, "next week", weekday => (8 - weekday) % 7 || 7),
       el("button", { class: "quiet", title: "Hide it until it gets news", onclick: guard(() => confirm(`Hide "${e.title}" until it gets news?`) && post("/api/incoming/dismiss", { url: e.url }, "Hidden")) }, "hide"),
@@ -1105,14 +1119,21 @@ function render() {
   if (ui.highlight && ui.tab === "incoming") { document.getElementById(`in-${ui.highlight}`)?.scrollIntoView({ block: "center" }); ui.highlight = null; }
 }
 
-$("q").addEventListener("input", e => { ui.q = e.target.value; if (!["backlog", "done"].includes(ui.tab)) ui.tab = "backlog"; render(); });
+$("q").addEventListener("input", e => { ui.q = e.target.value; if (["backlog", "done"].includes(ui.tab)) render(); else go("backlog"); });
 $("captureBtn").addEventListener("click", () => { ui.capture = true; render(); });
 $("settingsBtn").addEventListener("click", () => { ui.settings = true; render(); });
-addEventListener("hashchange", () => {
-  const tab = location.hash.slice(1);
-  if (TABS.some(t => t[0] === tab)) { ui.tab = tab; render(); }
+// Back and Forward between two entries of the same tab fire only popstate, a typed address only hashchange.
+function showAddress() {
+  const tab = location.hash.slice(1) || "now", was = history.state || {};
+  if (TABS.some(t => t[0] === tab)) {
+    Object.assign(ui, { tab, highlight: was.highlight || null, from: was.from || null });
+    render();
+    if (was.y != null) scrollTo(0, was.y);
+  }
   else if (tab.startsWith("goal/")) { ui.tab = "goal"; ui.goal = decodeURIComponent(tab.slice(5)); scrollTo(0, 0); render(); }
-});
+}
+addEventListener("popstate", showAddress);
+addEventListener("hashchange", showAddress);
 document.addEventListener("keydown", e => {
   const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
   if (e.key === "Escape") { if (ui.openId || ui.capture || ui.settings) closeOverlay(); else if (ui.selecting) { ui.selecting = false; ui.selected.clear(); render(); } else if (typing) document.activeElement.blur(); }

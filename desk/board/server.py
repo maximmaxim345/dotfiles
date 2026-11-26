@@ -14,6 +14,7 @@ import os
 import re
 import secrets
 import sqlite3
+import subprocess
 import sys
 import tempfile
 import threading
@@ -51,6 +52,11 @@ SHOWN_PROPOSALS = {"open", "approved", "failed"}
 SETTABLE_STATUSES = {"open", "requested", "done", "dropped"}
 CLOSED_STATUSES = {"done", "dropped"}
 START_GRANTS = ("draft_pr", "babysit", "second_opinion")
+MACHINES = DESK / "machines.json"
+MACHINES_CHECKED_FOR = 60
+T3 = Path.home() / ".t3" / "bin" / "t3"
+reachable: dict = {"at": 0.0, "ids": set()}
+reachable_lock = threading.Lock()
 BOARD_CONFIG = DESK / "board.json"
 TOKEN = STATE / "board.token"
 LOGIN = STATE / "board.login"
@@ -161,6 +167,32 @@ def check_repo(repo: str | None) -> None:
     known = repos()
     if repo and repo not in known:
         raise ValueError(f"unknown repo {repo}, use one of: {', '.join(known)}")
+
+
+def listed_machines() -> list[dict]:
+    try:
+        listed = json.loads(MACHINES.read_text())
+        return [{"name": str(m["name"]), "environmentId": str(m["environmentId"])} for m in listed]
+    except (OSError, ValueError, TypeError, KeyError):
+        return []
+
+
+def check_machines() -> None:
+    try:
+        out = subprocess.run([str(T3), "environment", "list", "--json"], capture_output=True, text=True, timeout=20).stdout
+        reachable["ids"] = {e["environmentId"] for e in json.loads(out) if e.get("status") == "reachable"}
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        reachable["ids"] = set()
+    reachable["at"] = time.time()
+    reachable_lock.release()
+
+
+def machines() -> list[dict]:
+    """My other machines from machines.json, each with whether its T3 answered at the last check."""
+    listed = listed_machines()
+    if listed and time.time() - reachable["at"] > MACHINES_CHECKED_FOR and reachable_lock.acquire(blocking=False):
+        threading.Thread(target=check_machines, daemon=True).start()
+    return [{**machine, "online": machine["environmentId"] in reachable["ids"]} for machine in listed]
 
 
 def listening() -> bool:
@@ -323,6 +355,7 @@ def load_state() -> dict:
         "threads": threads,
         "efforts": efforts(),
         "repos": repos(),
+        "machines": machines(),
         "listening": listening(),
         "health": health,
         "incoming": shown,
@@ -641,18 +674,19 @@ def apply_status(item: dict, status: str) -> None:
         item.pop("suggested", None)
 
 
-def start_note(note: dict | None) -> dict | None:
+def start_note(note: dict | None, away: bool = False) -> dict | None:
     """The note and grants I gave on the board when starting an item."""
     text = (note or {}).get("text", "").strip()
     grants = {key: True for key in START_GRANTS if (note or {}).get(key)}
-    if "babysit" in grants:
+    # Work on another machine reaches me as a draft PR, since the review page is served from this one.
+    if "babysit" in grants or away:
         grants["draft_pr"] = True
     if not text and not grants:
         return None
     return {"text": text, **grants, "at": datetime.datetime.now().astimezone().isoformat(timespec="seconds")}
 
 
-def set_status(ids: list[str], status: str, note: dict | None = None) -> None:
+def set_status(ids: list[str], status: str, note: dict | None = None, here: bool = False) -> None:
     if status not in SETTABLE_STATUSES:
         raise ValueError(status)
     items = all_items()
@@ -661,7 +695,7 @@ def set_status(ids: list[str], status: str, note: dict | None = None) -> None:
         if status == "requested" and open_blockers(items[item_id], items):
             raise ValueError(f"blocked: {items[item_id]['title']}")
     changes = []
-    saved_note = start_note(note)
+    picked = (note or {}).get("machine")
     for item_id in ids:
         item = items[item_id]
         old = item["status"]
@@ -671,7 +705,17 @@ def set_status(ids: list[str], status: str, note: dict | None = None) -> None:
             continue
         apply_status(item, status)
         item.pop("adopted", None)
+        if retry and here and not item.get("thread"):
+            item.pop("machine", None)
+            if not (item.get("start_note") or {}).get("babysit"):
+                (item.get("start_note") or {}).pop("draft_pr", None)
         if status == "requested" and old != "requested":
+            # An item keeps the machine its thread already runs on.
+            if not item.get("thread"):
+                item.pop("machine", None)
+                if picked in [m["name"] for m in listed_machines()]:
+                    item["machine"] = picked
+            saved_note = start_note(note, away=bool(item.get("machine")))
             item.pop("start_note", None)
             if saved_note:
                 item["start_note"] = saved_note
@@ -843,7 +887,7 @@ class Handler(BaseHTTPRequestHandler):
                 write_json(path, item)
                 log_event({"type": "comment", "id": body["id"]})
             elif self.path == "/api/status":
-                set_status(body["ids"], body["status"], body.get("note"))
+                set_status(body["ids"], body["status"], body.get("note"), bool(body.get("here")))
             elif self.path == "/api/ask":
                 item = next(
                     (i for i in all_items().values() if i["thread"] == body["thread"] and i["status"] not in CLOSED_STATUSES),

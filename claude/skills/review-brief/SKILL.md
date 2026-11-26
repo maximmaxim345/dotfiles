@@ -4,7 +4,7 @@ description: Brief me before I review this branch's changes (TLDR, decisions, re
 argument-hint: "[base ref, commit range or PR URL]"
 ---
 
-I'm about to review this branch's changes myself, and I may not remember what we did. Brief me on a review page built with the review kit (`~/.claude/review-kit/README.md`), always, also for a small diff and a second round. The chat reply holds only the PR's URL first when `implement` step 5 puts it there, the page's addresses and path (section 2), a one-line TLDR, the line with the folder, branch and range (section 1), and the Ask (section 3). The page holds the rest, starting with these, about the non-test changes:
+I'm about to review this branch's changes myself, and I may not remember what we did. Brief me on a review page built with the review kit (`~/.claude/review-kit/README.md`), always, also for a small diff and a second round. The one exception is a machine other than the desk's (`~/desk/TASK.md`, "On another machine"): build no page there and put the brief with its hunks in your reply. The chat reply holds only the PR's URL first when `implement` step 5 puts it there, the page's addresses and path (section 2), a one-line TLDR, the line with the folder, branch and range (section 1), and the Ask (section 3). The page holds the rest, starting with these, about the non-test changes:
 
 - TLDR: a table of what behaves differently, one row per behavior, with the columns "Before" and "After". For a visible change, show it in the cell with an example, such as a log line, a UI string or a setting. When only one behavior changes, write one or two plain sentences instead.
 - TLDR why: why the change is needed. For a bug fix, the numbered steps a user takes to hit the bug, then one line each for before and after.

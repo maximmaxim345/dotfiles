@@ -404,6 +404,10 @@ def fill(args: argparse.Namespace) -> None:
             item[field] = value
     if args.size:
         item["size"], item["minutes"] = args.size
+    if args.needs:
+        if item["status"] != "requested":
+            sys.exit("--needs is for an item I pressed Start on that could not start")
+        item["needs"] = " ".join(args.needs.split())
     write_json(path, item)
 
 
@@ -552,12 +556,13 @@ def main() -> None:
     p_list.add_argument("--parked", action="store_true", help="only parked items, see Backlog items in ~/desk/AGENTS.md")
     p_list.set_defaults(func=list_items)
 
-    p_fill = sub.add_parser("fill", help="fill in the size, why, from-me or start of an existing item")
+    p_fill = sub.add_parser("fill", help="fill in the size, why, from-me, start or needs of an existing item")
     p_fill.add_argument("id")
     p_fill.add_argument("--size", type=size_and_minutes, help="S, M or L and my minutes for it, like S:10")
     p_fill.add_argument("--why", help="one line: who notices what, and how often")
     p_fill.add_argument("--from-me", help="what it needs from me")
     p_fill.add_argument("--start", help="the first concrete step")
+    p_fill.add_argument("--needs", help="why a requested item could not start, shown on the board with Start again")
     p_fill.set_defaults(func=fill)
 
     p_urgent = sub.add_parser("urgent", help="keep an item above my Today line whatever its minutes, or stop that")

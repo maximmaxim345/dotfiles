@@ -294,13 +294,13 @@ const ui = {
   q: "", effort: params.get("effort") || "", space: "", repo: "", label: "", thread: "", groupBy: store.groupBy || "effort",
   ready: false, seen: false, active: false, openGroups: new Set(store.openGroups || []), doneDays: store.doneDays || 7, showLater: false,
   selecting: false, selected: new Set(), openId: null, capture: false, settings: false, highlight: null, from: null, drag: null,
-  folds: new Set(), chatDrafts: {}, startNotes: {}, picked: new Set(), proposalsOpen: null, blockerEdit: null,
+  folds: new Set(), chatDrafts: {}, startNotes: {}, lastMachine: store.lastMachine || {}, picked: new Set(), proposalsOpen: null, blockerEdit: null,
 };
-let state = { items: [], threads: null, efforts: [], repos: [], now: [], today: { rows: [], budget: 240, waiting: 0 }, incoming: [], proposals: [], goals: [], parked: [] };
+let state = { items: [], threads: null, efforts: [], repos: [], machines: [], now: [], today: { rows: [], budget: 240, waiting: 0 }, incoming: [], proposals: [], goals: [], parked: [] };
 let lastJson = "";
 
 const $ = id => document.getElementById(id);
-function save() { try { localStorage.setItem("desk-board", JSON.stringify({ groupBy: ui.groupBy, openGroups: [...ui.openGroups], doneDays: ui.doneDays })); } catch {} }
+function save() { try { localStorage.setItem("desk-board", JSON.stringify({ groupBy: ui.groupBy, openGroups: [...ui.openGroups], doneDays: ui.doneDays, lastMachine: ui.lastMachine })); } catch {} }
 function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
@@ -366,7 +366,7 @@ function guard(fn) { return async e => { e?.stopPropagation?.(); const node = e?
 function button(label, fn, cls = "", attrs = {}) { return el("button", { class: `btn${cls ? " " + cls : ""}`, type: "button", ...attrs, onclick: guard(fn) }, label); }
 function setState(data) {
   for (const id of Object.keys(ui.startNotes)) if (!["new", "open"].includes(data.items.find(i => i.id === id)?.status)) delete ui.startNotes[id];
-  const empty = { items: [], efforts: [], repos: [], now: [], incoming: [], proposals: [], goals: [], parked: [], askMinutes: {}, worktrees: {} };
+  const empty = { items: [], efforts: [], repos: [], machines: [], now: [], incoming: [], proposals: [], goals: [], parked: [], askMinutes: {}, worktrees: {} };
   state = { ...empty, ...data, today: { date: "", budget: 240, waiting: 0, rows: [], ...data.today } };
   lastJson = JSON.stringify(data); render();
 }
@@ -409,7 +409,8 @@ function spaceShown(effort) {
 }
 function inScope(effort) { return spaceShown(effort) && (!ui.effort || (effort || "") === (ui.effort === "-" ? "" : ui.effort)); }
 function effortTitle(slug) { return state.efforts.find(e => e.slug === slug)?.title || slug; }
-function threadUrl(id) { const env = state.threads?.environment; return env && id ? `t3code://threads/${encodeURIComponent(env)}/${encodeURIComponent(id)}` : null; }
+function machineOf(item) { return state.machines.find(m => m.name === item?.machine); }
+function threadUrl(id) { const env = id && machineOf(state.items.find(i => i.thread === id))?.environmentId || state.threads?.environment; return env && id ? `t3code://threads/${encodeURIComponent(env)}/${encodeURIComponent(id)}` : null; }
 function threadLink(id, text) { const url = threadUrl(id); return url ? el("a", { href: url, title: "Open in T3 Code", onclick: e => e.stopPropagation() }, text || id) : el("span", { class: "mono" }, text || id); }
 function managerOf(effort) { return state.threads?.managers?.[effort] || null; }
 function isManager(id) { return !!id && Object.values(state.threads?.managers || {}).includes(id); }
@@ -456,7 +457,7 @@ function row({ kinds, title, context: ctx, meta, minutes, estimated, at, warn, a
 }
 function stop(e) { e.stopPropagation(); }
 function itemMeta(item) {
-  const parts = [item.repo, item.kind, item.thread && threadUrl(item.thread) && el("a", { href: threadUrl(item.thread), onclick: stop }, "thread"),
+  const parts = [item.repo, item.kind, machineOf(item) && `on ${machineOf(item).name}`, item.thread && threadUrl(item.thread) && el("a", { href: threadUrl(item.thread), onclick: stop }, "thread"),
     item.pr && el("a", { href: item.pr, target: "_blank", onclick: stop }, `PR${item.prs?.length > 1 ? `s ${item.prs.length}` : ""}`),
     item.comments.length > 0 && `${item.comments.length} ${item.comments.length === 1 ? "comment" : "comments"}`,
     item.status === "open" && item.suggested && `desk pick: ${item.suggested}`,
@@ -534,12 +535,13 @@ function nowAction(r) {
   const item = r.item && byId(r.item);
   const pr = r.pr && el("a", { class: "btn", href: r.pr, target: "_blank", onclick: stop }, r.kind === "reply" ? "Open" : "PR");
   if (item?.asks && !item.answer) return [pr, button("Go", async () => { if (confirm(`Answer "go" to:\n\n${item.asks.text}`)) { await api("/api/ask/open", { id: item.id }); await answer(item.id, "go", item.asks.text); } }, "", { title: "Accept the thread's pick" })];
-  if (r.kind === "start") return button("Start again", () => post("/api/status", { ids: [r.item], status: "requested" }, startMsg()));
+  if (r.kind === "start") return [button("Start again", () => post("/api/status", { ids: [r.item], status: "requested" }, startMsg())), machineOf(item) && !item.thread && startHere(r.item)];
   if (r.url) return [pr, askDesk(r.url, r.kind === "review")];
   if (r.kind === "worktree") return button("Copy path", async () => { await navigator.clipboard.writeText(r.path); toast("Path copied"); });
   const url = threadUrl(r.thread);
   return [pr, url && el("a", { class: "btn", href: url, onclick: e => { e.stopPropagation(); if (item?.asks && !item.asks.opened) api("/api/ask/open", { id: item.id }).catch(() => {}); } }, r.kind === "desk" ? "Open desk" : "Open thread")];
 }
+function startHere(id) { return button("Start on this Mac", () => post("/api/status", { ids: [id], status: "requested", here: true }, startMsg())); }
 function nowClick(r) {
   if (r.item && byId(r.item)) return openItem(r.item);
   if (r.url) { ui.highlight = r.url; ui.folds.add(`${r.url} preread`); return go("incoming", r.url); }
@@ -901,7 +903,17 @@ function renderSheet() {
   const locked = ["started", "done"].includes(item.status);
   const blocked = openBlockers(item);
   const note = ui.startNotes[item.id] ||= { text: "" };
-  const grant = (key, label, title) => el("label", { title }, el("input", { type: "checkbox", checked: !!note[key], onchange: e => { note[key] = e.target.checked; } }), label);
+  const grant = (key, label, title, forced) => el("label", { title }, el("input", { type: "checkbox", checked: forced || !!note[key], disabled: !!forced, onchange: e => { note[key] = e.target.checked; } }), label);
+  if (item.thread) note.machine = item.machine || "";
+  else if (note.machine === undefined) {
+    const last = ui.lastMachine[item.repo || ""];
+    note.machine = state.machines.some(m => m.name === last && m.online) ? last : "";
+  }
+  const runOn = state.machines.length > 0 && el("div", { class: "grants" }, el("span", { style: { alignSelf: "center" } }, "Run on"),
+    [{ name: "", online: true }, ...state.machines].map(m => el("label", { title: item.thread ? "Its thread already runs there" : m.online ? "" : `${m.name} does not answer right now` },
+      el("input", { type: "radio", name: `machine-${item.id}`, checked: note.machine === m.name, disabled: !!item.thread || !m.online, onchange: () => { note.machine = m.name; renderSheet(); } }),
+      m.name ? (m.online ? m.name : `${m.name} (offline)`) : "This Mac")),
+    note.machine && el("span", { class: "muted", style: { alignSelf: "center" } }, "comes back as a draft PR"));
   const noteBox = el("textarea", { rows: 2, placeholder: "Note for this start, like how far it may go or what to check first", oninput: e => { note.text = e.target.value; } });
   noteBox.value = note.text;
   const replyKey = `answer:${item.id}`;
@@ -917,8 +929,8 @@ function renderSheet() {
   });
   const today = todayRow(item.id);
   const actions = [];
-  if (startable(item)) actions.push(button("Start", () => post("/api/status", { ids: [item.id], status: "requested", note }, startMsg()), "primary", { disabled: blocked.length > 0, title: blocked.length ? "Blocked" : "" }));
-  if (item.status === "requested" && item.needs) actions.push(button("Start again", () => setStatus("requested", startMsg()), "primary"));
+  if (startable(item)) actions.push(button("Start", () => { ui.lastMachine[item.repo || ""] = note.machine; save(); return post("/api/status", { ids: [item.id], status: "requested", note }, startMsg()); }, "primary", { disabled: blocked.length > 0, title: blocked.length ? "Blocked" : "" }));
+  if (item.status === "requested" && item.needs) actions.push(button("Start again", () => setStatus("requested", startMsg()), "primary"), machineOf(item) && !item.thread && startHere(item.id));
   if (item.status === "requested") actions.push(button("Cancel start", () => setStatus("open")));
   if (startable(item)) actions.push(today?.today ? button("Later", () => moveToday(item.id, "later")) : button("Today", () => moveToday(item.id, "today")));
   if (item.status === "started" || item.thread && item.status === "open") actions.push(button("Done", () => confirm("Mark this item done? The desk archives its thread.") && setStatus("done")));
@@ -991,8 +1003,8 @@ function renderSheet() {
             onchange: e => post("/api/update", { ids: [item.id], fields: { urgent: e.target.checked } }, e.target.checked ? "Marked urgent, it stays above the line" : "No longer urgent") }), " stays above the line"))],
           dd("Thread", item.thread && threadLink(item.thread, threadTitle(item.thread) || "open thread")),
           blockerEditor && [el("dt", {}, "Blocked by"), el("dd", {}, current.length || ui.blockerEdit === item.id ? blockerEditor : el("button", { class: "quiet", onclick: () => { ui.blockerEdit = item.id; renderSheet(); } }, "add a blocker"))]),
-        startable(item) && el("div", {}, el("h3", {}, "When started"), noteBox, el("div", { class: "grants" },
-          grant("draft_pr", "may open a draft PR", "After its own review, the thread pushes the branch and opens a draft PR without asking"),
+        startable(item) && el("div", {}, el("h3", {}, "When started"), noteBox, runOn, el("div", { class: "grants" },
+          grant("draft_pr", "may open a draft PR", "After its own review, the thread pushes the branch and opens a draft PR without asking", !!note.machine),
           grant("babysit", "babysit the PR", "It also fixes failing checks and review bot findings on that PR"),
           grant("second_opinion", "second opinion first", "Another model reviews the change before the brief"))),
         glance.map(x => el("div", {}, el("h3", {}, x.title), md(x.body))),

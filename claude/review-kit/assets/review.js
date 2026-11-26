@@ -522,36 +522,53 @@ function hang(raw) {
 }
 
 // Each source line gets a hanging indent, so a wrapped list item lines up under its text.
-function wordLines(parts) {
-  const lines = [{ html: '', raw: '' }];
+function wordRows(parts) {
+  const rows = [{ html: '', raw: '', kinds: new Set(), end: null }];
   for (const [t, k] of parts) {
     t.split('\n').forEach((piece, i) => {
-      if (i) lines.push({ html: '', raw: '' });
+      if (i) { rows[rows.length - 1].end = k; rows.push({ html: '', raw: '', kinds: new Set(), end: null }); }
       if (!piece) return;
-      const line = lines[lines.length - 1];
-      line.raw += piece;
-      line.html += k === 'same' ? escLine(piece) : k === 'del' ? `<del>${escLine(piece)}</del>` : `<ins>${escLine(piece)}</ins>`;
+      const row = rows[rows.length - 1];
+      row.raw += piece;
+      row.kinds.add(k);
+      row.html += k === 'same' ? escLine(piece) : k === 'del' ? `<del>${escLine(piece)}</del>` : `<ins>${escLine(piece)}</ins>`;
     });
   }
-  return lines.map(l => `<div class="wl" style="--i:${hang(l.raw)}">${l.html || '&nbsp;'}</div>`).join('');
+  return rows;
+}
+
+const wordLine = (row, key) => `<div class="wl${key ? ' cl' : ''}"${key ? ` data-key="${key}"` : ''} style="--i:${hang(row.raw)}">${row.html || '&nbsp;'}</div>`;
+
+// A row of a changed block belongs to the new file when it shows kept or added text, otherwise to the old file.
+function changedBlock(id, b) {
+  const used = new Set(), shown = [new Set(), new Set()];
+  let oi = 0, ni = 0, html = '';
+  for (const row of wordRows(mergedDiff(b.R.map(x => x.s).join('\n'), b.A.map(x => x.s).join('\n')))) {
+    const k = row.kinds;
+    const isNew = k.size ? k.has('same') || k.has('add') : row.end ? row.end !== 'del' : ni < b.A.length;
+    const isOld = k.size ? k.has('same') || k.has('del') : row.end ? row.end !== 'add' : !isNew;
+    const a = isNew ? b.A[ni++] : null, r = isOld ? b.R[oi++] : null;
+    let key = a ? 'R' + a.n : r ? 'L' + r.o : null;
+    if (used.has(key)) key = null;
+    used.add(key);
+    if (r) shown[0].add(r.o);
+    if (a) shown[1].add(a.n);
+    html += wordLine(row, key) + (key ? rowComments(id, key, [r ? [r.o] : [], a ? [a.n] : []]) : '');
+  }
+  if (b.R.some(x => x.e)) html += `<div class="wl"><del>${EOL}</del></div>`;
+  if (b.A.some(x => x.e)) html += `<div class="wl"><ins>${EOL}</ins></div>`;
+  const rest = [b.R.map(x => x.o).filter(o => !shown[0].has(o)), b.A.map(x => x.n).filter(n => !shown[1].has(n))];
+  return `<div class="wb">${html}</div>` + draftsAt(id, rest);
 }
 
 function renderWords(id, h) {
   let html = '<div class="words">';
   for (const b of blocks(h)) {
-    if (b.ctx) {
-      if (!b.s.trim()) continue;
-      html += `<div class="wb ctx cl" data-key="R${b.n}">${wordLines([[b.s, 'same']])}${b.e ? EOL : ''}</div>` + rowComments(id, 'R' + b.n, [[b.o], [b.n]]);
-      continue;
-    }
-    let body = wordLines(mergedDiff(b.R.map(x => x.s).join('\n'), b.A.map(x => x.s).join('\n')));
-    if (b.R.some(x => x.e)) body += `<div class="wl"><del>${EOL}</del></div>`;
-    if (b.A.some(x => x.e)) body += `<div class="wl"><ins>${EOL}</ins></div>`;
-    const key = b.A.length ? 'R' + b.A[0].n : 'L' + b.R[0].o;
-    const span = b.A.length > 1 ? `${key}-${b.A[b.A.length - 1].n}` : key;
-    html += `<div class="wb cl" data-key="${key}" data-span="${span}">${body}</div>` + rowComments(id, key, [b.R.map(x => x.o), b.A.map(x => x.n)]);
+    if (!b.ctx) { html += changedBlock(id, b); continue; }
+    if (!b.s.trim()) continue;
+    html += `<div class="wb ctx cl" data-key="R${b.n}">${wordRows([[b.s, 'same']]).map(r => wordLine(r)).join('')}${b.e ? EOL : ''}</div>` + rowComments(id, 'R' + b.n, [[b.o], [b.n]]);
   }
-  return html + '<p class="legend">Struck words are removed, marked words are added. Switch to Lines for line numbers.</p></div>';
+  return html + '<p class="legend">Struck words are removed, marked words are added. Tap a line to comment on it. Switch to Lines for line numbers.</p></div>';
 }
 
 function renderPr(el) {
@@ -613,20 +630,9 @@ function edges(el) {
   if (hint) hint.hidden = !any;
 }
 
-function keyLines(node) {
-  const key = node.dataset.key;
-  if (!key || key[0] !== 'R') return null;
-  const first = +key.slice(1);
-  const span = node.dataset.span;
-  return [first, span ? +span.split('-')[1] : first];
-}
-
 function markLines(el) {
   const { first, last } = ui.mark;
-  const hits = $$('[data-key]', el).filter(n => {
-    const r = keyLines(n);
-    return r && r[0] <= last && first <= r[1];
-  });
+  const hits = $$('[data-key^="R"]', el).filter(n => first <= +n.dataset.key.slice(1) && +n.dataset.key.slice(1) <= last);
   hits.forEach(n => n.classList.add('mark'));
   return hits;
 }
@@ -866,7 +872,7 @@ function reveal(id) {
 }
 
 document.addEventListener('click', e => {
-  const t = e.target.closest('button, a, tr.cl, .wb.cl');
+  const t = e.target.closest('button, a, tr.cl, .wb.cl, .wl.cl');
   if (!t) return;
   const d = t.dataset;
   const host = t.closest('.hunk[data-hunk], .cm[data-fb]');
@@ -945,13 +951,11 @@ document.addEventListener('click', e => {
   if (t.id === 'copy') { copy(); return; }
   if (t.id === 'send') { sendAnswer(); return; }
   if (t.id === 'pending') { requestPending(); return; }
-  if (t.matches('tr.cl, .wb.cl')) {
+  if (t.matches('tr.cl, .wb.cl, .wl.cl')) {
     if (String(window.getSelection())) return;
     const h = KIT.hunks[host.dataset.hunk];
     const key = t.dataset.key;
-    const span = t.dataset.span;
-    const label = !h ? (key === 'T' ? 'PR title' : `PR description line ${key.slice(1)}`)
-      : span && span !== key ? `${h.path}:${span.slice(1)}` : labelOf(h, key);
+    const label = !h ? (key === 'T' ? 'PR title' : `PR description line ${key.slice(1)}`) : labelOf(h, key);
     const prev = ui.open && ui.open.hunk && ui.open.hunk !== host.dataset.hunk && document.querySelector(`[data-hunk="${ui.open.hunk}"]`);
     ui.open = { hunk: host.dataset.hunk, key, label };
     if (prev) renderHunk(prev);

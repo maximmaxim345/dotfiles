@@ -155,7 +155,7 @@ details.ctxp .dscroll { border-top: 1px solid var(--border); }
 .pair td.ln.empty { background: var(--surface-2); }
 tr.mark td.ln { color: var(--accent); font-weight: 700; box-shadow: inset 3px 0 var(--accent); }
 tr.mark td.c { background-image: linear-gradient(var(--mark), var(--mark)); }
-.words .wb.mark { background: var(--mark); box-shadow: -6px 0 0 var(--accent); }
+.words .wb.mark, .words .wl.mark { background: var(--mark); box-shadow: -6px 0 0 var(--accent); }
 table.d { width: 100%; table-layout: fixed; border-collapse: collapse; font: 12.5px/1.55 var(--mono); }
 table.d td { padding: 0 8px; border: 0; vertical-align: top; }
 table.d td.ln { width: 46px; text-align: right; color: var(--muted); user-select: none; -webkit-user-select: none; font-size: 11.5px; padding: 0 6px; }
@@ -190,8 +190,8 @@ body.nowrap table.d tr.crow td > div { position: sticky; left: 0; max-width: min
 .words { padding: 6px 14px 10px; font-size: 14.5px; line-height: 1.6; border-top: 1px solid var(--border); }
 .words .wb { margin: 8px 0; max-width: 100ch; }
 .words .wl { white-space: pre-wrap; overflow-wrap: anywhere; padding-left: calc(var(--i) * 1ch); text-indent: calc(var(--i) * -1ch); }
-.words .wb.cl { cursor: pointer; border-radius: 4px; }
-.words .wb.cl:hover { box-shadow: -6px 0 0 var(--accent-soft); }
+.words .wb.cl, .words .wl.cl { cursor: pointer; border-radius: 4px; }
+.words .wb.cl:hover, .words .wl.cl:hover { box-shadow: -6px 0 0 var(--accent-soft); }
 .words .wb.ctx { color: var(--muted); }
 .words del { background: var(--del-word); color: inherit; text-decoration: line-through; border-radius: 2px; }
 .words ins { background: var(--add-word); text-decoration: none; border-radius: 2px; }

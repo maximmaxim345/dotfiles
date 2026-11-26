@@ -133,6 +133,12 @@ class SaveTests(unittest.TestCase):
         rows = server.now_rows({}, {}, self.entries(), None, {}, SPACES)
         self.assertEqual([(r["kind"], r["minutes"], r["url"]) for r in rows], [("review", 12, pr(3)["html_url"])])
 
+    def test_saving_the_same_head_again_keeps_one_log_entry(self) -> None:
+        self.save(3, "ready")
+        self.save(3, "almost")
+        log = json.loads((self.folder / "prereads.json").read_text())["log"]
+        self.assertEqual([(entry["verdict"], "firstPass" in entry) for entry in log], [("almost", True)])
+
     def test_only_a_ready_pre_read_files_a_first_pass(self) -> None:
         self.save(3, "almost")
         self.assertEqual(server.all_items(), {})

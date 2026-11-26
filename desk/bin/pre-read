@@ -221,10 +221,13 @@ def save(args: argparse.Namespace) -> None:
         data[args.url] = entry
         write_json(INCOMING, data)
     kept = (datetime.date.today() - datetime.timedelta(days=LOG_DAYS)).isoformat()
-    log = [entry for entry in state["log"] if entry["at"][:10] >= kept]
+    same = [entry for entry in state["log"] if (entry["url"], entry["sha"]) == (args.url, args.sha)]
+    log = [entry for entry in state["log"] if entry["at"][:10] >= kept and entry not in same]
     log.append({"url": args.url, "sha": args.sha, "verdict": args.verdict, "at": preread["at"]})
+    filed = first_pass["id"] if first_pass else next((e["firstPass"] for e in same if e.get("firstPass")), None)
+    if filed:
+        log[-1]["firstPass"] = filed
     if first_pass:
-        log[-1]["firstPass"] = first_pass["id"]
         print(f"first pass filed: {first_pass['id']}")
     write_json(PREREADS, {**state, "log": log})
 

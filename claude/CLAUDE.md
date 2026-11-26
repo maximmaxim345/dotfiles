@@ -25,7 +25,10 @@ skill lists, for the PR it names, until it merges or closes or I say stop, the `
 `/open-pr`, which also marks that PR ready and merges it once babysit stops
 clean, the message the board sends when I press "Create pending review" on a
 review page, naming that review id, which covers what `review-changes` step 9
-lists, once, and the `start_note` field the board writes on a desk item, which covers
+lists, once, the message the board sends when I press "Open PR" on a review
+page, naming that review id, a mode and a review, which covers what `/open-pr`
+step 7 lists for that mode and that review, for the branch that page shows,
+once, and the `start_note` field the board writes on a desk item, which covers
 what `implement` step 5 lists, once.
 
 Merging, releasing, marking a PR draft or ready, editing a description,

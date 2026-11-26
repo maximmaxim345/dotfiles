@@ -283,6 +283,23 @@ class ReviewKitTests(unittest.TestCase):
         placed = {d["id"]: (d["hunk"] is not None, d["inDiff"]) for d in self.kit_data(page)["review"]["drafts"]}
         self.assertEqual(placed, {"changed": (True, True), "outside": (False, False), "removed": (True, True)})
 
+    def test_needs_me_keeps_noted_decided_and_unplaced_hunks_only(self) -> None:
+        narrative = {
+            "decide": [{"title": "Keep?", "options": [{"text": "Yes"}], "refs": [{"file": "app.py", "lines": "10-10"}]}],
+            "groups": [
+                {
+                    "title": "Core",
+                    "hunks": [{"file": "app.py"}, {"file": "old.txt", "note": "Why it goes."}, {"file": "README.md"}],
+                }
+            ],
+        }
+        page = self.build_page(narrative)
+        change = build_review.collect(self.repo, "main", None, None, False, None)
+        needed = [h.where for h in change.hunks if f'id="hunk-{h.id}" data-need' in page]
+        plain = [h.where for h in change.hunks if f'id="hunk-{h.id}">' in page]
+        self.assertEqual([w.split(":")[0] for w in needed], ["app.py", "logo.bin", "old.txt", "renamed.txt"])
+        self.assertEqual([w.split(":")[0] for w in plain], ["README.md", "app.py"])
+
     def test_pr_review_refuses_a_head_other_than_the_built_one(self) -> None:
         error = io.StringIO()
         with self.assertRaises(AssertionError), contextlib.redirect_stderr(error):

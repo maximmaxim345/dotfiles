@@ -101,6 +101,7 @@ A PR by someone else that waits on my review gets a pre-read first (see "Pre-rea
 ## Listening
 
 The `local.desk-listener` service (`bin/desk-wait --serve`, from the dotfiles module `desk_listener`) runs outside T3, so it survives T3 restarts. It watches for my actions on the board and for due refreshes, PR checks and idle threads, queues them as lines and wakes this thread with the message "Desk wake-up: run `bin/desk-wait --take` ...". Run `bin/desk-wait --take`, which prints the queued lines and clears them, and handle them. When it prints nothing, an earlier wake-up already took them: end the turn without a reply. The board shows "desk listening" while the service runs, and a warning when the last three desk runs failed or no morning sweep finished since the last one was due.
+
 Events are hints. Act on the items' current state, since I may have changed them again:
 - `adopt`: a thread handed itself over with `/desk` (see "Starting threads").
 - `refresh`: do "Refresh".

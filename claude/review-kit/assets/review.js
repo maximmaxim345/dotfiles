@@ -20,7 +20,7 @@ function save(key, value) {
 
 const PREFS = 'review-kit:prefs';
 const PAGE = 'review-kit:page:' + KIT.key;
-const prefs = Object.assign({ wrap: false, layout: 'auto', order: 'reading' }, load(PREFS, {}));
+const prefs = Object.assign({ wrap: false, layout: 'auto', order: 'reading', depth: 'standard' }, load(PREFS, {}));
 const blank = () => ({ comments: [], picks: {}, notes: {}, resolved: [], nextId: 1, drafts: {}, body: null });
 const page = Object.assign(blank(), load(PAGE, {}));
 const ui = { open: null, expand: {}, view: {}, tray: false, mark: null, slots: {}, unfold: {} };
@@ -33,6 +33,7 @@ const DRAFTS = R ? R.drafts : [];
 const BASE = Object.fromEntries(DRAFTS.map(d => [d.id, d]));
 const STATUS = { post: 'To post', lower: 'Lower priority', dismissed: 'Dismissed' };
 const draftTimers = {};
+const openpr = { mode: null, bot: '' };
 const draft = id => ({ ...BASE[id], ...(page.drafts[id] || {}) });
 const bodyText = () => page.body ?? R.body;
 const AUTHORS = [...new Set(Object.values(KIT.hunks).flatMap(h => h.authors || []))];
@@ -60,7 +61,7 @@ function adopt(data) {
   const typed = Object.keys(draftTimers).filter(k => k !== 'body').map(id => [id, page.drafts[id].text]);
   const body = 'body' in draftTimers ? page.body : undefined;
   Object.assign(page, blank(), data.state);
-  Object.assign(board, { rev: data.rev, scroll: data.scroll, replies: data.replies, sent: data.sent, send: data.send, header: data.header, pending: data.pending });
+  Object.assign(board, { rev: data.rev, scroll: data.scroll, replies: data.replies, sent: data.sent, send: data.send, header: data.header, pending: data.pending, opened: data.opened });
   const typing = document.activeElement;
   if (typing && typing.matches('.call textarea.note')) page.notes[typing.closest('.call').dataset.call] = typing.value;
   if (typing && typing.matches('textarea.dtext')) typed.push([typing.closest('[data-draft]').dataset.draft, typing.value]);
@@ -395,18 +396,46 @@ function draftBox(id, place) {
   const proof = b.proof ? `<div class="proof"><div class="cmeta">Proof, private, never posted</div>${b.proofHtml}</div>` : '';
   return `<div class="draft s-${d.status}" data-draft="${esc(id)}"${place === 'list' ? ` id="draft-${esc(id)}"` : ''}><div class="dh">${tag}${where}${edited}`
     + `<span class="seg" role="group" aria-label="Status">${seg}</span>${fold}</div>`
-    + `<div class="dgrid${proof ? ' two' : ''}"><textarea class="dtext" aria-label="Draft text" rows="${rowsFor(d.text)}">${esc(d.text)}</textarea>${proof}</div>${reason}${off}${jump}</div>`;
+    + `<div class="dgrid${proof ? ' two' : ''}"><textarea class="dtext" aria-label="Draft text" rows="${rowsFor(d.text)}">${esc(d.text)}</textarea>${proof}</div>${reason}${off}${jump}`
+    + asks('D:' + id, place, `Draft ${id}${d.where ? ` (${d.where})` : ''}`) + '</div>';
+}
+
+const isAsk = key => key === 'RB' || key.startsWith('D:');
+
+// A request to rewrite a draft or the review body is a comment thread, which the author answers with the new text.
+function asks(key, place, label) {
+  const open = ui.open && ui.open.key === key && ui.open.place === place ? ui.open : null;
+  const list = commentsHtml(c => c.key === key, open);
+  const ask = open ? '' : `<button class="linkbtn" data-ask="${esc(key)}" data-label="${esc(label)}">Ask for a rewrite</button>`;
+  return `<div class="asks" data-place="${place}">${list}${ask}</div>`;
+}
+
+// Opening a comment box anywhere else closes an open request for a rewrite.
+function opening(next) {
+  const prev = ui.open;
+  ui.open = next;
+  if (prev && isAsk(prev.key) && prev.key !== next.key) renderAsks(prev.key);
+}
+
+function renderAsks(key) {
+  const b = key === 'RB' ? null : BASE[key.slice(2)];
+  const el = b && b.hunk && document.getElementById('hunk-' + b.hunk);
+  if (el && el.dataset.rendered) renderHunk(el);
+  renderReview();
+  const ta = $('#rv .cbox textarea');
+  if (ta) ta.focus({ preventScroll: true });
 }
 
 function renderReview() {
   const host = $('#rv');
   if (!host) return;
-  if (!$('#rbody')) host.innerHTML = '<div class="card rvbody"><div class="cmeta">Review body <span class="tag" id="rbody-edited" hidden>Edited</span></div><textarea id="rbody" aria-label="Review body"></textarea></div><div id="rv-lists"></div>';
+  if (!$('#rbody')) host.innerHTML = '<div class="card rvbody"><div class="cmeta">Review body <span class="tag" id="rbody-edited" hidden>Edited</span></div><textarea id="rbody" aria-label="Review body"></textarea><div id="rbody-asks"></div></div><div id="rv-lists"></div>';
   const area = $('#rbody');
   if (area !== document.activeElement) { area.value = bodyText(); area.rows = rowsFor(area.value) + 1; }
   $('#rbody-edited').hidden = bodyText() === R.body;
   const lists = $('#rv-lists');
-  if (lists.contains(document.activeElement) && document.activeElement.matches('textarea')) { ui.reviewStale = true; return; }
+  if (host.contains(document.activeElement) && document.activeElement.matches('.cbox textarea, #rv-lists textarea')) { ui.reviewStale = true; return; }
+  $('#rbody-asks').innerHTML = asks('RB', 'list', 'Review body');
   ui.reviewStale = false;
   const by = s => DRAFTS.filter(d => draft(d.id).status === s);
   const post = by('post');
@@ -521,7 +550,6 @@ function hang(raw) {
   return m[1].replace(/\t/g, '    ').length + (m[2] ? m[2].length : 0);
 }
 
-// Each source line gets a hanging indent, so a wrapped list item lines up under its text.
 function wordRows(parts) {
   const rows = [{ html: '', raw: '', kinds: new Set(), end: null }];
   for (const [t, k] of parts) {
@@ -537,23 +565,27 @@ function wordRows(parts) {
   return rows;
 }
 
+// Each source line gets a hanging indent, so a wrapped list item lines up under its text.
 const wordLine = (row, key) => `<div class="wl${key ? ' cl' : ''}"${key ? ` data-key="${key}"` : ''} style="--i:${hang(row.raw)}">${row.html || '&nbsp;'}</div>`;
 
-// A row of a changed block belongs to the new file when it shows kept or added text, otherwise to the old file.
+// A kept or added line break ends a line of the new file, a kept or removed one a line of the old file.
+// A row takes the new line it shows text of, and a row of only removed text takes its old line.
 function changedBlock(id, b) {
   const used = new Set(), shown = [new Set(), new Set()];
   let oi = 0, ni = 0, html = '';
   for (const row of wordRows(mergedDiff(b.R.map(x => x.s).join('\n'), b.A.map(x => x.s).join('\n')))) {
     const k = row.kinds;
-    const isNew = k.size ? k.has('same') || k.has('add') : row.end ? row.end !== 'del' : ni < b.A.length;
-    const isOld = k.size ? k.has('same') || k.has('del') : row.end ? row.end !== 'add' : !isNew;
-    const a = isNew ? b.A[ni++] : null, r = isOld ? b.R[oi++] : null;
-    let key = a ? 'R' + a.n : r ? 'L' + r.o : null;
-    if (used.has(key)) key = null;
-    used.add(key);
-    if (r) shown[0].add(r.o);
-    if (a) shown[1].add(a.n);
-    html += wordLine(row, key) + (key ? rowComments(id, key, [r ? [r.o] : [], a ? [a.n] : []]) : '');
+    const isNew = k.has('same') || k.has('add') || (row.end ? row.end !== 'del' : !k.size);
+    const a = isNew ? b.A[ni] : null, r = a ? null : b.R[oi];
+    const key = a ? 'R' + a.n : r ? 'L' + r.o : null;
+    html += wordLine(row, key);
+    if (key && !used.has(key)) {
+      used.add(key);
+      shown[a ? 1 : 0].add(a ? a.n : r.o);
+      html += rowComments(id, key, [r ? [r.o] : [], a ? [a.n] : []]);
+    }
+    if (row.end && row.end !== 'del') ni++;
+    if (row.end && row.end !== 'add') oi++;
   }
   if (b.R.some(x => x.e)) html += `<div class="wl"><del>${EOL}</del></div>`;
   if (b.A.some(x => x.e)) html += `<div class="wl"><ins>${EOL}</ins></div>`;
@@ -637,9 +669,22 @@ function markLines(el) {
   return hits;
 }
 
+// Needs me hides each hunk without a note, a draft, a comment or a decide card that points at it.
+function applyDepth() {
+  document.body.dataset.depth = prefs.depth;
+  $$('button[data-depth]').forEach(b => b.setAttribute('aria-pressed', String(prefs.depth === b.dataset.depth)));
+  const marked = new Set([...page.comments.map(c => c.hunk), ...DRAFTS.map(d => d.hunk)]);
+  $$('.hunk[data-hunk]').forEach(el => { if (marked.has(el.dataset.hunk)) el.dataset.need = ''; });
+  const hidden = prefs.depth === 'needs' ? $$('.hunk[data-hunk]:not([data-need]):not([data-hunk="pr"])').length : 0;
+  const note = $('#depth-note');
+  note.hidden = !hidden;
+  note.textContent = `Needs me hides ${hidden} hunk${hidden === 1 ? '' : 's'} without a note, a draft or a comment. Standard shows them.`;
+}
+
 function jump(id, first, last) {
   const el = document.getElementById('hunk-' + id), h = KIT.hunks[id];
   if (!el) return;
+  el.dataset.need = '';
   ui.mark = { id, first, last };
   const ex = ui.expand[id] = ui.expand[id] || { up: 0, down: 0 };
   const top = h.newCount ? h.newStart : h.newStart + 1;
@@ -666,6 +711,7 @@ function renderAll() {
   renderReview();
   $$('[data-layout]').forEach(b => b.setAttribute('aria-pressed', String(prefs.layout === b.dataset.layout)));
   $('#wrap').checked = prefs.wrap;
+  applyDepth();
   updateCards();
   updateBar();
 }
@@ -753,6 +799,14 @@ function updateBar() {
     pending.title = board.pending ? `Asked the thread at ${board.pending}` : '';
   }
   $('#copy').classList.toggle('primary', send.hidden);
+  const form = $('#openpr');
+  if (form) {
+    form.hidden = send.hidden;
+    $$('[data-mode]', form).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === openpr.mode)));
+    $$('[data-bot]', form).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bot === openpr.bot)));
+    $('#openpr-go').disabled = !openpr.mode;
+    $('#openpr-at').textContent = board.opened ? `Asked the thread at ${board.opened}` : '';
+  }
   renderTray();
 }
 
@@ -802,6 +856,28 @@ async function requestPending() {
     st.classList.add('ok');
   } catch (e) {
     st.textContent = `Not asked: ${e.message}`;
+  }
+  btn.disabled = false;
+}
+
+// The thread pushes and opens the PR, the board only passes the request on.
+async function requestOpen() {
+  const st = $('#status'), btn = $('#openpr-go');
+  st.classList.remove('ok');
+  const a = answer();
+  if (a.comments.length || a.notes.length) { st.textContent = 'Send your comments and notes first, so the thread answers them before it opens the PR.'; return; }
+  const how = $(`#openpr [data-mode="${openpr.mode}"]`).textContent;
+  if (!confirm(`Ask the thread to push this branch and open the PR as "${how}"${openpr.bot ? `, with a review by ${openpr.bot}` : ''}?`)) return;
+  btn.disabled = true;
+  st.textContent = 'Asking the thread...';
+  try {
+    await settle();
+    refresh(adopt(await call('/open-pr', { mode: openpr.mode, bot: openpr.bot, pr: KIT.pr })));
+    st.textContent = 'Asked the thread to open the PR.';
+    st.classList.add('ok');
+  } catch (e) {
+    st.textContent = `Not asked: ${e.message}`;
+    if (e.status === 409) stale();
   }
   btn.disabled = false;
 }
@@ -858,7 +934,8 @@ async function copy() {
   }
 }
 
-function rerender(el) {
+function rerender(el, key) {
+  if (key && isAsk(key)) { renderAsks(key); return; }
   if (!el) return;
   if (el.matches('.cm')) renderReplies(el); else renderHunk(el);
 }
@@ -866,6 +943,7 @@ function rerender(el) {
 function reveal(id) {
   const el = document.getElementById(id);
   if (!el) return;
+  if (el.matches('.hunk')) el.dataset.need = '';
   for (let d = el.closest('details'); d; d = d.parentElement.closest('details')) d.open = true;
   $$('.hunk[data-hunk]').forEach(h => { if (!h.dataset.rendered && visible(h)) renderHunk(h); });
   el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -886,6 +964,17 @@ document.addEventListener('click', e => {
     return;
   }
   if (d.layout) { prefs.layout = d.layout; save(PREFS, prefs); renderAll(); return; }
+  if (d.depth) {
+    prefs.depth = d.depth;
+    save(PREFS, prefs);
+    $$('details.group.skim:not(.dlist)').forEach(x => { x.open = d.depth === 'all'; });
+    applyDepth();
+    $$('.hunk[data-rendered]').forEach(edges);
+    return;
+  }
+  if (d.mode) { openpr.mode = openpr.mode === d.mode ? null : d.mode; updateBar(); return; }
+  if ('bot' in d) { openpr.bot = d.bot; updateBar(); return; }
+  if (t.id === 'openpr-go') { requestOpen(); return; }
   if (d.order) { prefs.order = d.order; save(PREFS, prefs); applyOrder(); return; }
   if (d.view) { const [id, v] = d.view.split(':'); ui.view[id] = v; renderHunk(host); return; }
   if (d.expand) { const [id, dir] = d.expand.split(':'); const ex = ui.expand[id] = ui.expand[id] || { up: 0, down: 0 }; ex[dir] += STEP; renderHunk(host); return; }
@@ -893,19 +982,25 @@ document.addEventListener('click', e => {
     const h = KIT.hunks[host.dataset.hunk];
     const prev = ui.open && document.querySelector(`[data-hunk="${ui.open.hunk}"]`);
     const label = h ? `${h.path}${rangeOf(h) ? ':' + rangeOf(h) : ''} (whole hunk)` : 'PR draft';
-    ui.open = { hunk: host.dataset.hunk, key: 'H', label };
+    opening({ hunk: host.dataset.hunk, key: 'H', label });
     if (prev && prev !== host) renderHunk(prev);
     renderHunk(host); return;
   }
   if (d.reply) {
     const cm = t.closest('.cm');
-    ui.open = { hunk: null, key: 'F' + d.reply, label: `Reply to your comment${cm.dataset.where ? ' on ' + cm.dataset.where : ''}` };
+    opening({ hunk: null, key: 'F' + d.reply, label: `Reply to your comment${cm.dataset.where ? ' on ' + cm.dataset.where : ''}` });
     renderReplies(cm); return;
   }
+  if (d.ask) {
+    const prev = ui.open && ui.open.hunk && document.querySelector(`.hunk[data-hunk="${ui.open.hunk}"]`);
+    opening({ hunk: (BASE[d.ask.slice(2)] || {}).hunk || null, key: d.ask, label: d.label, place: t.closest('.asks').dataset.place });
+    if (prev) renderHunk(prev);
+    renderAsks(d.ask); return;
+  }
   if (d.save !== undefined) {
-    const text = $('.cbox textarea', host).value.trim();
+    const text = $('textarea', t.closest('.cbox')).value.trim();
     const open = ui.open;
-    const close = () => { if (ui.open === open) ui.open = null; rerender(host); updateBar(); };
+    const close = () => { if (ui.open === open) ui.open = null; rerender(host, open && open.key); updateBar(); };
     if (!text || !open) { close(); return; }
     t.disabled = true;
     edit({ op: 'add', hunk: open.hunk, key: open.key, label: open.label, text, ...(open.parent ? { parent: open.parent } : {}) }).then(close, err => {
@@ -914,21 +1009,22 @@ document.addEventListener('click', e => {
     });
     return;
   }
-  if (d.cancel !== undefined) { ui.open = null; rerender(host); return; }
+  if (d.cancel !== undefined) { const key = ui.open && ui.open.key; ui.open = null; rerender(host, key); return; }
+  const keyOfComment = id => (page.comments.find(x => x.id === +id) || {}).key;
   if (d.follow) {
     const c = page.comments.find(x => x.id === +d.follow);
     const prev = ui.open && ui.open.hunk && ui.open.hunk !== c.hunk && document.querySelector(`.hunk[data-hunk="${ui.open.hunk}"]`);
-    ui.open = { hunk: c.hunk, key: c.key, label: c.label, parent: c.id };
+    opening({ hunk: c.hunk, key: c.key, label: c.label, parent: c.id, place: (t.closest('.asks') || t).dataset.place });
     if (prev) renderHunk(prev);
-    rerender(host); return;
+    rerender(host, c.key); return;
   }
   if (d.resolve) {
     const id = +d.resolve;
     ui.unfold[id] = false;
     edit({ op: 'resolve', id, on: !page.resolved.includes(id) }).catch(() => {});
-    rerender(host); return;
+    rerender(host, keyOfComment(id)); return;
   }
-  if (d.unfold) { ui.unfold[d.unfold] = !ui.unfold[d.unfold]; rerender(host); return; }
+  if (d.unfold) { ui.unfold[d.unfold] = !ui.unfold[d.unfold]; rerender(host, keyOfComment(d.unfold)); return; }
   if (d.del) { edit({ op: 'remove', id: +d.del }).catch(() => {}); renderAll(); return; }
   if (d.clear !== undefined) {
     if (confirm('Remove all unsent comments, changed picks and notes on this page?')) {
@@ -957,7 +1053,7 @@ document.addEventListener('click', e => {
     const key = t.dataset.key;
     const label = !h ? (key === 'T' ? 'PR title' : `PR description line ${key.slice(1)}`) : labelOf(h, key);
     const prev = ui.open && ui.open.hunk && ui.open.hunk !== host.dataset.hunk && document.querySelector(`[data-hunk="${ui.open.hunk}"]`);
-    ui.open = { hunk: host.dataset.hunk, key, label };
+    opening({ hunk: host.dataset.hunk, key, label });
     if (prev) renderHunk(prev);
     renderHunk(host);
   }
@@ -1087,6 +1183,7 @@ window.addEventListener('scroll', () => {
     } catch (e) {}
   }
   applyOrder();
+  if (prefs.depth === 'all') $$('details.group.skim:not(.dlist)').forEach(x => { x.open = true; });
   renderAll();
   if (location.hash.length > 1) reveal(location.hash.slice(1));
   else if (board.scroll) window.scrollTo(0, board.scroll);

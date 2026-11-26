@@ -164,6 +164,19 @@ class ReviewPageTests(unittest.TestCase):
             f"Create pending review, pressed on the review page review-abc1234.html (review {self.review})", self.log.read_text()
         )
 
+    def test_open_pr_asks_the_thread_only_for_a_mode_the_page_offers(self) -> None:
+        draft = {"title": "t", "body": "", "modes": ["draft", "babysit"], "reviews": ["Copilot"]}
+        data = {"key": "2222", "pr": draft}
+        self.page.write_text(f'<script id="kit-data" type="application/json">{json.dumps(data)}</script>')
+        reviews.register(self.page, "thread-one")
+        with self.assertRaises(ValueError):
+            reviews.open_pr(self.review, {"page": "2222", "pr": draft, "mode": "merge", "bot": ""})
+        with self.assertRaises(reviews.Stale):
+            reviews.open_pr(self.review, {"page": "2222", "pr": {**draft, "title": "older"}, "mode": "draft", "bot": ""})
+        self.assertFalse(self.log.exists())
+        reviews.open_pr(self.review, {"page": "2222", "pr": draft, "mode": "babysit", "bot": "Copilot"})
+        self.assertIn("mode `babysit`, automatic review Copilot", self.log.read_text())
+
 
 if __name__ == "__main__":
     unittest.main()

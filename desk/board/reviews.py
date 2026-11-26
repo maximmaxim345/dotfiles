@@ -194,7 +194,7 @@ def shown(review: dict) -> dict:
     keys = ("key", "rev", "state", "scroll", "replies", "sent")
     version = (review.get("narrative") or {}).get("version")
     extra = {"version": version, "pending": review.get("pending"), "send": bool(review["thread"]), "header": header(review)}
-    return {**{key: review[key] for key in keys}, **extra}
+    return {**{key: review[key] for key in keys}, **extra, "opened": review.get("opened")}
 
 
 def text_of(body: dict, name: str) -> str:
@@ -299,6 +299,26 @@ def pending(review_id: str, body: dict) -> dict:
     return shown(review)
 
 
+def open_pr(review_id: str, body: dict) -> dict:
+    with changing(review_id) as review:
+        check_page(review, body)
+        draft = page_data(page_file(review).read_bytes()).get("pr") or {}
+        if body.get("pr") != draft:
+            raise Stale("this page was rebuilt")
+        mode, bot = body["mode"], body.get("bot") or ""
+        if mode not in draft.get("modes", []) or (bot and bot not in draft.get("reviews", [])):
+            raise ValueError("the page does not offer this way to open the PR")
+        to_thread(
+            review["thread"],
+            f"Open PR, pressed on the review page {Path(review['page']).name} (review {review['id']}): mode `{mode}`,"
+            f" automatic review {bot or 'none'}. It is my go-ahead for `/open-pr` with these picks, for the PR draft on"
+            " that page, once.",
+        )
+        review["opened"] = now()
+        review["rev"] += 1
+    return shown(review)
+
+
 def export(review_id: str) -> dict:
     with changing(review_id) as review:
         page = page_file(review).read_bytes()
@@ -367,7 +387,7 @@ def get(handler: BaseHTTPRequestHandler, path: str) -> None:
 
 
 def post(handler: BaseHTTPRequestHandler, path: str, body: dict) -> None:
-    match = re.fullmatch(r"/api/review/([^/]+)/(edit|send|sent|pending)", path)
+    match = re.fullmatch(r"/api/review/([^/]+)/(edit|send|sent|pending|open-pr)", path)
     try:
         if not match:
             raise FileNotFoundError(path)
@@ -375,6 +395,8 @@ def post(handler: BaseHTTPRequestHandler, path: str, body: dict) -> None:
             data = edit(match[1], body)
         elif match[2] == "pending":
             data = pending(match[1], body)
+        elif match[2] == "open-pr":
+            data = open_pr(match[1], body)
         else:
             data = send(match[1], body, deliver=match[2] == "send")
         answer(handler, 200, data)

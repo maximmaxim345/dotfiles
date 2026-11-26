@@ -39,6 +39,15 @@ RISK_TAGS = {"low": "", "medium": "warn", "high": "bad"}
 PROOF_TAGS = {"test": ("good", "Test"), "run": ("good", "Run"), "recording": ("good", "Recording"), "none": ("warn", "No proof")}
 STATUS_TAGS = {"changed": ("good", "Changed"), "partly": ("warn", "Partly changed"), "declined": ("warn", "Not changed")}
 DRAFT_STATUSES = ("post", "lower", "dismissed")
+OPEN_MODES = {
+    "babysit": "Draft, then babysit",
+    "draft": "Draft",
+    "ready": "Ready for review",
+    "merge": "Babysit, then ready and merge",
+    "push": "Push only",
+    "push-ready": "Push and mark ready",
+    "push-babysit": "Push and babysit",
+}
 DRAFT_WHERE_RE = re.compile(r"(.+):(\d+)")
 PR_NUMBER_RE = re.compile(r"/pull/(\d+)")
 MOVED_COLORS = {
@@ -55,6 +64,8 @@ TOP_BAR_CONTROLS = (
     '<div class="ctl"><span class="seg" role="group" aria-label="Diff layout">'
     '<button data-layout="auto">Auto</button><button data-layout="split">Side by side</button>'
     '<button data-layout="unified">Stacked</button></span>'
+    '<span class="seg" role="group" aria-label="How much to show"><button data-depth="needs">Needs me</button>'
+    '<button data-depth="standard">Standard</button><button data-depth="all">Everything</button></span>'
     '<label class="chk"><input type="checkbox" id="wrap"> Wrap lines</label></div>'
 )
 BOTTOM_BAR = (
@@ -843,14 +854,15 @@ def context_panel(ref: Dict[str, Any], change: Change) -> str:
 
 
 class Layout:
-    def __init__(self, change: Change, pr_review: bool = False) -> None:
+    def __init__(self, change: Change, pr_review: bool = False, needed: Optional[Set[str]] = None) -> None:
         self.change = change
         self.pr_review = pr_review
+        self.needed = needed or set()
         self.linker = Linker(change.hunks)
         self.placed: Dict[str, str] = {}
         self.unplaced = 0
 
-    def entries(self, items: List[Any], where: str, skim: str = "") -> str:
+    def entries(self, items: List[Any], where: str, skim: str = "", need: bool = False) -> str:
         out = ""
         for item in items:
             meta = item if isinstance(item, dict) else {}
@@ -858,10 +870,10 @@ class Layout:
             if "file" in meta and "lines" not in meta:
                 found = [h for h in found if h.id not in self.placed] or found
             for index, hunk in enumerate(found):
-                out += self.entry(hunk, meta if index == 0 else {}, where, skim)
+                out += self.entry(hunk, meta if index == 0 else {}, where, skim, need)
         return out
 
-    def entry(self, hunk: Hunk, meta: Dict[str, Any], where: str, skim: str = "") -> str:
+    def entry(self, hunk: Hunk, meta: Dict[str, Any], where: str, skim: str = "", need: bool = False) -> str:
         if hunk.id in self.placed:
             note = f" {inline(meta['note'], self.linker)}" if meta.get("note") else ""
             return (
@@ -883,8 +895,9 @@ class Layout:
         if tags:
             why += f"<p>{tags}</p>"
         panels = "".join(context_panel(ref, self.change) for ref in meta.get("context", []))
+        need = need or bool(meta.get("note") or look or hunk.look) or hunk.id in self.needed
         return (
-            f'<article class="hunk" data-hunk="{hunk.id}" id="hunk-{hunk.id}">'
+            f'<article class="hunk" data-hunk="{hunk.id}" id="hunk-{hunk.id}"{" data-need" if need else ""}>'
             + (f'<div class="why">{why}</div>' if why else "")
             + panels
             + '<div class="hbody"></div></article>'
@@ -921,7 +934,7 @@ class Layout:
         self.unplaced = len(rest)
         if not rest:
             return ""
-        body = "".join(self.entry(h, {}, '"Not mentioned by the author"') for h in rest)
+        body = "".join(self.entry(h, {}, '"Not mentioned by the author"', need=True) for h in rest)
         return (
             f'<section class="group unmentioned"><h3>Not mentioned by the author <span class="count">{len(rest)}</span></h3>'
             f'<p class="gnote">The narrative does not place these hunks. They are shown in file order.</p>{body}</section>'
@@ -1270,7 +1283,8 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
     if round_two and not change.reviewed:
         raise KitError("The narrative has `feedback`, which needs --since with the previously reviewed head")
     pr_review = narrative.get("review") is not None
-    layout = Layout(change, pr_review)
+    refs = [ref for card in narrative.get("decide", []) for ref in card.get("refs", [])]
+    layout = Layout(change, pr_review, {h.id for ref in refs for h in resolve(ref, change.hunks)})
     linker = layout.linker
     head_label = change.head[:7] if change.head else "uncommitted changes"
     files = len({h.path for h in change.hunks})
@@ -1280,9 +1294,19 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
     sections = decide_cards(narrative.get("decide", []), change, linker, narrative.get("decide_order", ""))
     review = review_data(narrative["review"], change, linker) if pr_review else None
     if review:
+        given = narrative["review"]
+        if given.get("pr_title"):
+            by = f' <span class="count">by {esc(given["author"])}</span>' if given.get("author") else ""
+            text = inline(given.get("pr_body") or "") or '<span class="muted">No description.</span>'
+            sections += (
+                f'<section id="theirs"><h2>The PR{by}</h2><div class="card theirs"><h3>{esc(given["pr_title"])}</h3>'
+                f'<div class="prtext">{text}</div></div></section>'
+            )
         sections += (
             '<section id="review"><h2>Your review</h2><p class="sub">Each draft sits at its line in the diff. Edit its '
-            "text there or here, and tap To post, Lower or Dismissed to move it. Proofs are for you and are never posted.</p>"
+            "text there or here, and tap To post, Lower or Dismissed to move it. Ask for a rewrite sends the thread your "
+            "note on a draft or on the body. Proofs are for you and are never posted. Nothing goes to GitHub until you "
+            "press Create pending review.</p>"
             '<div id="rv"></div></section>'
         )
     sections += behavior_table(narrative.get("behavior"), linker)
@@ -1290,10 +1314,29 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
     pr = narrative.get("pr")
     if pr is not None and not (isinstance(pr, dict) and isinstance(pr.get("title"), str)):
         raise KitError("`pr` needs a `title` and an optional `body`, both text")
+    modes = [str(m) for m in pr.get("modes", [])] if pr else []
+    bots = [str(b) for b in pr.get("reviews", [])] if pr else []
+    if [m for m in modes if m not in OPEN_MODES]:
+        raise KitError(f"`pr.modes` takes {list(OPEN_MODES)}, got {modes}")
     if pr:
+        form = ""
+        if modes:
+            how = "".join(f'<button class="opt" data-mode="{m}"><span>{OPEN_MODES[m]}</span></button>' for m in modes)
+            who = "".join(f'<button data-bot="{esc(b)}">{esc(b)}</button>' for b in bots)
+            if who:
+                who = (
+                    '<p class="small">Automatic review <span class="seg" role="group" aria-label="Automatic review">'
+                    f'<button data-bot="">None</button>{who}</span></p>'
+                )
+            form = (
+                '<div class="card openpr" id="openpr" hidden><h3>Open the PR</h3><p class="sub">Nothing is picked yet. '
+                "The thread pushes and opens the PR only after you pick one and press the button.</p>"
+                f'<div class="opts">{how}</div>{who}<div class="row"><button class="btn primary" id="openpr-go" disabled>'
+                'Open PR</button><span class="small muted" id="openpr-at"></span></div></div>'
+            )
         sections += (
             '<section id="pr"><h2>PR draft</h2><p class="sub">Tap a line to comment on its wording.</p>'
-            '<article class="hunk" data-hunk="pr" id="hunk-pr"><div class="hbody"></div></article></section>'
+            f'<article class="hunk" data-hunk="pr" id="hunk-pr"><div class="hbody"></div></article>{form}</section>'
         )
     if round_two:
         feedback_html = ""
@@ -1301,7 +1344,7 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
             fid = str(item.get("id", index))
             where = item.get("where", "")
             tag, label = STATUS_TAGS.get(item.get("status", "changed"), ("", str(item.get("status"))))
-            body = layout.entries(item.get("hunks", []), f"your comment {index}")
+            body = layout.entries(item.get("hunks", []), f"your comment {index}", need=True)
             panels = "".join(context_panel(ref, change) for ref in item.get("context", []))
             on = f", on <code>{esc(where)}</code>" if where else ""
             feedback_html += (
@@ -1344,7 +1387,7 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
     brand = f"{kind} <span>{esc(' '.join(x for x in (repo, branch) if x))}</span>"
     body = (
         f'<header class="top"><div class="top-in"><div class="brand">{brand}</div>{TOP_BAR_CONTROLS}</div></header>'
-        f'<main class="wrap page">{head}{sections}</main>'
+        f'<main class="wrap page">{head}<p class="warnbox" id="depth-note" hidden></p>{sections}</main>'
         + BOTTOM_BAR.format(pending='<button class="btn" id="pending" hidden>Create pending review</button>' if review else "")
     )
     tree = change.head or f"worktree:{change.diff_hash}"
@@ -1354,7 +1397,7 @@ def build_review(change: Change, narrative: Dict[str, Any]) -> Tuple[str, int]:
         "key": key,
         "hunks": {h.id: h.to_page() for h in change.hunks},
         "commits": [[sha[:7], subject] for sha, subject in change.commits],
-        "pr": {"title": pr["title"], "body": str(pr.get("body", ""))} if pr else None,
+        "pr": {"title": pr["title"], "body": str(pr.get("body", "")), "modes": modes, "reviews": bots} if pr else None,
     }
     if review:
         data["review"] = review

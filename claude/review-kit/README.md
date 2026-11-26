@@ -113,7 +113,8 @@ Every field is optional. An empty object `{}` gives a page with every hunk under
     {"name": "Copilot", "fixed": ["The retry loop never gave up."], "kept": [{"finding": "Retry forever.", "why": "The caller sets a deadline."}],
      "skipped": 2}
   ],
-  "pr": {"title": "Reconnect after the server restarts", "body": "The client now reconnects ...\n\nFixes #12"},
+  "pr": {"title": "Reconnect after the server restarts", "body": "The client now reconnects ...\n\nFixes #12",
+         "modes": ["babysit", "draft", "ready"], "reviews": ["Copilot"]},
   "groups": [
     {
       "title": "Core",
@@ -132,11 +133,11 @@ Every field is optional. An empty object `{}` gives a page with every hunk under
 
 - `tier` is one of `fixup`, `small`, `normal`, `risky`. The script computes the lowest tier from the size of the diff (changed lines outside tests: over 400 is risky, 50 or more is normal, otherwise small, and fixup only in round two at 15 or fewer). A hunk in a path marked for a close look (see below) makes it at least normal. The narrative may raise the tier, never lower it. Leave it out to take the computed one.
 - `repo` and `branch` name the page in the browser tab and the top bar. Without them the page takes the repository from the `upstream` or `origin` remote and the branch from `--head` or the end of `--range`, never from the checkout's folder or its current branch.
-- `worst_case` and `tested` sit next to the tier at the top, as do the `facts`.
+- `worst_case`, `tested` and the `facts` follow the tier at the top as one short list, a label and a sentence or two each. Leave out a fact that has nothing to say.
 - `decide` cards come first on the page, in the order given. The heading shows their count, followed by `decide_order` when set (for example "riskiest first"). See "Decide cards" below.
 - `claims` lists each behavior the change claims, with its `proof`: `test`, `run` (a command and its result), `recording` or `none`. `name` is the test, the command or the recording, `detail` adds the result. For a test, `fails_without` says whether it fails without the change (`true`), passes without it (`false`) or was not tried (left out). Claims without proof are marked. `refs` link to hunks as on decide cards.
 - `reviewers` gives one line per reviewer: what it found that was fixed (a list, or a count), what was kept and why, and how many theoretical findings were skipped. Each of the three counts shows only when its field is given. `note` adds text to a reviewer, such as the findings of your own pass. `reviewers_note` shows even without reviewers.
-- `pr` is the PR draft: its `title` and its `body` as the Markdown that goes to GitHub. The page shows it as raw text before the diff, and each line takes comments like a line of code.
+- `pr` is the PR draft: its `title` and its `body` as the Markdown that goes to GitHub. The page shows it as raw text before the diff, and each line takes comments like a line of code. With `modes`, the page shows an Open PR form under the draft when it comes from the board: one button per mode (`babysit`, `draft`, `ready`, `merge`, and `push`, `push-ready`, `push-babysit` for a PR that is already open), and with `reviews` a choice of the bot that reviews it, such as `Copilot`. No mode is picked until Maxim picks one, and the review starts at None. Its Open PR button asks once for confirmation, then sends the thread a message that names the review id, the mode and the bot. It refuses while comments or notes are unsent.
 - `groups` set the reading order. A group is shown in full, or collapsed under its one-line `reason` when `unimportant` is true. A collapsed group takes no `note`: put it on one of its hunks. Every hunk the groups do not place appears in a last group, "Not mentioned by the author". Nothing is dropped.
 
 ### Paths to look at closely
@@ -212,6 +213,9 @@ A `review` object turns the page into a review of someone else's PR. It never gr
   "review": {
     "url": "https://github.com/acme/widget/pull/42",
     "head": "72a59f5",
+    "author": "octocat",
+    "pr_title": "Retry the connection",
+    "pr_body": "The description as the author wrote it.",
     "body": "Thanks! A few notes ...",
     "drafts": [
       {"id": "retry-loop", "where": "src/client.py:88", "text": "This retries forever when ...", "proof": "Ran `test_retry` with ..."},
@@ -224,11 +228,12 @@ A `review` object turns the page into a review of someone else's PR. It never gr
 ```
 
 - `url` is the PR, `head` the head commit the review is for. Each build stores the head under `refs/review/<PR number>/<round>`, a new round only when the head changed, and prints the ref. Pass it as `--since` for the next round, with a `feedback` list for the comments that went out, so the page shows only what the author changed since. The script refuses to build when `head` is not the commit it builds from, since GitHub places comments by the diff of that commit. Leave it out to take the built head.
+- `author`, `pr_title` and `pr_body` are the PR as its author wrote it. The page shows them above the review, the description as raw text.
 - `body` is the review body.
 - Each draft has a unique `id` of letters, digits, `_`, `.` and `-`, `where` as `path:line`, `side` (`RIGHT`, the default, for the new file, `LEFT` for a removed line), `text`, an optional `proof` that is never posted, and `status`: `post` (the default), `lower` or `dismissed`. A dismissed draft gives its `reason`. A `where` may name a path by its end, like `client.rs:1529`, when only one file ends that way, and may be left out for a draft that has no line.
 - A draft whose line is not in the PR's diff still builds. The page shows it apart with a warning, since GitHub rejects inline comments outside the diff.
 
-On the page each draft sits under its line as an editable box with its status and the proof beside it. Lower priority and dismissed drafts fold to one line in the diff and are listed in full under "Your review", where one tap moves any draft between To post, Lower and Dismissed. A draft to post that is not on a line of the diff offers "Move into the review body", which appends it to the body and dismisses it. Edits stay on the board like comments. When the page is rebuilt, each draft keeps its edited text and status as long as its `id` still exists and the narrative's text for it is unchanged, and the body keeps its edits while the narrative's body is unchanged. A changed text in the narrative wins over the edits, and an open copy of the older page asks for a reload. Send and Copy carry one line with the counts of drafts to post, lower and dismissed, and what changed on the page. Without the board, Copy for chat carries every draft and the body in full.
+On the page each draft sits under its line as an editable box with its status and the proof beside it. Lower priority and dismissed drafts fold to one line in the diff and are listed in full under "Your review", where one tap moves any draft between To post, Lower and Dismissed. Ask for a rewrite, under each draft and under the review body, opens a comment for the thread, such as "focus on the retry instead". It goes out with Send like any comment, labeled `Draft <id>` or `Review body`, and the thread answers it by rewriting that text in the narrative. A draft to post that is not on a line of the diff offers "Move into the review body", which appends it to the body and dismisses it. Edits stay on the board like comments. When the page is rebuilt, each draft keeps its edited text and status as long as its `id` still exists and the narrative's text for it is unchanged, and the body keeps its edits while the narrative's body is unchanged. A changed text in the narrative wins over the edits, and an open copy of the older page asks for a reload. Send and Copy carry one line with the counts of drafts to post, lower and dismissed, and what changed on the page. Without the board, Copy for chat carries every draft and the body in full.
 
 From the board, the Create pending review button asks once for confirmation, then sends the thread a message that names the review id and asks it to create the pending review from `review-page export`. The board itself never talks to GitHub. The button refuses while comments or notes are unsent, or while a draft to post is not on a line of the diff.
 
@@ -238,7 +243,8 @@ From the board, the Create pending review button asks once for confirmation, the
 - A `path:line` or `path:10-20` in any text of the narrative links to that line when the page shows it, inside a hunk or in its unchanged lines. A path may be shortened to its end, like `worktree-due:40`, as long as only one changed file ends that way. Following such a link or a card ref opens the hunk, reveals the lines and marks them.
 - Side by side diff on screens 900 pixels and wider, stacked below that, with syntax colors and word-level highlights inside changed lines. The colors come from Pygments at build time, from the whole old and new file, so a line inside a multi-line string is colored as a string. The top bar switches between Auto, Side by side and Stacked.
 - A carriage return shows as a small ␍, and a line without a final newline carries a "No newline at end of file" note, so a change of line endings is visible.
-- Markdown and text files open in a Words view that shows the changed paragraphs with struck and marked words. The source text stays raw. Long lines wrap with a hanging indent under list markers. A Lines switch shows the usual diff. These files show no function line in the hunk header.
+- The top bar switches how much shows. Needs me hides each hunk that has no note, no Look closely tag, no draft, no comment and no decide card pointing at it, and says how many it hides. Hunks the narrative does not place always show. Standard is the page as written. Everything also opens the groups marked unimportant. The choice is remembered in the browser.
+- Markdown and text files open in a Words view that shows the changed paragraphs with struck and marked words. Each line of a changed paragraph takes its own comment. The source text stays raw. Long lines wrap with a hanging indent under list markers. A Lines switch shows the usual diff. These files show no function line in the hunk header.
 - Wrap lines is off by default, so long lines scroll inside the diff. Side by side, both sides scroll sideways together. A touchpad swipe moves the page and the diff at the same time, in any direction, while a mouse wheel and shift with the wheel work as usual. A shadow on the right edge and a "scroll sideways" note in the hunk header show when lines continue. The choice is remembered in the browser.
 - Each hunk can show up to 100 unchanged lines above and below it, 20 per click, like GitHub.
 - Tapping a line, a word block or the Comment button on a hunk opens a comment box. Round two pages add a Reply button per feedback item. Copy for chat puts the answer on the clipboard for pasting into the chat: `go` when no pick changed and there are no notes or comments, otherwise the changed picks like `2B, 4C`, then each decide card note as `Decide 2: text`, then each comment as `path:line: text`.

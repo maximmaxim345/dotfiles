@@ -22,6 +22,7 @@ from server import (  # noqa: E402
     incoming_shown,
     open_blockers,
     plan_day,
+    require_desk_home,
     space_of,
     spaces_setting,
     write_json,
@@ -44,6 +45,7 @@ def ready_brief(brief: str) -> bool:
 
 
 def main() -> None:
+    require_desk_home()
     setting = autostart_setting()
     spaces = spaces_setting()
     items = all_items()

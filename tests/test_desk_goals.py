@@ -19,6 +19,8 @@ class GoalTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.home = Path(temporary.name)
         (self.home / "desk" / "backlog").mkdir(parents=True)
+        (self.home / ".config" / "desk").mkdir(parents=True)
+        (self.home / ".config" / "desk" / "home").touch()
 
     def backlog(self, *args: str) -> subprocess.CompletedProcess:
         env = {**os.environ, "HOME": str(self.home)}

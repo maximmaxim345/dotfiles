@@ -92,6 +92,8 @@ class AutostartTodayTests(unittest.TestCase):
             desk = Path(home) / "desk"
             (desk / "backlog").mkdir(parents=True)
             (desk / "state").mkdir()
+            (Path(home) / ".config" / "desk").mkdir(parents=True)
+            (Path(home) / ".config" / "desk" / "home").touch()
             (desk / "state" / "autostart.json").write_text(json.dumps({"mode": "all", "efforts": [], "reviews": False}))
             (desk / "state" / "budget.json").write_text(json.dumps({"minutes": 30}))
             day = datetime.date.today().isoformat()

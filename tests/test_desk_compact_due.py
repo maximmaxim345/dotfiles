@@ -18,6 +18,8 @@ class CompactDueTests(unittest.TestCase):
         self.home = Path(temporary.name)
         (self.home / "desk" / "backlog").mkdir(parents=True)
         (self.home / "desk" / "state").mkdir()
+        (self.home / ".config" / "desk").mkdir(parents=True)
+        (self.home / ".config" / "desk" / "home").touch()
         db = self.home / ".t3" / "userdata" / "statev2.sqlite"
         db.parent.mkdir(parents=True)
         self.conn = sqlite3.connect(db)

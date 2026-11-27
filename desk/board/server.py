@@ -28,6 +28,7 @@ from urllib.parse import parse_qs, urlsplit
 import reviews
 
 DESK = Path.home() / "desk"
+DESK_HOME = Path.home() / ".config" / "desk" / "home"
 BACKLOG = DESK / "backlog"
 EFFORTS = DESK / "efforts"
 PAGE = Path(__file__).resolve().parent / "index.html"
@@ -115,6 +116,15 @@ def board_token() -> str:
 def login_url(address: str, port: int) -> str:
     LOGIN.unlink(missing_ok=True)
     return f"http://{address}:{port}/login?code={new_secret(LOGIN, 16)}"
+
+
+def require_desk_home() -> None:
+    """Exit unless this machine runs the desk, since `~/desk` on my other machines is a synced copy."""
+    if not DESK_HOME.exists():
+        sys.exit(
+            f"error: {DESK_HOME} is missing, so this is not the desk's machine and ~/desk here is a synced copy."
+            ' Change nothing in it and follow "On another machine" in ~/desk/TASK.md.'
+        )
 
 
 def write_json(path: Path, data: dict) -> None:
@@ -1063,6 +1073,7 @@ def serve_tailnet(address: str, port: int) -> None:
 
 
 def main() -> None:
+    require_desk_home()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--login-url", action="store_true", help="print a link that lets one browser on the tailnet in, once")

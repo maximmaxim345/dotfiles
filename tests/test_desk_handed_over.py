@@ -33,6 +33,8 @@ class AutoAdoptedThreadTests(unittest.TestCase):
         self.backlog = self.home / "desk" / "backlog"
         self.backlog.mkdir(parents=True)
         (self.home / "desk" / "state").mkdir()
+        (self.home / ".config" / "desk").mkdir(parents=True)
+        (self.home / ".config" / "desk" / "home").touch()
 
     def add_item(self, thread: str, **fields: object) -> None:
         item = {

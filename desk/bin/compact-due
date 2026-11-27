@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import handed_over  # noqa: E402
+from server import handed_over, require_desk_home  # noqa: E402
 
 DESK = Path.home() / "desk"
 BACKLOG = DESK / "backlog"
@@ -35,6 +35,7 @@ def parse_time(value: str | None) -> datetime.datetime | None:
 
 
 def main() -> None:
+    require_desk_home()
     try:
         conn = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
         rows = conn.execute(

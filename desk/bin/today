@@ -8,10 +8,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import INCOMING, THREADS, WORKTREES, all_items, incoming_shown, plan_day  # noqa: E402
+from server import INCOMING, THREADS, WORKTREES, all_items, incoming_shown, plan_day, require_desk_home  # noqa: E402
 
 
 def main() -> None:
+    require_desk_home()
     items = all_items()
     threads = json.loads(THREADS.read_text()) if THREADS.exists() else {}
     incoming = [e for e in (json.loads(INCOMING.read_text()) if INCOMING.exists() else {}).values() if incoming_shown(e)]

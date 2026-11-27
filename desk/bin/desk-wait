@@ -14,6 +14,9 @@ import sys
 import time
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import require_desk_home  # noqa: E402
+
 STATE = Path.home() / "desk" / "state"
 BACKLOG = STATE.parent / "backlog"
 THREADS = STATE / "threads.json"
@@ -273,6 +276,7 @@ def take() -> None:
 
 
 def main() -> None:
+    require_desk_home()
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--serve", action="store_true", help="run the listener, as the local.desk-listener service does")

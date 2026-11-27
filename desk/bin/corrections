@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import STATE, locked, write_json  # noqa: E402
+from server import STATE, locked, require_desk_home, write_json  # noqa: E402
 
 CORRECTIONS = STATE / "corrections.json"
 
@@ -59,6 +59,8 @@ def main() -> None:
     marking.add_argument("ids", nargs="+", type=int)
     marking.add_argument("--item", required=True, help="the backlog item with the proposed rule change")
     args = parser.parse_args()
+    if args.command != "list":
+        require_desk_home()
     if args.command == "add":
         add(args)
     elif args.command == "proposed":

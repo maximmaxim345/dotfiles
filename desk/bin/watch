@@ -23,7 +23,7 @@ SORTING = ("action", "draft", "link", "item")
 BOARD_NEWS = ("added to the ", "moved on the ")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import locked, write_json  # noqa: E402
+from server import locked, require_desk_home, write_json  # noqa: E402
 
 DISCUSSIONS = """
 query($q: String!) {
@@ -202,6 +202,7 @@ def record(entries: list[dict]) -> list[dict]:
 
 
 def main() -> None:
+    require_desk_home()
     config = json.loads(CONFIG.read_text()) if CONFIG.exists() else {}
     state = json.loads(STATE.read_text()) if STATE.exists() else {}
     me = gh("api", "user")["login"]

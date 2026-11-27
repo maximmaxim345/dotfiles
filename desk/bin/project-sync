@@ -28,7 +28,7 @@ REFERENCE = re.compile(
 BODY_CHARS = 600
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import locked, write_json  # noqa: E402
+from server import locked, require_desk_home, write_json  # noqa: E402
 
 
 def gh_text(*args: str) -> str:
@@ -446,6 +446,7 @@ def apply(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
+    require_desk_home()
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     p_propose = sub.add_parser("propose", help="refresh the proposed moves and print what needs a link or an edit")

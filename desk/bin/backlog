@@ -38,6 +38,7 @@ from server import (  # noqa: E402
     parked,
     place_today,
     repos,
+    require_desk_home,
     slug_id,
     write_json,
 )
@@ -613,6 +614,8 @@ def main() -> None:
     g_list.set_defaults(func=goal_list)
 
     args = parser.parse_args()
+    if args.func not in (list_items, goal_list):
+        require_desk_home()
     args.func(args)
 
 

@@ -52,6 +52,7 @@ class AutostartTests(unittest.TestCase):
                 INCOMING=missing,
                 WORKTREES=missing,
                 AUTOSTART_LAST=Path(folder) / "autostart-last.json",
+                require_desk_home=lambda: None,
                 all_items=lambda: items,
                 autostart_setting=lambda: {"mode": "all", "efforts": [], "reviews": True},
                 spaces_setting=lambda: {"spaces": ["work"], "off": [], "efforts": {}},

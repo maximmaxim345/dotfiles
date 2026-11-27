@@ -20,7 +20,11 @@ loader.exec_module(corrections)
 class CorrectionsTests(unittest.TestCase):
     def run_script(self, *argv: str) -> str:
         out = io.StringIO()
-        with patch.object(sys, "argv", ["corrections", *argv]), contextlib.redirect_stdout(out):
+        with (
+            patch.object(sys, "argv", ["corrections", *argv]),
+            patch.object(corrections, "require_desk_home", lambda: None),
+            contextlib.redirect_stdout(out),
+        ):
             corrections.main()
         return out.getvalue()
 

@@ -30,7 +30,7 @@ COLUMNS = {
 PAYLOAD_KEYS = {"lineage", "settledOverride", "snoozedUntil", "snoozedAt"}
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
-from server import add_item, apply_status, log_event, repos, write_json  # noqa: E402
+from server import add_item, apply_status, log_event, repos, require_desk_home, write_json  # noqa: E402
 
 
 def schema_changed(detail: str) -> None:
@@ -329,6 +329,7 @@ def build(threads: list[dict], items: list[dict], efforts: set[str], old: dict) 
 
 
 def main() -> None:
+    require_desk_home()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--stdin", action="store_true", help="read t3_thread_list results as JSON from stdin instead of T3's database"

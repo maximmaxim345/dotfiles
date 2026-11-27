@@ -10,6 +10,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+from server import require_desk_home  # noqa: E402
+
 DESK = Path.home() / "desk"
 BACKLOG = DESK / "backlog"
 SAVED = DESK / "state" / "worktrees.json"
@@ -58,6 +61,7 @@ def held_because(path: str) -> str | None:
 
 
 def main() -> None:
+    require_desk_home()
     try:
         conn = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
         rows = conn.execute(

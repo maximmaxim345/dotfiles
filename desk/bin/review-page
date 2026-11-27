@@ -11,6 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
 import reviews  # noqa: E402
+from server import require_desk_home  # noqa: E402
 
 BOARD_CONFIG = Path.home() / "desk" / "board.json"
 
@@ -31,6 +32,7 @@ def main() -> None:
     export = sub.add_parser("export", help="print a PR review page's drafts, review body and picks as JSON")
     export.add_argument("review", help="the review id")
     args = parser.parse_args()
+    require_desk_home()
     try:
         if args.command == "register":
             if not args.thread:

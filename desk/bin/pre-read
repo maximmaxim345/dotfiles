@@ -23,6 +23,7 @@ from server import (  # noqa: E402
     autostart_setting,
     in_window,
     locked,
+    require_desk_home,
     write_json,
 )
 
@@ -235,6 +236,7 @@ def save(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
+    require_desk_home()
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
 

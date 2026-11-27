@@ -40,7 +40,7 @@ The script exits with an error and a message when a reference in the narrative m
 
 ## Showing a page
 
-On a machine with the desk (`~/desk/bin/review-page` exists), register the page with the desk board and give its address:
+On the desk's machine (`~/.config/desk/home` exists), register the page with the desk board and give its address:
 
 ```sh
 ~/desk/bin/review-page register --page <absolute path of the html>

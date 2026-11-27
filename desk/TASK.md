@@ -65,7 +65,7 @@ What I say in a task thread, and what it does. `/desk help` shows this list.
 
 ## On another machine
 
-When your launch message says you run on another machine than the desk's, the desk, its board and my browser are not on yours, and I may be asleep:
+When `~/.config/desk/home` is missing or your launch message says you run on another machine than the desk's, the desk, its board and my browser are not on yours, and I may be asleep:
 - `~/desk` is a synced copy. Read it, and write nothing in it: run no `~/desk/bin` script that changes something, such as `backlog ask`, `backlog comment` or `review-page`. Where these rules, a skill or my global rules tell you to use one, put that note, question or brief in your reply instead. The desk reads your thread and keeps your item.
 - Build and register no review page. Your reply carries the brief, with the changed text or the hunks I need to see as `diff` blocks.
 - The work reaches me as a draft PR, which your start note allows (see "Start note"). Open it once your own review is done.

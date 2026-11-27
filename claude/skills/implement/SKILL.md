@@ -65,7 +65,7 @@ Launch these in parallel, passing the diff (`git diff <base>...HEAD`), the chang
 - ohf-sage, for the projects listed in step 2.
 - A reviewer from another model, started as the `second-opinion` skill says, when the change has about 50 or more changed non-test lines, changes a contract (models, commands, events, stored data, migrations, settings, text users see), or touches what the project rules file lists under "Always look closely", however small. Also when the item's start note asks for a second opinion. Skip it for every other change.
 
-Check each finding against the source yourself and drop what you can't confirm. Label the rest as a user-visible bug, reachable but rare, or theoretical. Fix bugs and rule violations, each in a `git commit --fixup` of the commit it fixes, and skip theoretical ones. A finding that widens the change is an extra finding, not a fix. When two reviewers disagree on a design point, put it in the brief's Decide list instead of fixing it.
+Check each finding against the source yourself and drop what you can't confirm. Label the rest as a user-visible bug, reachable but rare, or theoretical. Fix bugs and rule violations, each in a `git commit --fixup` of the commit it fixes, and skip theoretical ones. When a fixed finding is a mistake that can repeat, search the diff for the same mistake and fix each place, in a fixup of the commit that added it. A finding that widens the change is an extra finding, not a fix. When two reviewers disagree on a design point, put it in the brief's Decide list instead of fixing it.
 
 Review in two rounds at most. In the second, only the reviewers whose findings you fixed check those fixes, and nothing else. What is still open after it goes to the brief's Decide list, with no third round.
 
